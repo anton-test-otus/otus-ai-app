@@ -1,11 +1,13 @@
 /backend/vendor/
 /backend/var/
+/backend/.env
 /backend/.env.local
 /backend/.env.local.php
 /backend/.env.*.local
-/backend/config/jwt/*.pem
+/backend/config/jwt/
 /frontend/node_modules/
 /frontend/dist/
+/frontend/.env
 /frontend/.env.local
 .DS_Store
 .idea/

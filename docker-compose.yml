@@ -1,19 +1,20 @@
-version: '3.8'
-
 services:
   postgres:
     image: postgres:16-alpine
     container_name: otus_postgres
     environment:
-      POSTGRES_DB: otus_ai_db
-      POSTGRES_USER: otus_user
-      POSTGRES_PASSWORD: otus_password
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:-otus_ai_db}
+      POSTGRES_USER: ${DB_USER:-otus_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-otus_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - otus_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-otus_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   php:
     build:
@@ -23,10 +24,11 @@ services:
     working_dir: /var/www/backend
     volumes:
       - ./backend:/var/www/backend
-    environment:
-      DATABASE_URL: postgresql://otus_user:otus_password@postgres:5432/otus_ai_db?serverVersion=16&charset=utf8
+    env_file:
+      - ./backend/.env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - otus_network
 
@@ -34,7 +36,7 @@ services:
     image: nginx:alpine
     container_name: otus_nginx
     ports:
-      - "8080:80"
+      - "${APP_PORT:-8080}:80"
     volumes:
       - ./backend:/var/www/backend
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf

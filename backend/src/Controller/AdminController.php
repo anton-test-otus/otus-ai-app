@@ -108,4 +108,54 @@ class AdminController extends AbstractController
             'message' => 'Пользователь и все его данные удалены'
         ]);
     }
+
+    #[Route('/users/{id}/promote', name: 'api_admin_users_promote', methods: ['PATCH'])]
+    public function promoteUser(User $user): JsonResponse
+    {
+        $roles = $user->getRoles();
+        
+        if (in_array('ROLE_ADMIN', $roles)) {
+            return $this->json([
+                'message' => 'Пользователь уже имеет роль администратора'
+            ], Response::HTTP_OK);
+        }
+
+        $roles[] = 'ROLE_ADMIN';
+        $user->setRoles($roles);
+        $this->entityManager->flush();
+
+        return $this->json([
+            'message' => 'Пользователь назначен администратором',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ]
+        ]);
+    }
+
+    #[Route('/users/{id}/demote', name: 'api_admin_users_demote', methods: ['PATCH'])]
+    public function demoteUser(User $user): JsonResponse
+    {
+        $roles = $user->getRoles();
+        
+        if (!in_array('ROLE_ADMIN', $roles)) {
+            return $this->json([
+                'message' => 'Пользователь не является администратором'
+            ], Response::HTTP_OK);
+        }
+
+        $roles = array_filter($roles, fn($role) => $role !== 'ROLE_ADMIN');
+        $user->setRoles(array_values($roles));
+        $this->entityManager->flush();
+
+        return $this->json([
+            'message' => 'Роль администратора снята с пользователя',
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'roles' => $user->getRoles(),
+            ]
+        ]);
+    }
 }
