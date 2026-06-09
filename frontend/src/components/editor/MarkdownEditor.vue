@@ -36,14 +36,16 @@ onMounted(async () => {
 
   try {
     editor = await Editor.make()
+      // @ts-ignore - Milkdown config types issue
       .config((ctx) => {
         ctx.set(rootCtx, editorRef.value!)
         ctx.set(defaultValueCtx, props.modelValue)
         
-        ctx.get(listenerCtx).markdownUpdated((ctx, markdown) => {
+        ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
           emit('update:modelValue', markdown)
         })
       })
+      // @ts-ignore - Milkdown plugin types issue
       .use(nord)
       .use(commonmark)
       .use(gfm)
@@ -60,7 +62,7 @@ watch(
   (newValue) => {
     if (editor && newValue !== editor.action((ctx) => ctx.get(defaultValueCtx))) {
       editor.action((ctx) => {
-        const view = ctx.get(rootCtx)
+        ctx.get(rootCtx)
         // Update editor content if different from current
       })
     }

@@ -31,4 +31,8 @@ export const foldersApi = {
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/folders/${id}`);
   },
+
+  async count(id: string): Promise<{ notes: number; folders: number }> {
+    return apiClient.get<{ notes: number; folders: number }>(`/folders/${id}/count`);
+  },
 };

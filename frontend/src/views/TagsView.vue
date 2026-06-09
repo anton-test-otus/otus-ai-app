@@ -41,15 +41,14 @@
       <template #title>
         <div class="flex items-center justify-between">
           <span>Ваши теги ({{ tags.length }})</span>
-          <InputText
-            v-model="searchQuery"
-            placeholder="Поиск..."
-            class="w-64"
-          >
-            <template #prefix>
-              <i class="pi pi-search" />
-            </template>
-          </InputText>
+          <div class="relative w-64">
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <InputText
+              v-model="searchQuery"
+              placeholder="Поиск..."
+              class="w-full pl-10"
+            />
+          </div>
         </div>
       </template>
 
@@ -168,7 +167,6 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';
@@ -180,7 +178,6 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { useTagsStore } from '../stores/tags';
 import type { Tag } from '../types';
 
-const router = useRouter();
 const tagsStore = useTagsStore();
 
 const newTagName = ref('');

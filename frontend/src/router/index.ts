@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/TrashView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/admin/users',
+    name: 'admin-users',
+    component: () => import('@/views/admin/AdminUsersView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 ]
 
 const router = createRouter({
@@ -46,7 +52,7 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
 
   if (!authStore.user && authStore.token) {
@@ -56,6 +62,8 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })
   } else if (to.meta.guest && authStore.isAuthenticated) {
+    next({ name: 'dashboard' })
+  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     next({ name: 'dashboard' })
   } else {
     next()

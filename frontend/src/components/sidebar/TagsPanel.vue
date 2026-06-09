@@ -4,7 +4,6 @@
       <h3 class="text-lg font-semibold">Теги</h3>
       <Button
         icon="pi pi-cog"
-        size="small"
         text
         rounded
         @click="$router.push('/tags')"
@@ -36,7 +35,6 @@
           v-if="isTagSelected(tag.id)"
           value="✓"
           severity="success"
-          size="small"
         />
       </div>
     </div>
@@ -46,7 +44,6 @@
       <Button
         label="Очистить фильтры"
         icon="pi pi-times"
-        size="small"
         outlined
         class="w-full"
         @click="clearFilters"
@@ -57,13 +54,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import ProgressSpinner from 'primevue/progressspinner';
 import { useTagsStore } from '../../stores/tags';
 
-const router = useRouter();
 const tagsStore = useTagsStore();
 
 const emit = defineEmits<{

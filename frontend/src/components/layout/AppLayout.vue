@@ -61,7 +61,7 @@ function handleFolderSelect(folderId: string | null) {
   // TODO: Filter notes by folder
 }
 
-function handleTagFilter(tagIds: string[]) {
+function handleTagFilter(_tagIds: string[]) {
   // TODO: Filter notes by tags
 }
 

@@ -25,23 +25,39 @@ class AdminController extends AbstractController
     {
         $page = max(1, (int) $request->query->get('page', 1));
         $perPage = min(100, max(1, (int) $request->query->get('perPage', 20)));
+        $query = $request->query->get('q', '');
 
         $repository = $this->entityManager->getRepository(User::class);
-        $qb = $repository->createQueryBuilder('u')
-            ->orderBy('u.createdAt', 'DESC')
-            ->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage);
 
-        $users = $qb->getQuery()->getResult();
-        $total = $repository->count([]);
+        if ($query) {
+            $users = $repository->searchUsers($query, $page, $perPage);
+            $total = $repository->countSearchResults($query);
+        } else {
+            $qb = $repository->createQueryBuilder('u')
+                ->orderBy('u.createdAt', 'DESC')
+                ->setFirstResult(($page - 1) * $perPage)
+                ->setMaxResults($perPage);
 
-        $usersData = array_map(function (User $user) {
+            $users = $qb->getQuery()->getResult();
+            $total = $repository->count([]);
+        }
+
+        $usersData = array_map(function (User $user) use ($repository) {
+            $stats = $repository->getUserStatistics($user);
+            
             return [
                 'id' => $user->getId()->toRfc4122(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
                 'isActive' => $user->isActive(),
                 'createdAt' => $user->getCreatedAt()?->format('c'),
+                'statistics' => [
+                    'notesCount' => $stats['notesCount'],
+                    'foldersCount' => $stats['foldersCount'],
+                    'tagsCount' => $stats['tagsCount'],
+                    'lastActivity' => $stats['lastActivity']?->format('c'),
+                    'storageSize' => $stats['storageSize'],
+                ],
             ];
         }, $users);
 
@@ -59,12 +75,22 @@ class AdminController extends AbstractController
     #[Route('/users/{id}', name: 'api_admin_users_get', methods: ['GET'])]
     public function getUserDetails(User $user): JsonResponse
     {
+        $repository = $this->entityManager->getRepository(User::class);
+        $stats = $repository->getUserStatistics($user);
+
         return $this->json([
             'id' => $user->getId()->toRfc4122(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'isActive' => $user->isActive(),
             'createdAt' => $user->getCreatedAt()?->format('c'),
+            'statistics' => [
+                'notesCount' => $stats['notesCount'],
+                'foldersCount' => $stats['foldersCount'],
+                'tagsCount' => $stats['tagsCount'],
+                'lastActivity' => $stats['lastActivity']?->format('c'),
+                'storageSize' => $stats['storageSize'],
+            ],
         ]);
     }
 

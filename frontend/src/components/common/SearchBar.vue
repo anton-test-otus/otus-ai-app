@@ -10,7 +10,7 @@
           class="search-input w-full"
           :class="{ 'pr-20': searchQuery.length > 0, 'pl-10': searchQuery.length === 0, 'pl-3': searchQuery.length > 0 }"
           @input="onInput"
-          @keyup.enter="performFullSearch"
+          @keyup.enter="() => performFullSearch()"
           @focus="showQuickResults = true"
         />
         
@@ -27,7 +27,7 @@
             icon="pi pi-search"
             rounded
             size="small"
-            @click="performFullSearch"
+            @click="() => performFullSearch()"
             :loading="searching"
             v-tooltip.bottom="'Полный поиск (Enter)'"
           />
@@ -122,7 +122,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';

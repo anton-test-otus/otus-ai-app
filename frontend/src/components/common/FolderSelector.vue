@@ -43,7 +43,7 @@ interface Props {
   inputId?: string;
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   inputId: 'folder-select',
 });
 

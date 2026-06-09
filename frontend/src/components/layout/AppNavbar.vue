@@ -18,6 +18,15 @@
         <!-- Actions -->
         <div class="flex items-center space-x-2 flex-shrink-0">
           <Button
+            v-if="authStore.isAdmin"
+            icon="pi pi-users"
+            severity="secondary"
+            text
+            @click="router.push({ name: 'admin-users' })"
+            v-tooltip.bottom="'Управление пользователями'"
+            rounded
+          />
+          <Button
             v-if="authStore.isAuthenticated"
             icon="pi pi-trash"
             severity="secondary"

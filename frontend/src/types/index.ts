@@ -4,6 +4,15 @@ export interface User {
   roles: string[]
   isActive: boolean
   createdAt?: string
+  statistics?: UserStatistics
+}
+
+export interface UserStatistics {
+  notesCount: number
+  foldersCount: number
+  tagsCount: number
+  lastActivity: string | null
+  storageSize: number
 }
 
 export interface Note {
