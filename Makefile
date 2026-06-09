@@ -1,19 +1,21 @@
-.PHONY: help init build up down restart logs install migrate admin cache-clear test clean
+.PHONY: help init build up down restart logs install migrate admin cache-clear test clean frontend-install frontend-build
 
 help:
 	@echo "Доступные команды:"
-	@echo "  make init          - Первоначальная настройка проекта (копирование .env, сборка, запуск)"
-	@echo "  make build         - Сборка Docker образов"
-	@echo "  make up            - Запуск контейнеров"
-	@echo "  make down          - Остановка контейнеров"
-	@echo "  make restart       - Перезапуск контейнеров"
-	@echo "  make logs          - Просмотр логов (Ctrl+C для выхода)"
-	@echo "  make install       - Установка зависимостей Composer"
-	@echo "  make migrate       - Применение миграций базы данных"
-	@echo "  make admin         - Создание администратора из .env"
-	@echo "  make cache-clear   - Очистка кэша Symfony"
-	@echo "  make test          - Запуск тестов"
-	@echo "  make clean         - Удаление всех контейнеров, образов и volumes"
+	@echo "  make init             - Первоначальная настройка проекта (копирование .env, сборка, запуск)"
+	@echo "  make build            - Сборка Docker образов"
+	@echo "  make up               - Запуск контейнеров"
+	@echo "  make down             - Остановка контейнеров"
+	@echo "  make restart          - Перезапуск контейнеров"
+	@echo "  make logs             - Просмотр логов (Ctrl+C для выхода)"
+	@echo "  make install          - Установка зависимостей Composer (backend)"
+	@echo "  make migrate          - Применение миграций базы данных"
+	@echo "  make admin            - Создание администратора из .env"
+	@echo "  make cache-clear      - Очистка кэша Symfony"
+	@echo "  make test             - Запуск тестов"
+	@echo "  make frontend-install - Установка зависимостей npm (frontend)"
+	@echo "  make frontend-build   - Сборка production фронтенда"
+	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
 
 init:
 	@echo "Инициализация проекта..."
@@ -40,6 +42,7 @@ init:
 	@echo "✅ Проект успешно инициализирован!"
 	@echo "🌐 API доступен на http://localhost:8080/api"
 	@echo "📚 Swagger UI доступен на http://localhost:8080/api/docs"
+	@echo "💻 Frontend dev server на http://localhost:5173"
 
 build:
 	docker compose build --no-cache
@@ -72,6 +75,12 @@ cache-clear:
 
 test:
 	docker exec otus_php bin/phpunit
+
+frontend-install:
+	docker exec otus_node npm install
+
+frontend-build:
+	docker exec otus_node npm run build
 
 clean:
 	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и volumes!"

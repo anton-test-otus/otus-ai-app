@@ -141,3 +141,78 @@ docker exec -it otus_postgres psql -U otus_user -d otus_ai_db
 
 ---
 
+## Фаза 2: Основные функции заметок
+
+---
+
+## Проблема 8: Критические уязвимости в axios
+
+**Описание проблемы:**
+При проверке безопасности зависимостей фронтенда обнаружены множественные критические CVE в axios 1.7.9:
+- **CVE-2026-42033** - Prototype Pollution (перехват/модификация JSON ответов)
+- **CVE-2026-42035** - Header Injection via Prototype Pollution
+- **CVE-2026-42042** - XSRF Token Exposure (утечка токенов на cross-origin серверы)
+- **CVE-2026-40175** - Cloud Metadata Exfiltration/SSRF (RCE в облачных средах)
+- Дополнительно: axios был скомпрометирован в supply chain атаке в марте 2026
+
+Минимальная безопасная версия: axios@1.15.1 (апрель 2026)
+
+**Решение:**
+Вместо обновления axios принято решение полностью отказаться от него в пользу native fetch API:
+- Создан собственный API клиент на базе fetch (~120 строк кода)
+- Реализованы request/response interceptors через hooks
+- Добавлена обработка JWT токенов
+- Автоматический редирект на login при 401
+- Query parameters поддержка
+- Типизированные ошибки (HttpError класс)
+
+**Преимущества решения:**
+- 0 известных CVE
+- Удалено 22 пакета (axios + транзитивные зависимости)
+- Полный контроль над HTTP логикой
+- Меньший bundle size
+- Образовательная ценность для учебного проекта
+
+---
+
+## Проблема 9: XSS уязвимость в Milkdown
+
+**Описание проблемы:**
+Обнаружена уязвимость в Milkdown 7.5.3:
+- **AIKIDO-2025-10253** - Cross-Site Scripting (XSS)
+- Уязвимые версии: 7.3.0 - 7.8.0
+- Исправлено в версии 7.9.0
+
+**Решение:**
+Обновлены все пакеты @milkdown/* с версии 7.5.3 до 7.9.0:
+- @milkdown/core
+- @milkdown/ctx
+- @milkdown/vue
+- @milkdown/prose
+- @milkdown/preset-commonmark
+- @milkdown/preset-gfm
+- @milkdown/plugin-history
+- @milkdown/plugin-listener
+- @milkdown/theme-nord
+
+---
+
+## Проблема 10: Несуществующие версии зависимостей
+
+**Описание проблемы:**
+При первом запуске node контейнера обнаружены ошибки установки:
+- `@vee-validate/zod@^4.15.2` - версия не существует
+- `@vueuse/core@^11.4.0` - версия не существует
+
+**Решение:**
+Исправлены версии на актуальные и стабильные:
+- `@vee-validate/zod`: 4.15.2 → 4.15.1 (latest stable, июнь 2025)
+- `vee-validate`: 4.15.2 → 4.15.1
+- `@vueuse/core`: 11.4.0 → 14.3.0 (latest stable, май 2026)
+
+**Проверка безопасности:**
+- vee-validate 4.15.1: 0 уязвимостей, Health Score 86/100, почти год в production
+- @vueuse/core 14.3.0: 0 уязвимостей, 7.7M weekly downloads
+
+---
+
