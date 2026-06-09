@@ -14,6 +14,7 @@
       show-clear
       class="w-full"
       :loading="loading"
+      appendTo="body"
     >
       <template #value="slotProps">
         <div v-if="slotProps.value" class="flex items-center gap-2">

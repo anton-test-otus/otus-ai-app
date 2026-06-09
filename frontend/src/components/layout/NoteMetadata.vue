@@ -3,9 +3,9 @@
     <!-- Desktop: Fixed right panel -->
     <div
       v-if="!isMobile"
-      class="hidden lg:block fixed right-0 top-0 h-screen w-80 bg-surface-0 dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 overflow-y-auto"
+      class="hidden lg:block fixed right-0 top-32 bottom-0 w-80 bg-surface-0 dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 z-10"
     >
-      <div class="p-6">
+      <div class="h-full overflow-y-auto p-6">
         <h3 class="text-lg font-semibold mb-4">Метаданные</h3>
         <slot />
       </div>

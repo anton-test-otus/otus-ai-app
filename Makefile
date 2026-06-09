@@ -1,4 +1,4 @@
-.PHONY: help init build up down restart logs install migrate admin cache-clear test clean frontend-install frontend-build
+.PHONY: help init build up down restart logs install migrate admin cache-clear test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart
 
 help:
 	@echo "Доступные команды:"
@@ -15,6 +15,9 @@ help:
 	@echo "  make test             - Запуск тестов"
 	@echo "  make frontend-install - Установка зависимостей npm (frontend)"
 	@echo "  make frontend-build   - Сборка production фронтенда"
+	@echo "  make frontend-dev     - Запуск Vite dev server"
+	@echo "  make frontend-kill    - Остановка всех Node.js/Vite процессов"
+	@echo "  make frontend-restart - Перезапуск Vite dev server"
 	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
 
 init:
@@ -77,10 +80,27 @@ test:
 	docker exec otus_php bin/phpunit
 
 frontend-install:
+	@docker compose start node 2>/dev/null || true
 	docker exec otus_node npm install
 
 frontend-build:
+	@docker compose start node 2>/dev/null || true
 	docker exec otus_node npm run build
+
+frontend-dev:
+	@echo "Запуск Vite dev server..."
+	@docker compose start node 2>/dev/null || true
+	docker exec -it otus_node sh -c "cd /app && npm run dev"
+
+frontend-kill:
+	@echo "Остановка Node.js/Vite процессов..."
+	@docker exec otus_node sh -c "pkill -9 node || true" 2>/dev/null || echo "⚠️  Контейнер node не запущен"
+	@echo "✅ Завершено"
+
+frontend-restart: frontend-kill
+	@echo "Перезапуск через 2 секунды..."
+	@sleep 2
+	@$(MAKE) frontend-dev
 
 clean:
 	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и volumes!"

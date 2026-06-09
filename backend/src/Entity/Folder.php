@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\FolderRepository;
 use App\State\FolderTreeProvider;
@@ -34,6 +35,7 @@ use Symfony\Component\Uid\Uuid;
         new Get(),
         new Post(processor: FolderProcessor::class),
         new Put(processor: FolderProcessor::class),
+        new Patch(processor: FolderProcessor::class),
         new Delete(processor: FolderProcessor::class),
     ],
     normalizationContext: ['groups' => ['folder:read']],

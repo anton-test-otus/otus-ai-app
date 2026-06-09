@@ -17,7 +17,14 @@ const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
-app.use(PrimeVue)
+app.use(PrimeVue, {
+  zIndex: {
+    modal: 1100,        // dialog, sidebar
+    overlay: 1000,      // dropdown, multiselect
+    menu: 1000,         // menu
+    tooltip: 1100       // tooltip
+  }
+})
 app.use(ToastService)
 app.use(ConfirmationService)
 app.directive('tooltip', Tooltip)

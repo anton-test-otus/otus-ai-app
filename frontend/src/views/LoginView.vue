@@ -76,8 +76,8 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { useForm } from 'vee-validate'
-import { z } from 'zod'
 import { toTypedSchema } from '@vee-validate/zod'
+import { z } from '@/lib/zod'
 import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -90,8 +90,11 @@ const authStore = useAuthStore()
 
 const validationSchema = toTypedSchema(
   z.object({
-    email: z.string().email('Некорректный email').min(1, 'Email обязателен'),
-    password: z.string().min(6, 'Пароль должен содержать минимум 6 символов'),
+    email: z.string({ required_error: 'Email обязателен' })
+      .min(1, 'Email обязателен')
+      .email('Некорректный email'),
+    password: z.string({ required_error: 'Пароль обязателен' })
+      .min(6, 'Пароль должен содержать минимум 6 символов'),
   })
 )
 

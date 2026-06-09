@@ -14,6 +14,14 @@
             </div>
             
             <div class="flex items-center space-x-4">
+              <Button
+                icon="pi pi-link"
+                severity="secondary"
+                text
+                @click="showLinkModal = true"
+                v-tooltip.bottom="'Вставить ссылку на заметку'"
+              />
+              
               <SaveIndicator :status="saveStatus" />
               
               <SelectButton
@@ -106,6 +114,13 @@
             
             <Divider />
             
+            <BacklinksPanel
+              v-if="notesStore.currentNote"
+              :note-id="notesStore.currentNote.id"
+            />
+            
+            <Divider />
+            
             <div>
               <h4 class="text-sm font-semibold mb-2">Информация</h4>
               <div class="text-xs text-surface-500 dark:text-surface-400 space-y-1">
@@ -137,6 +152,10 @@
 
     <Toast />
     <ConfirmDialog />
+    <LinkNoteModal
+      v-model:visible="showLinkModal"
+      @select="handleLinkSelect"
+    />
   </AppLayout>
 </template>
 
@@ -160,6 +179,8 @@ import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
 import SaveIndicator from '@/components/common/SaveIndicator.vue'
 import FolderSelector from '@/components/common/FolderSelector.vue'
 import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
+import BacklinksPanel from '@/components/BacklinksPanel.vue'
+import LinkNoteModal from '@/components/LinkNoteModal.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
 import type { ViewMode } from '@/types'
@@ -175,6 +196,7 @@ const noteContent = ref('')
 const noteFolderId = ref<string | null>(null)
 const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('split')
+const showLinkModal = ref(false)
 
 const viewModeOptions = [
   { label: 'Редактор', value: 'edit', icon: 'pi pi-pencil' },
@@ -262,6 +284,21 @@ function confirmDelete() {
       }
     },
   })
+}
+
+function handleLinkSelect(noteTitle: string) {
+  // Insert wiki-link at the end of content
+  // In a real implementation, this would insert at cursor position in the editor
+  const wikiLink = `[[${noteTitle}]]`;
+  noteContent.value = noteContent.value ? `${noteContent.value}\n\n${wikiLink}` : wikiLink;
+  triggerSave();
+  
+  toast.add({
+    severity: 'success',
+    summary: 'Ссылка добавлена',
+    detail: `Ссылка на "${noteTitle}" добавлена в конец заметки`,
+    life: 3000,
+  });
 }
 
 function formatDate(dateString?: string): string {

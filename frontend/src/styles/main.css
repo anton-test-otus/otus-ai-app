@@ -36,3 +36,26 @@
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
   }
 }
+
+/* PrimeVue overlays z-index fix */
+.p-dropdown-panel,
+.p-multiselect-panel,
+.p-autocomplete-panel {
+  z-index: 9999 !important;
+}
+
+.p-dialog {
+  z-index: 1200 !important;
+}
+
+.p-dialog-mask {
+  z-index: 1200 !important;
+}
+
+/* Force dropdown panels to be on top */
+body > .p-dropdown-panel,
+body > .p-multiselect-panel,
+body > .p-autocomplete-panel {
+  z-index: 9999 !important;
+  position: fixed !important;
+}

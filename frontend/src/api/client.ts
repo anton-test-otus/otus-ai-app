@@ -131,7 +131,7 @@ class ApiClient {
       body: data ? JSON.stringify(data) : undefined,
       headers: {
         ...config?.headers,
-        'Content-Type': 'application/json',
+        'Content-Type': 'application/merge-patch+json',
       },
     })
   }

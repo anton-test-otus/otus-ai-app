@@ -25,7 +25,7 @@ export const foldersApi = {
   },
 
   async update(id: string, folderData: Partial<Folder>): Promise<Folder> {
-    return apiClient.put<Folder>(`/folders/${id}`, folderData);
+    return apiClient.patch<Folder>(`/folders/${id}`, folderData);
   },
 
   async delete(id: string): Promise<void> {

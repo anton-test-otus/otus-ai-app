@@ -112,4 +112,41 @@ class NoteRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+
+    /**
+     * Find notes by title (case-insensitive) for a specific user
+     * Returns active notes only (not deleted)
+     * 
+     * @return Note[]
+     */
+    public function findByTitleCaseInsensitive(string $title, $user): array
+    {
+        return $this->createQueryBuilder('n')
+            ->where('LOWER(n.title) = LOWER(:title)')
+            ->andWhere('n.user = :user')
+            ->andWhere('n.deletedAt IS NULL')
+            ->setParameter('title', $title)
+            ->setParameter('user', $user)
+            ->orderBy('n.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find notes that link to the given note (backlinks)
+     * Returns notes that have wiki-links pointing to this note
+     * 
+     * @return Note[]
+     */
+    public function findBacklinks(Note $note): array
+    {
+        return $this->createQueryBuilder('n')
+            ->innerJoin('n.outgoingLinks', 'nl')
+            ->where('nl.targetNote = :note')
+            ->andWhere('n.deletedAt IS NULL')
+            ->setParameter('note', $note)
+            ->orderBy('n.updatedAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

@@ -36,6 +36,7 @@ class FolderProcessor implements ProcessorInterface
             return $data;
         }
 
+        // PUT и PATCH обрабатываются одинаково
         $this->em->persist($data);
         $this->em->flush();
 

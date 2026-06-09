@@ -29,6 +29,12 @@ class AuthController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
+        if (!is_array($data)) {
+            return $this->json([
+                'error' => 'Invalid JSON'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
         if (!isset($data['email']) || !isset($data['password'])) {
             return $this->json([
                 'error' => 'Email и пароль обязательны'
