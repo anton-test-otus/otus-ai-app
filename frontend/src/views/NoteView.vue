@@ -15,6 +15,14 @@
             
             <div class="flex items-center space-x-4">
               <Button
+                icon="pi pi-history"
+                severity="secondary"
+                text
+                @click="showVersionHistory = !showVersionHistory"
+                v-tooltip.bottom="'История версий'"
+              />
+              
+              <Button
                 icon="pi pi-link"
                 severity="secondary"
                 text
@@ -112,6 +120,16 @@
               @update:model-value="handleTagsChange"
             />
             
+            <Divider v-if="showVersionHistory" />
+            
+            <VersionHistoryPanel
+              v-if="showVersionHistory && notesStore.currentNote"
+              :note-id="notesStore.currentNote.id"
+              :current-note="notesStore.currentNote"
+              @close="showVersionHistory = false"
+              @restore="handleVersionRestore"
+            />
+            
             <Divider />
             
             <BacklinksPanel
@@ -181,9 +199,10 @@ import FolderSelector from '@/components/common/FolderSelector.vue'
 import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
 import BacklinksPanel from '@/components/BacklinksPanel.vue'
 import LinkNoteModal from '@/components/LinkNoteModal.vue'
+import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
-import type { ViewMode } from '@/types'
+import type { ViewMode, RestoreVersionRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -197,6 +216,7 @@ const noteFolderId = ref<string | null>(null)
 const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('split')
 const showLinkModal = ref(false)
+const showVersionHistory = ref(false)
 
 const viewModeOptions = [
   { label: 'Редактор', value: 'edit', icon: 'pi pi-pencil' },
@@ -299,6 +319,41 @@ function handleLinkSelect(noteTitle: string) {
     detail: `Ссылка на "${noteTitle}" добавлена в конец заметки`,
     life: 3000,
   });
+}
+
+async function handleVersionRestore(versionId: string, mode: RestoreVersionRequest['mode']) {
+  try {
+    // Reload the note after restore
+    const noteId = route.params.id as string
+    const note = await notesStore.fetchNoteById(noteId)
+    
+    // Update local state
+    noteTitle.value = note.title
+    noteContent.value = note.content
+    noteFolderId.value = note.folderId || null
+    noteTags.value = note.tags?.map(t => t.name) || []
+    
+    let message = 'Версия восстановлена'
+    if (mode === 'copy') {
+      message = 'Новая заметка создана из версии'
+    } else if (mode === 'create_version') {
+      message = 'Версия восстановлена, текущее состояние сохранено'
+    }
+    
+    toast.add({
+      severity: 'success',
+      summary: 'Успешно',
+      detail: message,
+      life: 3000,
+    })
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: 'Не удалось восстановить версию',
+      life: 3000,
+    })
+  }
 }
 
 function formatDate(dateString?: string): string {

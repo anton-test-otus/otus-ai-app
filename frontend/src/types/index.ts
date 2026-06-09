@@ -52,6 +52,12 @@ export interface NoteVersion {
   createdAt: string
 }
 
+export interface RestoreVersionRequest {
+  mode: 'create_version' | 'overwrite' | 'copy'
+}
+
+export type DiffViewMode = 'inline' | 'unified'
+
 export interface NoteLink {
   sourceNoteId: string
   targetNoteId: string

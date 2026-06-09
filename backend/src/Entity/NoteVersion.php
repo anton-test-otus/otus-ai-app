@@ -5,8 +5,11 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
 use App\Repository\NoteVersionRepository;
 use App\State\NoteVersionCollectionProvider;
+use App\State\NoteVersionsByNoteProvider;
+use App\State\RestoreVersionProcessor;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -18,7 +21,17 @@ use Symfony\Component\Uid\Uuid;
 #[ApiResource(
     operations: [
         new GetCollection(provider: NoteVersionCollectionProvider::class),
+        new GetCollection(
+            uriTemplate: '/notes/{noteId}/versions',
+            provider: NoteVersionsByNoteProvider::class,
+            name: 'note_versions_by_note'
+        ),
         new Get(),
+        new Post(
+            uriTemplate: '/notes/{noteId}/versions/{id}/restore',
+            processor: RestoreVersionProcessor::class,
+            name: 'restore_version'
+        ),
     ],
     normalizationContext: ['groups' => ['version:read']]
 )]

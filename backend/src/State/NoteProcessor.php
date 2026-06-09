@@ -8,6 +8,7 @@ use App\Entity\Note;
 use App\Entity\NoteLink;
 use App\Repository\NoteRepository;
 use App\Service\WikiLinkParser;
+use App\Service\NoteVersionService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -17,7 +18,8 @@ class NoteProcessor implements ProcessorInterface
         private EntityManagerInterface $em,
         private Security $security,
         private WikiLinkParser $wikiLinkParser,
-        private NoteRepository $noteRepository
+        private NoteRepository $noteRepository,
+        private NoteVersionService $versionService
     ) {
     }
 
@@ -47,6 +49,12 @@ class NoteProcessor implements ProcessorInterface
             $data->setDeletedAt(new \DateTimeImmutable());
             $this->em->flush();
             return $data;
+        }
+
+        // Создать версию перед обновлением (PUT)
+        if ($operation->getMethod() === 'PUT' && $data->getId()) {
+            // Создаем версию с учетом debounce
+            $this->versionService->createVersion($data);
         }
 
         $this->em->persist($data);
