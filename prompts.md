@@ -91,3 +91,85 @@
 ### Выполненные действия:
 - Создан данный файл `prompts.md`
 
+---
+
+## Промпт 6
+
+> Файлы ARCHITECTURE.md, PHASES.md, REPORT.md содержат актуальное состояние. Начинаем выполнение фазы 1. Не забывай добавлять промпты и общую информацию по выполненным задачам в prompts.md, в случае если происходит рефакторинг - обновляй REPORT.md.
+
+### Выполненные действия:
+
+**Фаза 1: Основа - ЗАВЕРШЕНА**
+
+1. **Настройка проекта Symfony 7 с Docker:**
+   - Создан `docker-compose.yml` с сервисами: PostgreSQL 16, PHP 8.3-FPM, Nginx
+   - Настроены Dockerfile для PHP с расширениями (pdo_pgsql, intl, zip)
+   - Создана конфигурация Nginx для проксирования к PHP-FPM
+   - Установлен Symfony 7.4 через Composer в контейнере
+
+2. **Конфигурация API Platform со Swagger UI:**
+   - Установлен `api-platform/core ^4.3`
+   - API Platform автоматически настроил Swagger UI на `/api/docs`
+   - Доступна OpenAPI спецификация на `/api/docs.json`
+   - Настроена автоматическая документация для всех API ресурсов
+
+3. **Схема базы данных и Doctrine сущности:**
+   - Создано 6 сущностей с UUID идентификаторами:
+     - `User` - пользователи с ролями (ROLE_USER, ROLE_ADMIN)
+     - `Note` - заметки с мягким удалением
+     - `Folder` - иерархические папки (self-reference)
+     - `Tag` - теги с уникальностью по пользователю
+     - `NoteVersion` - версии заметок
+     - `NoteLink` - wiki-ссылки между заметками
+   - Создана и применена миграция базы данных
+   - Установлен пакет `symfony/uid` для поддержки UUID
+
+4. **Настройка JWT аутентификации:**
+   - Установлен `lexik/jwt-authentication-bundle ^3.2`
+   - Сгенерированы RSA ключи (private.pem, public.pem) с OpenSSL
+   - Настроен `security.yaml` с провайдерами и файрволами
+   - Созданы endpoints:
+     - `POST /api/auth/register` - регистрация (первый пользователь получает ROLE_ADMIN)
+     - `POST /api/auth/login` - получение JWT токена
+     - `GET /api/auth/me` - информация о текущем пользователе
+   - Настроен CORS через `nelmio/cors-bundle`
+
+5. **Ограничения валидации на бэкенде:**
+   - Добавлены Symfony Validator constraints в сущности:
+     - `@Assert\NotBlank`, `@Assert\Email`, `@Assert\Length` и др.
+     - Группы валидации для разных сценариев
+   - Валидация автоматически применяется в API Platform
+   - Кастомная валидация в AuthController при регистрации
+
+6. **Базовый CRUD для заметок с пагинацией:**
+   - API Platform автоматически создал REST endpoints для всех сущностей
+   - Настроена пагинация: 20 элементов по умолчанию, максимум 100
+   - Endpoints для Note:
+     - `GET /api/notes` - список с пагинацией
+     - `GET /api/notes/{id}` - получение заметки
+     - `POST /api/notes` - создание
+     - `PUT /api/notes/{id}` - обновление
+     - `DELETE /api/notes/{id}` - удаление
+   - Созданы кастомные методы в NoteRepository для фильтрации
+
+7. **Администрирование пользователей:**
+   - Создан `AdminController` с endpoints:
+     - `GET /api/admin/users` - список пользователей (пагинация)
+     - `GET /api/admin/users/{id}` - информация о пользователе
+     - `PATCH /api/admin/users/{id}/enable` - активация
+     - `PATCH /api/admin/users/{id}/disable` - деактивация
+     - `DELETE /api/admin/users/{id}` - удаление пользователя
+   - Все endpoints защищены аттрибутом `#[IsGranted('ROLE_ADMIN')]`
+
+**Проблемы и их решения:**
+- Проблема с правами доступа к файлам в контейнере → выполнена команда `chown -R $USER:$USER backend/`
+- JWT ключ не читался (права 600) → изменены права на 644
+- Роут `/api/auth/login` не регистрировался → создан `config/routes/lexik_jwt.yaml`
+
+**Текущее состояние:**
+- Backend полностью функционален
+- API доступен на `http://localhost:8080/api`
+- Swagger UI на `http://localhost:8080/api/docs`
+- Создан тестовый администратор: `admin@test.com` / `admin123`
+- Все сервисы запущены в Docker
+
