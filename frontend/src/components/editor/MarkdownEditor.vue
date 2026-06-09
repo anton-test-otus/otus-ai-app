@@ -12,7 +12,6 @@ import { gfm } from '@milkdown/preset-gfm'
 import { history } from '@milkdown/plugin-history'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { nord } from '@milkdown/theme-nord'
-import '@milkdown/theme-nord/style.css'
 
 interface Props {
   modelValue: string

@@ -24,14 +24,14 @@ class ApiClient {
   constructor(baseURL: string) {
     this.baseURL = baseURL
     this.defaultHeaders = {
-      'Content-Type': 'application/json',
+      'Accept': 'application/ld+json',
     }
   }
 
   private async request<T>(
     endpoint: string,
     config: RequestConfig = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<T> {
     const { params, headers, ...restConfig } = config
 
     // Build URL with query params
@@ -89,40 +89,56 @@ class ApiClient {
       throw new HttpError(response.status, response.statusText, errorData)
     }
 
-    // Parse JSON response
-    const data: ApiResponse<T> = await response.json()
-    return data
+    // Parse JSON response only if there is content
+    if (response.status === 204 || response.headers.get('content-length') === '0') {
+      return undefined as T
+    }
+
+    const data = await response.json()
+    return data as T
   }
 
-  async get<T>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+  async get<T>(url: string, config?: RequestConfig): Promise<T> {
     return this.request<T>(url, { ...config, method: 'GET' })
   }
 
-  async post<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
+  async post<T>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     return this.request<T>(url, {
       ...config,
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
+      headers: {
+        ...config?.headers,
+        'Content-Type': 'application/json',
+      },
     })
   }
 
-  async put<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
+  async put<T>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     return this.request<T>(url, {
       ...config,
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
+      headers: {
+        ...config?.headers,
+        'Content-Type': 'application/json',
+      },
     })
   }
 
-  async patch<T>(url: string, data?: any, config?: RequestConfig): Promise<ApiResponse<T>> {
+  async patch<T>(url: string, data?: any, config?: RequestConfig): Promise<T> {
     return this.request<T>(url, {
       ...config,
       method: 'PATCH',
       body: data ? JSON.stringify(data) : undefined,
+      headers: {
+        ...config?.headers,
+        'Content-Type': 'application/json',
+      },
     })
   }
 
-  async delete<T>(url: string, config?: RequestConfig): Promise<ApiResponse<T>> {
+  async delete<T>(url: string, config?: RequestConfig): Promise<T> {
     return this.request<T>(url, { ...config, method: 'DELETE' })
   }
 }

@@ -2,13 +2,21 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\NoteRepository;
+use App\State\TrashNotesProvider;
+use App\State\RestoreNoteProcessor;
+use App\State\EmptyTrashProcessor;
+use App\State\NoteProcessor;
+use App\State\NoteCollectionProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -22,17 +30,41 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'notes')]
 #[ApiResource(
     operations: [
-        new GetCollection(),
+        new GetCollection(provider: NoteCollectionProvider::class),
+        new GetCollection(
+            uriTemplate: '/notes/trash',
+            provider: TrashNotesProvider::class,
+            name: 'trash_list'
+        ),
         new Get(),
-        new Post(),
-        new Put(),
-        new Delete(),
+        new Post(
+            processor: NoteProcessor::class,
+            validationContext: ['groups' => ['Default', 'note:create']]
+        ),
+        new Post(
+            uriTemplate: '/notes/{id}/restore',
+            processor: RestoreNoteProcessor::class,
+            name: 'restore'
+        ),
+        new Put(
+            processor: NoteProcessor::class,
+            validationContext: ['groups' => ['Default', 'note:update']]
+        ),
+        new Delete(processor: NoteProcessor::class),
+        new Post(
+            uriTemplate: '/notes/trash/empty',
+            processor: EmptyTrashProcessor::class,
+            read: false,
+            name: 'empty_trash'
+        ),
     ],
     normalizationContext: ['groups' => ['note:read']],
     denormalizationContext: ['groups' => ['note:write']],
     paginationEnabled: true,
     paginationItemsPerPage: 20
 )]
+#[ApiFilter(SearchFilter::class, properties: ['title' => 'partial', 'content' => 'partial', 'folder' => 'exact'])]
+#[ApiFilter(OrderFilter::class, properties: ['updatedAt', 'createdAt', 'title'])]
 class Note
 {
     #[ORM\Id]
@@ -58,7 +90,7 @@ class Note
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Содержимое не может быть пустым')]
+    #[Assert\NotBlank(message: 'Содержимое не может быть пустым', groups: ['note:update'])]
     #[Groups(['note:read', 'note:write'])]
     private ?string $content = null;
 

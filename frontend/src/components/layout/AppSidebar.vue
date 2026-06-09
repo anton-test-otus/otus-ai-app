@@ -4,23 +4,24 @@
     <Button
       v-if="isMobile"
       icon="pi pi-bars"
-      class="fixed top-4 left-4 z-50 md:hidden"
+      class="fixed top-20 left-4 z-40 md:hidden"
       rounded
       @click="visible = true"
+      v-tooltip.right="'Папки'"
     />
 
     <!-- Desktop: Fixed sidebar -->
     <div
       v-if="!isMobile"
-      class="hidden md:block fixed left-0 top-0 h-screen w-80 bg-surface-0 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 overflow-y-auto"
+      class="hidden md:block fixed left-0 top-16 h-[calc(100vh-4rem)] w-80 bg-surface-0 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 overflow-y-auto z-30"
     >
       <div class="p-6">
         <slot />
       </div>
     </div>
 
-    <!-- Mobile: Drawer sidebar -->
-    <Drawer
+    <!-- Mobile: Sidebar drawer -->
+    <Sidebar
       v-model:visible="visible"
       position="left"
       class="md:hidden"
@@ -35,14 +36,14 @@
       <div class="p-4">
         <slot />
       </div>
-    </Drawer>
+    </Sidebar>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import Button from 'primevue/button';
-import Drawer from 'primevue/drawer';
+import Sidebar from 'primevue/sidebar';
 
 const visible = ref(false);
 const windowWidth = ref(window.innerWidth);

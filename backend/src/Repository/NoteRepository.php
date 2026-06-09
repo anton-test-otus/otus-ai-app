@@ -88,4 +88,28 @@ class NoteRepository extends ServiceEntityRepository
             'total' => $total,
         ];
     }
+
+    public function findDeletedNotes($user, int $page = 1, int $perPage = 20): array
+    {
+        return $this->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->andWhere('n.deletedAt IS NOT NULL')
+            ->setParameter('user', $user)
+            ->orderBy('n.deletedAt', 'DESC')
+            ->setFirstResult(($page - 1) * $perPage)
+            ->setMaxResults($perPage)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countDeletedNotes($user): int
+    {
+        return $this->createQueryBuilder('n')
+            ->select('COUNT(n.id)')
+            ->where('n.user = :user')
+            ->andWhere('n.deletedAt IS NOT NULL')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

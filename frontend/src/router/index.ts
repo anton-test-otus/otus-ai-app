@@ -33,6 +33,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/TagsView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/trash',
+    name: 'trash',
+    component: () => import('@/views/TrashView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

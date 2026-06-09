@@ -1,37 +1,49 @@
 <template>
-  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between items-center h-16">
-        <div class="flex items-center space-x-4">
+  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40">
+    <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between items-center h-16 gap-4">
+        <!-- Logo -->
+        <div class="flex items-center flex-shrink-0">
           <router-link to="/" class="flex items-center space-x-2">
             <i class="pi pi-book text-2xl text-blue-600"></i>
-            <span class="text-xl font-bold text-gray-900 dark:text-white">База знаний</span>
+            <span class="text-xl font-bold text-gray-900 dark:text-white hidden sm:inline">База знаний</span>
           </router-link>
         </div>
 
-        <!-- Search bar in the center -->
-        <div v-if="authStore.isAuthenticated" class="flex-1 max-w-2xl mx-4">
+        <!-- Search bar - hidden on small screens -->
+        <div v-if="authStore.isAuthenticated" class="hidden md:flex flex-1 max-w-xl">
           <SearchBar />
         </div>
 
-        <div class="flex items-center space-x-4">
+        <!-- Actions -->
+        <div class="flex items-center space-x-2 flex-shrink-0">
+          <Button
+            v-if="authStore.isAuthenticated"
+            icon="pi pi-trash"
+            severity="secondary"
+            text
+            @click="router.push({ name: 'trash' })"
+            v-tooltip.bottom="'Корзина'"
+            rounded
+          />
           <Button
             v-if="authStore.isAuthenticated"
             icon="pi pi-plus"
             label="Новая заметка"
             @click="createNewNote"
-            class="hidden sm:flex"
+            class="hidden lg:flex"
           />
           <Button
             v-if="authStore.isAuthenticated"
             icon="pi pi-plus"
             @click="createNewNote"
-            class="sm:hidden"
+            class="lg:hidden"
             rounded
+            v-tooltip.bottom="'Новая заметка'"
           />
 
           <div v-if="authStore.isAuthenticated" class="flex items-center space-x-2">
-            <span class="text-sm text-gray-700 dark:text-gray-300 hidden md:inline">
+            <span class="text-sm text-gray-700 dark:text-gray-300 hidden lg:inline">
               {{ authStore.user?.email }}
             </span>
             <Button
@@ -40,15 +52,16 @@
               severity="secondary"
               text
               @click="logout"
-              class="hidden sm:flex"
+              class="hidden md:flex"
             />
             <Button
               icon="pi pi-sign-out"
               severity="secondary"
               text
               @click="logout"
-              class="sm:hidden"
+              class="md:hidden"
               rounded
+              v-tooltip.bottom="'Выход'"
             />
           </div>
         </div>

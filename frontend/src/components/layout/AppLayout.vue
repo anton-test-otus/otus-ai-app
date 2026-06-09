@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col pt-16">
     <AppNavbar />
     
     <div class="flex-1 flex">
@@ -21,9 +21,10 @@
 
       <!-- Main content -->
       <main 
-        class="flex-1 overflow-y-auto"
+        class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900"
         :class="{
           'md:ml-80': authStore.isAuthenticated && showSidebar,
+          'pt-16 md:pt-0': authStore.isAuthenticated && showSidebar,
         }"
       >
         <slot />

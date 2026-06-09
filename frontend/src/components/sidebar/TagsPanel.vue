@@ -16,7 +16,7 @@
       <ProgressSpinner style="width: 30px; height: 30px" stroke-width="4" />
     </div>
 
-    <div v-else-if="tags.length === 0" class="text-sm text-surface-500 dark:text-surface-400 text-center py-4">
+    <div v-else-if="!tags || tags.length === 0" class="text-sm text-surface-500 dark:text-surface-400 text-center py-4">
       Нет тегов
     </div>
 

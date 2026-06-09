@@ -11,7 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!token.value && !!user.value)
-  const isAdmin = computed(() => user.value?.role === 'ROLE_ADMIN')
+  const isAdmin = computed(() => user.value?.roles?.includes('ROLE_ADMIN') || false)
 
   async function login(credentials: LoginRequest) {
     isLoading.value = true
@@ -19,15 +19,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.login(credentials)
       token.value = response.token
-      refreshToken.value = response.refreshToken
+      refreshToken.value = response.refreshToken || null
       user.value = response.user
 
       localStorage.setItem('token', response.token)
-      localStorage.setItem('refreshToken', response.refreshToken)
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken)
+      }
 
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка входа'
+      error.value = err.message || 'Ошибка входа'
       return false
     } finally {
       isLoading.value = false
@@ -40,15 +42,17 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authApi.register(credentials)
       token.value = response.token
-      refreshToken.value = response.refreshToken
+      refreshToken.value = response.refreshToken || null
       user.value = response.user
 
       localStorage.setItem('token', response.token)
-      localStorage.setItem('refreshToken', response.refreshToken)
+      if (response.refreshToken) {
+        localStorage.setItem('refreshToken', response.refreshToken)
+      }
 
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка регистрации'
+      error.value = err.message || 'Ошибка регистрации'
       return false
     } finally {
       isLoading.value = false
@@ -64,7 +68,7 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = await authApi.me()
       return true
     } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка загрузки пользователя'
+      error.value = err.message || 'Ошибка загрузки пользователя'
       logout()
       return false
     } finally {

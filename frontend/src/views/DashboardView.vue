@@ -16,7 +16,7 @@
         <Message severity="error">{{ notesStore.error }}</Message>
       </div>
 
-      <div v-else-if="notesStore.notes.length === 0" class="text-center py-12">
+      <div v-else-if="notesStore.notes && notesStore.notes.length === 0" class="text-center py-12">
         <i class="pi pi-book text-6xl text-gray-400 mb-4"></i>
         <p class="text-xl text-gray-600 dark:text-gray-400 mb-4">
           У вас пока нет заметок

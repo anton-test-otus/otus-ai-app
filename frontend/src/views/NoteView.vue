@@ -29,6 +29,14 @@
               </SelectButton>
 
               <Button
+                icon="pi pi-trash"
+                severity="danger"
+                text
+                @click="confirmDelete"
+                v-tooltip.bottom="'Удалить заметку'"
+              />
+
+              <Button
                 icon="pi pi-arrow-left"
                 label="Назад"
                 text
@@ -128,6 +136,7 @@
     </div>
 
     <Toast />
+    <ConfirmDialog />
   </AppLayout>
 </template>
 
@@ -135,6 +144,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
@@ -142,6 +152,7 @@ import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
+import ConfirmDialog from 'primevue/confirmdialog'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import NoteMetadata from '@/components/layout/NoteMetadata.vue'
 import MarkdownEditor from '@/components/editor/MarkdownEditor.vue'
@@ -156,6 +167,7 @@ import type { ViewMode } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const toast = useToast()
+const confirm = useConfirm()
 const notesStore = useNotesStore()
 
 const noteTitle = ref('')
@@ -218,6 +230,38 @@ function handleTagsChange() {
 
 function goBack() {
   router.push({ name: 'dashboard' })
+}
+
+function confirmDelete() {
+  if (!notesStore.currentNote) return
+  
+  confirm.require({
+    message: 'Вы уверены, что хотите удалить эту заметку? Она будет перемещена в корзину.',
+    header: 'Подтверждение удаления',
+    icon: 'pi pi-exclamation-triangle',
+    acceptLabel: 'Удалить',
+    rejectLabel: 'Отмена',
+    acceptClass: 'p-button-danger',
+    accept: async () => {
+      try {
+        await notesStore.deleteNote(notesStore.currentNote!.id)
+        toast.add({
+          severity: 'success',
+          summary: 'Успешно',
+          detail: 'Заметка перемещена в корзину',
+          life: 3000,
+        })
+        router.push({ name: 'dashboard' })
+      } catch (error) {
+        toast.add({
+          severity: 'error',
+          summary: 'Ошибка',
+          detail: 'Не удалось удалить заметку',
+          life: 3000,
+        })
+      }
+    },
+  })
 }
 
 function formatDate(dateString?: string): string {

@@ -51,7 +51,7 @@
 
         <div class="flex flex-col gap-2">
           <label for="parent-folder" class="font-semibold">Родительская папка (опционально)</label>
-          <Select
+          <Dropdown
             id="parent-folder"
             v-model="newFolderParentId"
             :options="selectableFolders"
@@ -77,7 +77,7 @@ import { VueDraggable } from 'vue-draggable-plus';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import Select from 'primevue/select';
+import Dropdown from 'primevue/dropdown';
 import FolderTreeItem from './FolderTreeItem.vue';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
@@ -94,19 +94,20 @@ const emit = defineEmits<{
 }>();
 
 const foldersStore = useFoldersStore();
-const localFolders = ref<Folder[]>([...props.folders]);
+const localFolders = ref<Folder[]>(Array.isArray(props.folders) ? [...props.folders] : []);
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
 
 watch(() => props.folders, (newFolders) => {
-  localFolders.value = [...newFolders];
+  localFolders.value = Array.isArray(newFolders) ? [...newFolders] : [];
 }, { deep: true });
 
 const selectableFolders = computed(() => {
   const options: { label: string; value: string }[] = [];
   
   const flatten = (items: Folder[], depth = 0) => {
+    if (!items || !Array.isArray(items)) return;
     items.forEach(item => {
       options.push({
         label: '  '.repeat(depth) + item.name,
@@ -118,7 +119,7 @@ const selectableFolders = computed(() => {
     });
   };
   
-  flatten(localFolders.value);
+  flatten(localFolders.value || []);
   return options;
 });
 

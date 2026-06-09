@@ -3,7 +3,13 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\NoteLinkRepository;
+use App\State\NoteLinkCollectionProvider;
+use App\State\NoteLinkProcessor;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
@@ -11,7 +17,14 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: NoteLinkRepository::class)]
 #[ORM\Table(name: 'note_links')]
 #[ORM\UniqueConstraint(name: 'source_target_unique', columns: ['source_note_id', 'target_note_id'])]
-#[ApiResource]
+#[ApiResource(
+    operations: [
+        new GetCollection(provider: NoteLinkCollectionProvider::class),
+        new Get(),
+        new Post(processor: NoteLinkProcessor::class),
+        new Delete(processor: NoteLinkProcessor::class),
+    ]
+)]
 class NoteLink
 {
     #[ORM\Id]

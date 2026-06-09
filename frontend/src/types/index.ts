@@ -1,9 +1,9 @@
 export interface User {
   id: string
   email: string
-  role: string
+  roles: string[]
   isActive: boolean
-  createdAt: string
+  createdAt?: string
 }
 
 export interface Note {
@@ -65,8 +65,25 @@ export interface PaginationMeta {
   totalPages: number
 }
 
+// API Platform Hydra Collection
+export interface HydraCollection<T> {
+  'hydra:member'?: T[]
+  'member'?: T[]
+  'hydra:totalItems'?: number
+  'totalItems'?: number
+  'hydra:view'?: {
+    'hydra:first'?: string
+    'hydra:last'?: string
+    'hydra:next'?: string
+    'hydra:previous'?: string
+  }
+  '@context'?: string
+  '@id'?: string
+  '@type'?: string
+}
+
 export interface LoginRequest {
-  email: string
+  username: string
   password: string
 }
 
@@ -77,7 +94,7 @@ export interface RegisterRequest {
 
 export interface AuthResponse {
   token: string
-  refreshToken: string
+  refreshToken?: string
   user: User
 }
 

@@ -3,7 +3,7 @@
     <label :for="inputId" class="block text-sm font-semibold mb-2">
       Папка
     </label>
-    <Select
+    <Dropdown
       :id="inputId"
       :model-value="modelValue"
       @update:model-value="$emit('update:modelValue', $event)"
@@ -28,13 +28,13 @@
           <span>{{ slotProps.option.label }}</span>
         </div>
       </template>
-    </Select>
+    </Dropdown>
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
-import Select from 'primevue/select';
+import Dropdown from 'primevue/dropdown';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 
@@ -59,6 +59,7 @@ const folderOptions = computed(() => {
   const options: { label: string; value: string }[] = [];
   
   const flatten = (items: Folder[], depth = 0) => {
+    if (!items || !Array.isArray(items)) return;
     items.forEach(item => {
       const indent = '\u00A0\u00A0'.repeat(depth);
       options.push({
@@ -71,7 +72,7 @@ const folderOptions = computed(() => {
     });
   };
   
-  if (foldersStore.folders.length > 0) {
+  if (foldersStore.folders && foldersStore.folders.length > 0) {
     flatten(foldersStore.folders);
   }
   
@@ -84,7 +85,7 @@ function getFolderLabel(folderId: string): string {
 }
 
 onMounted(async () => {
-  if (foldersStore.folders.length === 0) {
+  if (!foldersStore.folders || foldersStore.folders.length === 0) {
     await foldersStore.fetchFolders();
   }
 });

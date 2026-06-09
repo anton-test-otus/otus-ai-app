@@ -13,6 +13,7 @@ export const useFoldersStore = defineStore('folders', () => {
   const flatFolders = computed(() => {
     const flat: Folder[] = [];
     const flatten = (items: Folder[], depth = 0) => {
+      if (!items || !Array.isArray(items)) return;
       items.forEach(item => {
         flat.push({ ...item, depth } as Folder & { depth: number });
         if (item.children && item.children.length > 0) {
@@ -20,7 +21,7 @@ export const useFoldersStore = defineStore('folders', () => {
         }
       });
     };
-    flatten(folders.value);
+    flatten(folders.value || []);
     return flat;
   });
 
@@ -28,8 +29,11 @@ export const useFoldersStore = defineStore('folders', () => {
     loading.value = true;
     error.value = null;
     try {
-      folders.value = await foldersApi.getAll();
+      const result = await foldersApi.getAll();
+      folders.value = result || [];
     } catch (e: any) {
+      console.error('Folders fetch error:', e);
+      folders.value = [];
       error.value = e.message || 'Ошибка загрузки папок';
       throw e;
     } finally {
@@ -92,6 +96,7 @@ export const useFoldersStore = defineStore('folders', () => {
 
   function getFolderById(id: string): Folder | undefined {
     const find = (items: Folder[]): Folder | undefined => {
+      if (!items || !Array.isArray(items)) return undefined;
       for (const item of items) {
         if (item.id === id) return item;
         if (item.children) {
@@ -101,7 +106,7 @@ export const useFoldersStore = defineStore('folders', () => {
       }
       return undefined;
     };
-    return find(folders.value);
+    return find(folders.value || []);
   }
 
   return {

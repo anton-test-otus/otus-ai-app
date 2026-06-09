@@ -3,7 +3,15 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\FolderRepository;
+use App\State\FolderTreeProvider;
+use App\State\FolderProcessor;
+use App\State\FolderCollectionProvider;
 use App\Validator\MaxFolderDepth;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -16,6 +24,18 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: FolderRepository::class)]
 #[ORM\Table(name: 'folders')]
 #[ApiResource(
+    operations: [
+        new GetCollection(
+            uriTemplate: '/folders/tree',
+            provider: FolderTreeProvider::class,
+            name: 'tree'
+        ),
+        new GetCollection(provider: FolderCollectionProvider::class),
+        new Get(),
+        new Post(processor: FolderProcessor::class),
+        new Put(processor: FolderProcessor::class),
+        new Delete(processor: FolderProcessor::class),
+    ],
     normalizationContext: ['groups' => ['folder:read']],
     denormalizationContext: ['groups' => ['folder:write']]
 )]

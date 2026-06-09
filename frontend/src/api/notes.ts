@@ -1,28 +1,62 @@
 import { apiClient } from './client'
-import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse } from '@/types'
+import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
 export const notesApi = {
   async getAll(page = 1, perPage = 20, folderId?: string | null): Promise<ApiResponse<Note[]>> {
-    const params: any = { page, perPage }
-    if (folderId !== undefined) {
-      params.folderId = folderId
+    const params: any = { page, itemsPerPage: perPage }
+    if (folderId !== undefined && folderId !== null) {
+      params['folder.id'] = folderId
     }
-    return await apiClient.get<Note[]>('/notes', { params })
+    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+    
+    const data = response['hydra:member'] || response['member'] || [];
+    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+      },
+    }
   },
 
   async getById(id: string): Promise<Note> {
-    const response = await apiClient.get<Note>(`/notes/${id}`)
-    return response.data
+    return apiClient.get<Note>(`/notes/${id}`)
   },
 
   async create(data: CreateNoteRequest): Promise<Note> {
-    const response = await apiClient.post<Note>('/notes', data)
-    return response.data
+    // Преобразуем folderId в IRI для API Platform
+    const payload: any = {
+      title: data.title,
+      content: data.content,
+    }
+    
+    if (data.folderId) {
+      payload.folder = `/api/folders/${data.folderId}`
+    }
+    
+    return apiClient.post<Note>('/notes', payload)
   },
 
   async update(id: string, data: UpdateNoteRequest): Promise<Note> {
-    const response = await apiClient.put<Note>(`/notes/${id}`, data)
-    return response.data
+    // Преобразуем folderId в IRI для API Platform
+    const payload: any = {
+      ...data,
+    }
+    
+    if ('folderId' in data) {
+      delete payload.folderId
+      if (data.folderId) {
+        payload.folder = `/api/folders/${data.folderId}`
+      } else {
+        payload.folder = null
+      }
+    }
+    
+    return apiClient.put<Note>(`/notes/${id}`, payload)
   },
 
   async delete(id: string): Promise<void> {
@@ -30,8 +64,24 @@ export const notesApi = {
   },
 
   async search(query: string, page = 1, perPage = 20): Promise<ApiResponse<Note[]>> {
-    return await apiClient.get<Note[]>('/notes/search', {
-      params: { q: query, page, perPage },
-    })
+    const params = { 
+      page, 
+      itemsPerPage: perPage,
+      'title': query,
+    }
+    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+    
+    const data = response['hydra:member'] || response['member'] || [];
+    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+      },
+    }
   },
 }

@@ -13,8 +13,11 @@ export const useTagsStore = defineStore('tags', () => {
     loading.value = true;
     error.value = null;
     try {
-      tags.value = await tagsApi.getAll();
+      const result = await tagsApi.getAll();
+      tags.value = result || [];
     } catch (e: any) {
+      console.error('Tags fetch error:', e);
+      tags.value = [];
       error.value = e.message || 'Ошибка загрузки тегов';
       throw e;
     } finally {

@@ -1,36 +1,37 @@
 <template>
-  <div class="search-bar relative" v-click-outside="closeResults">
+  <div class="search-bar relative" ref="searchBarRef">
     <div class="search-input-wrapper relative">
-      <IconField>
-        <InputIcon class="pi pi-search" />
+      <div class="relative w-full">
+        <i v-if="searchQuery.length === 0" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"></i>
+        
         <InputText
           v-model="searchQuery"
           placeholder="Поиск заметок..."
-          class="search-input"
-          :class="{ 'pr-20': searchQuery.length > 0 }"
+          class="search-input w-full"
+          :class="{ 'pr-20': searchQuery.length > 0, 'pl-10': searchQuery.length === 0, 'pl-3': searchQuery.length > 0 }"
           @input="onInput"
           @keyup.enter="performFullSearch"
           @focus="showQuickResults = true"
         />
-      </IconField>
-      
-      <div v-if="searchQuery.length > 0" class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
-        <Button
-          icon="pi pi-times"
-          text
-          rounded
-          size="small"
-          @click="clearSearch"
-          v-tooltip.bottom="'Очистить'"
-        />
-        <Button
-          icon="pi pi-search"
-          rounded
-          size="small"
-          @click="performFullSearch"
-          :loading="searching"
-          v-tooltip.bottom="'Полный поиск (Enter)'"
-        />
+        
+        <div v-if="searchQuery.length > 0" class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+          <Button
+            icon="pi pi-times"
+            text
+            rounded
+            size="small"
+            @click="clearSearch"
+            v-tooltip.bottom="'Очистить'"
+          />
+          <Button
+            icon="pi pi-search"
+            rounded
+            size="small"
+            @click="performFullSearch"
+            :loading="searching"
+            v-tooltip.bottom="'Полный поиск (Enter)'"
+          />
+        </div>
       </div>
     </div>
 
@@ -121,11 +122,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import InputText from 'primevue/inputtext';
-import IconField from 'primevue/iconfield';
-import InputIcon from 'primevue/inputicon';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Card from 'primevue/card';
@@ -136,6 +135,7 @@ import { searchApi } from '../../api/search';
 import type { Note } from '../../types';
 
 const router = useRouter();
+const searchBarRef = ref<HTMLElement | null>(null);
 const searchQuery = ref('');
 const quickResults = ref<Note[]>([]);
 const fullResults = ref<Note[]>([]);
@@ -149,6 +149,21 @@ const perPage = ref(10);
 const firstResult = ref(0);
 
 let debounceTimer: number | null = null;
+
+// Click outside handler
+function handleClickOutside(event: MouseEvent) {
+  if (searchBarRef.value && !searchBarRef.value.contains(event.target as Node)) {
+    closeResults();
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 
 function onInput() {
   if (debounceTimer) {
@@ -256,12 +271,11 @@ function onPageChange(event: any) {
 <style scoped>
 .search-input {
   @apply w-full;
-  min-width: 300px;
 }
 
 @media (max-width: 768px) {
   .search-input {
-    min-width: 200px;
+    min-width: auto;
   }
 }
 

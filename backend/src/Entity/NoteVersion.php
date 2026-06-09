@@ -3,7 +3,10 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
 use App\Repository\NoteVersionRepository;
+use App\State\NoteVersionCollectionProvider;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -13,6 +16,10 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: NoteVersionRepository::class)]
 #[ORM\Table(name: 'note_versions')]
 #[ApiResource(
+    operations: [
+        new GetCollection(provider: NoteVersionCollectionProvider::class),
+        new Get(),
+    ],
     normalizationContext: ['groups' => ['version:read']]
 )]
 class NoteVersion

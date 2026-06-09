@@ -3,22 +3,18 @@ import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types'
 
 export const authApi = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/login', credentials)
-    return response.data
+    return apiClient.post<AuthResponse>('/auth/login', credentials)
   },
 
   async register(credentials: RegisterRequest): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/register', credentials)
-    return response.data
+    return apiClient.post<AuthResponse>('/auth/register', credentials)
   },
 
   async me(): Promise<User> {
-    const response = await apiClient.get<User>('/auth/me')
-    return response.data
+    return apiClient.get<User>('/auth/me')
   },
 
   async refresh(refreshToken: string): Promise<AuthResponse> {
-    const response = await apiClient.post<AuthResponse>('/auth/refresh', { refreshToken })
-    return response.data
+    return apiClient.post<AuthResponse>('/auth/refresh', { refreshToken })
   },
 }

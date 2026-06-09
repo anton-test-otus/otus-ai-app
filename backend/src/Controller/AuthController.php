@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -18,7 +19,8 @@ class AuthController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private JWTTokenManagerInterface $jwtManager
     ) {
     }
 
@@ -58,12 +60,15 @@ class AuthController extends AbstractController
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
+        $token = $this->jwtManager->create($user);
+
         return $this->json([
-            'message' => 'Пользователь успешно зарегистрирован',
+            'token' => $token,
             'user' => [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
+                'isActive' => $user->isActive(),
             ]
         ], Response::HTTP_CREATED);
     }
@@ -78,7 +83,7 @@ class AuthController extends AbstractController
         }
 
         return $this->json([
-            'id' => $user->getId(),
+            'id' => $user->getId()->toRfc4122(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'isActive' => $user->isActive(),

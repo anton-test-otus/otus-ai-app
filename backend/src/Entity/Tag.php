@@ -3,7 +3,14 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Delete;
 use App\Repository\TagRepository;
+use App\State\TagProcessor;
+use App\State\TagCollectionProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,6 +23,13 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'tags')]
 #[ORM\UniqueConstraint(name: 'user_tag_unique', columns: ['user_id', 'name'])]
 #[ApiResource(
+    operations: [
+        new GetCollection(provider: TagCollectionProvider::class),
+        new Get(),
+        new Post(processor: TagProcessor::class),
+        new Put(processor: TagProcessor::class),
+        new Delete(processor: TagProcessor::class),
+    ],
     normalizationContext: ['groups' => ['tag:read']],
     denormalizationContext: ['groups' => ['tag:write']]
 )]

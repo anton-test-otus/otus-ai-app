@@ -37,7 +37,7 @@ class AdminController extends AbstractController
 
         $usersData = array_map(function (User $user) {
             return [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
                 'isActive' => $user->isActive(),
@@ -60,7 +60,7 @@ class AdminController extends AbstractController
     public function getUserDetails(User $user): JsonResponse
     {
         return $this->json([
-            'id' => $user->getId(),
+            'id' => $user->getId()->toRfc4122(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'isActive' => $user->isActive(),
@@ -77,7 +77,7 @@ class AdminController extends AbstractController
         return $this->json([
             'message' => 'Пользователь активирован',
             'user' => [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'isActive' => $user->isActive(),
             ]
         ]);
@@ -92,7 +92,7 @@ class AdminController extends AbstractController
         return $this->json([
             'message' => 'Пользователь деактивирован',
             'user' => [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'isActive' => $user->isActive(),
             ]
         ]);
@@ -127,7 +127,7 @@ class AdminController extends AbstractController
         return $this->json([
             'message' => 'Пользователь назначен администратором',
             'user' => [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
             ]
@@ -152,7 +152,7 @@ class AdminController extends AbstractController
         return $this->json([
             'message' => 'Роль администратора снята с пользователя',
             'user' => [
-                'id' => $user->getId(),
+                'id' => $user->getId()->toRfc4122(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
             ]

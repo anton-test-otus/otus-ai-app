@@ -60,6 +60,24 @@ services:
     environment:
       - VITE_API_URL=http://localhost:${APP_PORT:-8080}/api
 
+  cron:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: otus_cron
+    working_dir: /var/www/backend
+    volumes:
+      - ./backend:/var/www/backend
+    env_file:
+      - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - otus_network
+    command: >
+      sh -c "echo '0 0 * * * cd /var/www/backend && php bin/console app:cleanup-trash >> /var/log/cron.log 2>&1' | crontab - && crond -f -l 2"
+
 volumes:
   postgres_data:
   node_modules:
