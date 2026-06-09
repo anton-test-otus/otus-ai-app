@@ -10,9 +10,10 @@ export interface Note {
   id: string
   userId: string
   folderId: string | null
+  folder?: Folder
   title: string
   content: string
-  position: number
+  tags?: Tag[]
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -22,8 +23,9 @@ export interface Folder {
   id: string
   userId: string
   parentId: string | null
+  parent?: Folder
   name: string
-  position: number
+  children?: Folder[]
   deletedAt: string | null
 }
 
@@ -49,6 +51,11 @@ export interface NoteLink {
 export interface ApiResponse<T> {
   data: T
   meta?: PaginationMeta
+}
+
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: PaginationMeta
 }
 
 export interface PaginationMeta {
@@ -84,6 +91,7 @@ export interface UpdateNoteRequest {
   title?: string
   content?: string
   folderId?: string | null
+  tags?: string[]
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

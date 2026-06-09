@@ -55,8 +55,8 @@
         <Message severity="error">{{ notesStore.error }}</Message>
       </div>
 
-      <div v-else class="flex-1 overflow-hidden">
-        <div class="h-full flex flex-col md:flex-row">
+      <div v-else class="flex-1 overflow-hidden flex">
+        <div class="flex-1 flex flex-col md:flex-row">
           <div
             v-show="viewMode === 'edit' || viewMode === 'split'"
             :class="[
@@ -80,6 +80,33 @@
             <MarkdownPreview :content="noteContent" />
           </div>
         </div>
+
+        <!-- Note Metadata Panel -->
+        <NoteMetadata>
+          <div class="space-y-6">
+            <FolderSelector
+              v-model="noteFolderId"
+              @update:model-value="handleFolderChange"
+            />
+            
+            <Divider />
+            
+            <NoteTagsEditor
+              v-model="noteTags"
+              @update:model-value="handleTagsChange"
+            />
+            
+            <Divider />
+            
+            <div>
+              <h4 class="text-sm font-semibold mb-2">Информация</h4>
+              <div class="text-xs text-surface-500 dark:text-surface-400 space-y-1">
+                <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
+                <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
+              </div>
+            </div>
+          </div>
+        </NoteMetadata>
       </div>
 
       <div class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2">
@@ -111,13 +138,17 @@ import { useToast } from 'primevue/usetoast'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
+import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import NoteMetadata from '@/components/layout/NoteMetadata.vue'
 import MarkdownEditor from '@/components/editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
 import SaveIndicator from '@/components/common/SaveIndicator.vue'
+import FolderSelector from '@/components/common/FolderSelector.vue'
+import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
 import type { ViewMode } from '@/types'
@@ -129,6 +160,8 @@ const notesStore = useNotesStore()
 
 const noteTitle = ref('')
 const noteContent = ref('')
+const noteFolderId = ref<string | null>(null)
+const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('split')
 
 const viewModeOptions = [
@@ -143,6 +176,8 @@ const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
   await notesStore.updateNote(notesStore.currentNote.id, {
     title: noteTitle.value,
     content: noteContent.value,
+    folderId: noteFolderId.value,
+    tags: noteTags.value,
   })
 }, 2000)
 
@@ -152,6 +187,8 @@ onMounted(async () => {
     const note = await notesStore.fetchNoteById(noteId)
     noteTitle.value = note.title
     noteContent.value = note.content
+    noteFolderId.value = note.folderId || null
+    noteTags.value = note.tags?.map(t => t.name) || []
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -171,8 +208,21 @@ function handleContentChange() {
   triggerSave()
 }
 
+function handleFolderChange() {
+  triggerSave()
+}
+
+function handleTagsChange() {
+  triggerSave()
+}
+
 function goBack() {
   router.push({ name: 'dashboard' })
+}
+
+function formatDate(dateString?: string): string {
+  if (!dateString) return 'Неизвестно'
+  return new Date(dateString).toLocaleString('ru-RU')
 }
 
 watch(saveError, (error) => {

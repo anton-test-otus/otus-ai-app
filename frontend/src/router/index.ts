@@ -27,6 +27,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/NoteView.vue'),
     meta: { requiresAuth: true },
   },
+  {
+    path: '/tags',
+    name: 'tags',
+    component: () => import('@/views/TagsView.vue'),
+    meta: { requiresAuth: true },
+  },
 ]
 
 const router = createRouter({

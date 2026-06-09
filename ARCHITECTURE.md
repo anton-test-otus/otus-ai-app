@@ -86,7 +86,6 @@ erDiagram
         uuid user_id FK
         uuid parent_id FK
         string name
-        int position
         timestamp deleted_at
     }
     
@@ -96,7 +95,6 @@ erDiagram
         uuid folder_id FK
         string title
         text content
-        int position
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
@@ -215,9 +213,11 @@ otus-ai-app/
 ### 3. Иерархические папки с Drag-and-Drop
 
 - Вложенная структура папок через `parent_id` самоссылку
-- Поле `position` поддерживает порядок внутри родителя
+- Максимальная глубина вложенности: 3 уровня (валидация на backend)
+- Папки сортируются по названию (алфавитный порядок)
+- Заметки сортируются по дате последнего обновления (updated_at DESC)
 - Перетаскивание заметок между папками
-- Перетаскивание папок для изменения порядка или вложенности
+- Перетаскивание папок для изменения вложенности
 - Заметки на корневом уровне разрешены (null `folder_id`)
 
 ### 4. История версий

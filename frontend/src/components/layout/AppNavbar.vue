@@ -1,12 +1,17 @@
 <template>
   <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex justify-between h-16">
-        <div class="flex items-center">
+      <div class="flex justify-between items-center h-16">
+        <div class="flex items-center space-x-4">
           <router-link to="/" class="flex items-center space-x-2">
             <i class="pi pi-book text-2xl text-blue-600"></i>
             <span class="text-xl font-bold text-gray-900 dark:text-white">База знаний</span>
           </router-link>
+        </div>
+
+        <!-- Search bar in the center -->
+        <div v-if="authStore.isAuthenticated" class="flex-1 max-w-2xl mx-4">
+          <SearchBar />
         </div>
 
         <div class="flex items-center space-x-4">
@@ -55,6 +60,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotesStore } from '@/stores/notes'
 

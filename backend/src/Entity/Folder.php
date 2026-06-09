@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
 use App\Repository\FolderRepository;
+use App\Validator\MaxFolderDepth;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -18,6 +19,7 @@ use Symfony\Component\Uid\Uuid;
     normalizationContext: ['groups' => ['folder:read']],
     denormalizationContext: ['groups' => ['folder:write']]
 )]
+#[MaxFolderDepth(3)]
 class Folder
 {
     #[ORM\Id]
@@ -48,10 +50,6 @@ class Folder
     #[Assert\Length(max: 255, maxMessage: 'Название не может превышать {{ limit }} символов')]
     #[Groups(['folder:read', 'folder:write', 'note:read'])]
     private ?string $name = null;
-
-    #[ORM\Column]
-    #[Groups(['folder:read', 'folder:write'])]
-    private int $position = 0;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['folder:read'])]
@@ -146,17 +144,6 @@ class Folder
     public function setName(string $name): static
     {
         $this->name = $name;
-        return $this;
-    }
-
-    public function getPosition(): int
-    {
-        return $this->position;
-    }
-
-    public function setPosition(int $position): static
-    {
-        $this->position = $position;
         return $this;
     }
 

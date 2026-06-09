@@ -20,7 +20,7 @@ final class Version20260609085911 extends AbstractMigration
     public function up(Schema $schema): void
     {
         // this up() migration is auto-generated, please modify it to your needs
-        $this->addSql('CREATE TABLE folders (id UUID NOT NULL, name VARCHAR(255) NOT NULL, position INT NOT NULL, deleted_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, user_id UUID NOT NULL, parent_id UUID DEFAULT NULL, PRIMARY KEY (id))');
+        $this->addSql('CREATE TABLE folders (id UUID NOT NULL, name VARCHAR(255) NOT NULL, deleted_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, user_id UUID NOT NULL, parent_id UUID DEFAULT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE INDEX IDX_FE37D30FA76ED395 ON folders (user_id)');
         $this->addSql('CREATE INDEX IDX_FE37D30F727ACA70 ON folders (parent_id)');
         $this->addSql('CREATE TABLE note_links (id UUID NOT NULL, source_note_id UUID NOT NULL, target_note_id UUID NOT NULL, PRIMARY KEY (id))');
@@ -29,7 +29,7 @@ final class Version20260609085911 extends AbstractMigration
         $this->addSql('CREATE UNIQUE INDEX source_target_unique ON note_links (source_note_id, target_note_id)');
         $this->addSql('CREATE TABLE note_versions (id UUID NOT NULL, content TEXT NOT NULL, title VARCHAR(255) NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, note_id UUID NOT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE INDEX IDX_9879C4C26ED0855 ON note_versions (note_id)');
-        $this->addSql('CREATE TABLE notes (id UUID NOT NULL, title VARCHAR(255) NOT NULL, content TEXT NOT NULL, position INT NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, deleted_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, user_id UUID NOT NULL, folder_id UUID DEFAULT NULL, PRIMARY KEY (id))');
+        $this->addSql('CREATE TABLE notes (id UUID NOT NULL, title VARCHAR(255) NOT NULL, content TEXT NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, updated_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, deleted_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL, user_id UUID NOT NULL, folder_id UUID DEFAULT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE INDEX IDX_11BA68CA76ED395 ON notes (user_id)');
         $this->addSql('CREATE INDEX IDX_11BA68C162CB942 ON notes (folder_id)');
         $this->addSql('CREATE TABLE note_tags (note_id UUID NOT NULL, tag_id UUID NOT NULL, PRIMARY KEY (note_id, tag_id))');

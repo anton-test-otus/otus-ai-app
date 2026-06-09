@@ -63,10 +63,6 @@ class Note
     private ?string $content = null;
 
     #[ORM\Column]
-    #[Groups(['note:read', 'note:write'])]
-    private int $position = 0;
-
-    #[ORM\Column]
     #[Groups(['note:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -154,17 +150,6 @@ class Note
     public function setContent(string $content): static
     {
         $this->content = $content;
-        return $this;
-    }
-
-    public function getPosition(): int
-    {
-        return $this->position;
-    }
-
-    public function setPosition(int $position): static
-    {
-        $this->position = $position;
         return $this;
     }
 
