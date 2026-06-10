@@ -8,7 +8,6 @@
         <div class="space-y-6">
           <FolderTree
             :folders="foldersStore.folderTree"
-            :selected-folder-id="selectedFolderId"
             @select="handleFolderSelect"
             @update="foldersStore.fetchFolders()"
           />
@@ -23,8 +22,8 @@
       <main 
         class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900"
         :class="{
-          'md:ml-80': authStore.isAuthenticated && showSidebar,
-          'pt-16 md:pt-0': authStore.isAuthenticated && showSidebar,
+          'lg:ml-80': authStore.isAuthenticated && showSidebar,
+          'pt-16 lg:pt-0': authStore.isAuthenticated && showSidebar,
         }"
       >
         <slot />
@@ -34,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import Divider from 'primevue/divider'
 import AppNavbar from './AppNavbar.vue'
 import AppSidebar from './AppSidebar.vue'
@@ -46,19 +45,19 @@ import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const foldersStore = useFoldersStore()
 const tagsStore = useTagsStore()
-
-const selectedFolderId = ref<string | null>(null)
 
 const showSidebar = computed(() => {
   return route.name !== 'login' && route.name !== 'register'
 })
 
-function handleFolderSelect(folderId: string | null) {
-  selectedFolderId.value = folderId
-  // TODO: Filter notes by folder
+function handleFolderSelect(_folderId: string | null) {
+  if (route.name !== 'dashboard') {
+    router.push({ name: 'dashboard' })
+  }
 }
 
 function handleTagFilter(_tagIds: string[]) {

@@ -5,10 +5,15 @@ import type { Folder } from '../types';
 
 export const useFoldersStore = defineStore('folders', () => {
   const folders = ref<Folder[]>([]);
+  const selectedFolderId = ref<string | null>(null);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
   const folderTree = computed(() => folders.value);
+
+  const selectedFolder = computed(() =>
+    selectedFolderId.value ? getFolderById(selectedFolderId.value) : undefined
+  );
 
   const flatFolders = computed(() => {
     const flat: Folder[] = [];
@@ -76,6 +81,9 @@ export const useFoldersStore = defineStore('folders', () => {
     error.value = null;
     try {
       await foldersApi.delete(id);
+      if (selectedFolderId.value === id) {
+        selectedFolderId.value = null;
+      }
       await fetchFolders();
     } catch (e: any) {
       error.value = e.message || 'Ошибка удаления папки';
@@ -109,10 +117,20 @@ export const useFoldersStore = defineStore('folders', () => {
     return find(folders.value || []);
   }
 
+  function selectFolder(id: string) {
+    selectedFolderId.value = id;
+  }
+
+  function clearFolderSelection() {
+    selectedFolderId.value = null;
+  }
+
   return {
     folders,
     folderTree,
     flatFolders,
+    selectedFolderId,
+    selectedFolder,
     loading,
     error,
     fetchFolders,
@@ -121,5 +139,7 @@ export const useFoldersStore = defineStore('folders', () => {
     deleteFolder,
     getFolderCount,
     getFolderById,
+    selectFolder,
+    clearFolderSelection,
   };
 });

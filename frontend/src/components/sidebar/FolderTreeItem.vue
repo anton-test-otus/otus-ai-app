@@ -1,21 +1,38 @@
 <template>
   <div class="folder-item">
     <div
-      class="folder-content flex items-center gap-2 px-3 py-2 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-      :class="{ 'bg-primary-50 dark:bg-primary-900/20': isSelected }"
-      @click="$emit('select', folder.id)"
+      class="group folder-content flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+      :class="{
+        'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isSelected,
+        'border-l-2 border-transparent pl-[6px]': !isSelected,
+      }"
+      @click="handleSelect"
     >
-      <i class="folder-drag-handle pi pi-bars text-sm text-surface-400 cursor-move hover:text-surface-600" />
+      <span class="w-4 shrink-0 flex items-center justify-center">
+        <i
+          v-if="hasChildren"
+          class="pi text-xs text-surface-500 cursor-pointer hover:text-primary-500 transition-colors"
+          :class="isExpanded ? 'pi-chevron-down' : 'pi-chevron-right'"
+          @click.stop="toggleExpand"
+        />
+      </span>
+
       <i
-        class="pi text-sm cursor-pointer hover:text-primary-500 transition-colors"
-        :class="isExpanded ? 'pi-chevron-down' : 'pi-chevron-right'"
-        @click.stop="toggleExpand"
-        v-if="hasChildren"
+        class="pi w-4 shrink-0 text-sm text-primary-500"
+        :class="hasChildren && isExpanded ? 'pi-folder-open' : 'pi-folder'"
       />
-      <i class="pi pi-folder text-primary-500" />
-      <span class="flex-1 text-sm">{{ folder.name }}</span>
-      
-      <div class="folder-actions flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+
+      <span class="flex-1 min-w-0 text-sm truncate">{{ folder.name }}</span>
+
+      <div class="folder-actions flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          icon="pi pi-plus"
+          text
+          rounded
+          size="small"
+          @click.stop="showCreateDialog = true"
+          v-tooltip.top="'Создать подпапку'"
+        />
         <Button
           icon="pi pi-pencil"
           text
@@ -36,26 +53,48 @@
       </div>
     </div>
 
-    <!-- Children -->
-    <div v-if="hasChildren && isExpanded" class="ml-6 mt-1 space-y-1">
-      <VueDraggable
-        v-model="localChildren"
-        :animation="200"
-        handle=".folder-drag-handle"
-        :group="{ name: 'folders' }"
-        @end="$emit('update')"
-      >
-        <FolderTreeItem
-          v-for="child in localChildren"
-          :key="child.id"
-          :folder="child"
-          :selected-folder-id="selectedFolderId"
-          @select="$emit('select', $event)"
-          @update="$emit('update')"
-          @delete="$emit('delete')"
-        />
-      </VueDraggable>
+    <div
+      v-if="hasChildren && isExpanded"
+      class="folder-children ml-[10px] pl-3 border-l border-surface-200 dark:border-surface-700 mt-0.5 space-y-0.5"
+    >
+      <FolderTreeItem
+        v-for="child in folder.children"
+        :key="child.id"
+        :folder="child"
+        :depth="depth + 1"
+        @select="$emit('select', $event)"
+        @update="$emit('update')"
+        @delete="$emit('delete')"
+      />
     </div>
+
+    <!-- Create Subfolder Dialog -->
+    <Dialog
+      v-model:visible="showCreateDialog"
+      modal
+      header="Создать подпапку"
+      :style="{ width: '25rem' }"
+    >
+      <div class="flex flex-col gap-4 py-4">
+        <div class="flex flex-col gap-2">
+          <label for="subfolder-name" class="font-semibold">Название папки</label>
+          <InputText
+            id="subfolder-name"
+            v-model="newSubfolderName"
+            autofocus
+            @keyup.enter="createSubfolder"
+          />
+        </div>
+        <p class="text-sm text-surface-500">
+          Родительская папка: <strong>{{ folder.name }}</strong>
+        </p>
+      </div>
+
+      <template #footer>
+        <Button label="Отмена" text @click="showCreateDialog = false" />
+        <Button label="Создать" @click="createSubfolder" :disabled="!newSubfolderName.trim()" />
+      </template>
+    </Dialog>
 
     <!-- Edit Dialog -->
     <Dialog
@@ -116,8 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { VueDraggable } from 'vue-draggable-plus';
+import { ref, computed } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -127,10 +165,13 @@ import type { Folder } from '../../types';
 
 interface Props {
   folder: Folder;
-  selectedFolderId?: string | null;
+  depth?: number;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+  depth: 0,
+});
+
 const emit = defineEmits<{
   select: [folderId: string];
   update: [];
@@ -139,24 +180,38 @@ const emit = defineEmits<{
 
 const foldersStore = useFoldersStore();
 const isExpanded = ref(true);
+const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
+const newSubfolderName = ref('');
 const editName = ref(props.folder.name);
 const deleteCount = ref<{ folders: number; notes: number } | null>(null);
 const deleting = ref(false);
-const localChildren = ref<Folder[]>(props.folder.children || []);
 
-watch(() => props.folder.children, (newChildren) => {
-  if (newChildren) {
-    localChildren.value = [...newChildren];
-  }
-}, { deep: true });
-
-const isSelected = computed(() => props.selectedFolderId === props.folder.id);
+const isSelected = computed(() => foldersStore.selectedFolderId === props.folder.id);
 const hasChildren = computed(() => props.folder.children && props.folder.children.length > 0);
+
+function handleSelect() {
+  foldersStore.selectFolder(props.folder.id);
+  emit('select', props.folder.id);
+}
 
 function toggleExpand() {
   isExpanded.value = !isExpanded.value;
+}
+
+async function createSubfolder() {
+  if (!newSubfolderName.value.trim()) return;
+
+  try {
+    await foldersStore.createFolder(newSubfolderName.value, props.folder.id);
+    newSubfolderName.value = '';
+    showCreateDialog.value = false;
+    isExpanded.value = true;
+    emit('update');
+  } catch (error) {
+    console.error('Failed to create subfolder:', error);
+  }
 }
 
 async function saveEdit() {
@@ -209,9 +264,5 @@ function pluralize(count: number, one: string, few: string, many: string): strin
 <style scoped>
 .folder-item {
   @apply select-none;
-}
-
-.folder-content:hover .folder-actions {
-  @apply opacity-100;
 }
 </style>

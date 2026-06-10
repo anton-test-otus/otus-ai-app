@@ -2,9 +2,11 @@
   <AppLayout>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Мои заметки</h1>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+          {{ pageTitle }}
+        </h1>
         <p class="mt-2 text-gray-600 dark:text-gray-400">
-          Всего заметок: {{ notesStore.pagination.total }}
+          {{ pageSubtitle }}
         </p>
       </div>
 
@@ -19,9 +21,10 @@
       <div v-else-if="notesStore.notes && notesStore.notes.length === 0" class="text-center py-12">
         <i class="pi pi-book text-6xl text-gray-400 mb-4"></i>
         <p class="text-xl text-gray-600 dark:text-gray-400 mb-4">
-          У вас пока нет заметок
+          {{ emptyMessage }}
         </p>
         <Button
+          v-if="!foldersStore.selectedFolderId"
           label="Создать первую заметку"
           icon="pi pi-plus"
           @click="createNewNote"
@@ -90,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
@@ -103,15 +106,45 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import Toast from 'primevue/toast'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useNotesStore } from '@/stores/notes'
+import { useFoldersStore } from '@/stores/folders'
 import type { Note } from '@/types'
 
 const router = useRouter()
 const notesStore = useNotesStore()
+const foldersStore = useFoldersStore()
 const confirm = useConfirm()
 const toast = useToast()
 
+const pageTitle = computed(() =>
+  foldersStore.selectedFolder
+    ? foldersStore.selectedFolder.name
+    : 'Мои заметки'
+)
+
+const pageSubtitle = computed(() => {
+  const total = notesStore.pagination.total
+  const countLabel = `${total} ${pluralizeNotes(total)}`
+  return foldersStore.selectedFolder
+    ? `${countLabel} в этой папке`
+    : `Всего заметок: ${total}`
+})
+
+const emptyMessage = computed(() =>
+  foldersStore.selectedFolder
+    ? 'В этой папке пока нет заметок'
+    : 'У вас пока нет заметок'
+)
+
+async function loadNotes(page = 1, perPage = notesStore.pagination.perPage) {
+  await notesStore.fetchNotes(page, perPage, foldersStore.selectedFolderId)
+}
+
 onMounted(async () => {
-  await notesStore.fetchNotes()
+  await loadNotes()
+})
+
+watch(() => foldersStore.selectedFolderId, async () => {
+  await loadNotes()
 })
 
 async function createNewNote() {
@@ -119,6 +152,7 @@ async function createNewNote() {
     const note = await notesStore.createNote({
       title: 'Новая заметка',
       content: '',
+      folderId: foldersStore.selectedFolderId,
     })
     router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
   } catch (error) {
@@ -169,7 +203,16 @@ function confirmDelete(note: Note) {
 }
 
 async function onPageChange(event: any) {
-  await notesStore.fetchNotes(event.page + 1, event.rows)
+  await loadNotes(event.page + 1, event.rows)
+}
+
+function pluralizeNotes(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+
+  if (mod10 === 1 && mod100 !== 11) return 'заметка'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'заметки'
+  return 'заметок'
 }
 
 function formatDate(dateString: string): string {

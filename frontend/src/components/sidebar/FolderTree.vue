@@ -12,24 +12,28 @@
       />
     </div>
 
-    <VueDraggable
-      v-model="localFolders"
-      :animation="200"
-      handle=".folder-drag-handle"
-      :group="{ name: 'folders' }"
-      @end="onDragEnd"
-      class="space-y-1"
-    >
+    <div class="space-y-0.5">
+      <div
+        class="group flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        :class="{
+          'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': !foldersStore.selectedFolderId,
+          'border-l-2 border-transparent pl-[6px]': foldersStore.selectedFolderId,
+        }"
+        @click="selectAllNotes"
+      >
+        <i class="pi pi-inbox w-4 shrink-0 text-sm text-surface-500" />
+        <span class="flex-1 text-sm">Все заметки</span>
+      </div>
+
       <FolderTreeItem
-        v-for="folder in localFolders"
+        v-for="folder in folders"
         :key="folder.id"
         :folder="folder"
-        :selected-folder-id="selectedFolderId"
         @select="$emit('select', $event)"
         @update="handleUpdate"
         @delete="handleDelete"
       />
-    </VueDraggable>
+    </div>
 
     <!-- Create Folder Dialog -->
     <Dialog
@@ -72,8 +76,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { VueDraggable } from 'vue-draggable-plus';
+import { ref, computed } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -84,28 +87,23 @@ import type { Folder } from '../../types';
 
 interface Props {
   folders: Folder[];
-  selectedFolderId?: string | null;
 }
 
-const props = defineProps<Props>();
+defineProps<Props>();
+
 const emit = defineEmits<{
   select: [folderId: string | null];
   update: [];
 }>();
 
 const foldersStore = useFoldersStore();
-const localFolders = ref<Folder[]>(Array.isArray(props.folders) ? [...props.folders] : []);
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
 
-watch(() => props.folders, (newFolders) => {
-  localFolders.value = Array.isArray(newFolders) ? [...newFolders] : [];
-}, { deep: true });
-
 const selectableFolders = computed(() => {
   const options: { label: string; value: string }[] = [];
-  
+
   const flatten = (items: Folder[], depth = 0) => {
     if (!items || !Array.isArray(items)) return;
     items.forEach(item => {
@@ -118,10 +116,15 @@ const selectableFolders = computed(() => {
       }
     });
   };
-  
-  flatten(localFolders.value || []);
+
+  flatten(foldersStore.folders || []);
   return options;
 });
+
+function selectAllNotes() {
+  foldersStore.clearFolderSelection();
+  emit('select', null);
+}
 
 async function createFolder() {
   if (!newFolderName.value.trim()) return;
@@ -137,15 +140,11 @@ async function createFolder() {
   }
 }
 
-async function handleUpdate() {
+function handleUpdate() {
   emit('update');
 }
 
-async function handleDelete() {
-  emit('update');
-}
-
-function onDragEnd() {
+function handleDelete() {
   emit('update');
 }
 </script>

@@ -16,7 +16,6 @@ use App\State\TrashNotesProvider;
 use App\State\RestoreNoteProcessor;
 use App\State\EmptyTrashProcessor;
 use App\State\NoteProcessor;
-use App\State\NoteCollectionProvider;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -30,7 +29,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'notes')]
 #[ApiResource(
     operations: [
-        new GetCollection(provider: NoteCollectionProvider::class),
+        new GetCollection(),
         new GetCollection(
             uriTemplate: '/notes/trash',
             provider: TrashNotesProvider::class,
@@ -63,7 +62,7 @@ use Symfony\Component\Uid\Uuid;
     paginationEnabled: true,
     paginationItemsPerPage: 20
 )]
-#[ApiFilter(SearchFilter::class, properties: ['title' => 'partial', 'content' => 'partial', 'folder' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['title' => 'partial', 'content' => 'partial', 'folder.id' => 'exact'])]
 #[ApiFilter(OrderFilter::class, properties: ['updatedAt', 'createdAt', 'title'])]
 class Note
 {
