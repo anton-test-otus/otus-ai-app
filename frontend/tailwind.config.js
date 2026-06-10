@@ -6,7 +6,11 @@ export default {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      screens: {
+        '3xl': '1400px',
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/typography'),

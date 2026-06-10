@@ -1,6 +1,6 @@
 <template>
-  <div class="markdown-preview h-full overflow-auto bg-white dark:bg-gray-800 p-4">
-    <div ref="rootRef" class="milkdown-preview-root min-h-full w-full max-w-full" />
+  <div class="markdown-preview h-full overflow-auto bg-white dark:bg-gray-800 p-3 md:p-4 3xl:p-6">
+    <div ref="rootRef" class="milkdown-preview-root markdown-prose min-h-full w-full max-w-full" />
   </div>
 </template>
 
@@ -210,46 +210,6 @@ onBeforeUnmount(() => {
   @apply min-h-full w-full max-w-full outline-none;
 }
 
-.milkdown-preview-root .milkdown .ProseMirror p {
-  @apply mb-4;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror strong {
-  @apply font-bold;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror em {
-  @apply italic;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror u {
-  @apply underline;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror h1 {
-  @apply text-3xl font-bold mb-4 mt-6;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror h2 {
-  @apply text-2xl font-bold mb-3 mt-5;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror h3 {
-  @apply text-xl font-bold mb-2 mt-4;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror ul {
-  @apply list-disc list-outside pl-6 mb-4;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror ol {
-  @apply list-decimal list-outside pl-6 mb-4;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror li {
-  @apply mb-1;
-}
-
 .milkdown-preview-root .wiki-link {
   @apply no-underline border-b transition-colors;
   text-decoration: none !important;
@@ -279,23 +239,4 @@ onBeforeUnmount(() => {
   @apply text-yellow-500 border-yellow-700 hover:bg-yellow-900/20;
 }
 
-.milkdown-preview-root .milkdown .ProseMirror blockquote {
-  @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror code {
-  @apply bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm font-mono;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror pre {
-  @apply bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror pre code {
-  @apply bg-transparent p-0;
-}
-
-.milkdown-preview-root .milkdown .ProseMirror a:not(.wiki-link) {
-  @apply text-blue-600 dark:text-blue-400 underline;
-}
 </style>

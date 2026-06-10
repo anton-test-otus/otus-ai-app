@@ -1,7 +1,7 @@
 <template>
   <div class="markdown-editor h-full flex flex-col">
     <!-- Панель форматирования -->
-    <div class="toolbar border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2 flex flex-wrap gap-1">
+    <div class="toolbar border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 p-2 flex flex-wrap gap-1 md:gap-1">
       <button
         v-for="tool in tools"
         :key="tool.name"
@@ -9,7 +9,7 @@
         @mousedown.prevent
         @click="applyFormat(tool.command)"
         :class="[
-          'toolbar-button p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          'toolbar-button rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
           { 'toolbar-button--active': isToolbarCommand(tool.command) && activeCommands.has(tool.command) },
         ]"
         type="button"
@@ -24,7 +24,7 @@
     </div>
     
     <!-- Редактор -->
-    <div ref="editorRef" class="milkdown-editor flex-1 overflow-auto"></div>
+    <div ref="editorRef" class="milkdown-editor markdown-prose flex-1 overflow-auto p-3 md:p-4 3xl:p-6"></div>
 
     <Dialog
       v-model:visible="showLinkDialog"
@@ -357,7 +357,7 @@ defineExpose({
 }
 
 .toolbar-button {
-  @apply flex items-center justify-center w-8 h-8 text-gray-700 dark:text-gray-300;
+  @apply flex items-center justify-center w-11 h-11 md:w-8 md:h-8 text-gray-700 dark:text-gray-300;
 }
 
 .toolbar-label {
@@ -373,7 +373,7 @@ defineExpose({
 }
 
 .milkdown-editor {
-  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 min-w-0 w-full;
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-w-0 w-full;
   outline: none;
   box-shadow: none;
   border: none;
@@ -417,62 +417,6 @@ defineExpose({
 .markdown-editor .milkdown .ProseMirror .ProseMirror-selectednode {
   outline: none !important;
   box-shadow: none !important;
-}
-
-.markdown-editor .milkdown .ProseMirror p {
-  @apply mb-4;
-}
-
-.markdown-editor .milkdown .ProseMirror strong {
-  @apply font-bold;
-}
-
-.markdown-editor .milkdown .ProseMirror em {
-  @apply italic;
-}
-
-.markdown-editor .milkdown .ProseMirror h1 {
-  @apply text-3xl font-bold mb-4 mt-6;
-}
-
-.markdown-editor .milkdown .ProseMirror h2 {
-  @apply text-2xl font-bold mb-3 mt-5;
-}
-
-.markdown-editor .milkdown .ProseMirror h3 {
-  @apply text-xl font-bold mb-2 mt-4;
-}
-
-.markdown-editor .milkdown .ProseMirror ul {
-  @apply list-disc list-outside pl-6 mb-4;
-}
-
-.markdown-editor .milkdown .ProseMirror ol {
-  @apply list-decimal list-outside pl-6 mb-4;
-}
-
-.markdown-editor .milkdown .ProseMirror li {
-  @apply mb-1;
-}
-
-.markdown-editor .milkdown .ProseMirror blockquote {
-  @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4;
-}
-
-.markdown-editor .milkdown .ProseMirror code {
-  @apply bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm font-mono;
-}
-
-.markdown-editor .milkdown .ProseMirror pre {
-  @apply bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto;
-}
-
-.markdown-editor .milkdown .ProseMirror pre code {
-  @apply bg-transparent p-0;
-}
-
-.markdown-editor .milkdown .ProseMirror a {
-  @apply text-blue-600 dark:text-blue-400 underline;
 }
 
 .markdown-editor .milkdown .ProseMirror .wiki-link-edit {

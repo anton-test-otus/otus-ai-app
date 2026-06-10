@@ -8,7 +8,7 @@
               <InputText
                 v-model="noteTitle"
                 placeholder="Название заметки"
-                class="w-full text-2xl font-bold"
+                class="w-full text-xl lg:text-2xl font-bold"
                 @input="handleTitleChange"
               />
             </div>
