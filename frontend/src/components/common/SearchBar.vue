@@ -234,7 +234,7 @@ function closeResults() {
 }
 
 function openNote(noteId: string) {
-  router.push(`/notes/${noteId}`);
+  router.push({ name: 'note', params: { id: noteId }, query: { mode: 'preview' } });
   clearSearch();
 }
 

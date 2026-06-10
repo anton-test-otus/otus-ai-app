@@ -136,7 +136,7 @@ const handleClick = (event: MouseEvent) => {
   if (linkType === 'exists') {
     const noteId = link.getAttribute('data-note-id');
     if (noteId) {
-      router.push(`/note/${noteId}`);
+      router.push({ name: 'note', params: { id: noteId }, query: { mode: 'preview' } });
     }
   } else if (linkType === 'missing') {
     const title = link.getAttribute('data-title');

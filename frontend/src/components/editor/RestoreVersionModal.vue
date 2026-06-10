@@ -101,7 +101,7 @@ interface Emits {
   (e: 'confirm', mode: RestoreVersionRequest['mode']): void
 }
 
-const props = defineProps<Props>()
+defineProps<Props>()
 const emit = defineEmits<Emits>()
 
 const selectedMode = ref<RestoreVersionRequest['mode']>('create_version')

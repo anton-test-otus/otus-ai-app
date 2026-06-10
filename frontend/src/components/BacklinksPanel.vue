@@ -15,7 +15,7 @@
     <ul v-else class="space-y-1">
       <li v-for="backlink in backlinks" :key="backlink.id">
         <router-link
-          :to="`/note/${backlink.id}`"
+          :to="{ name: 'note', params: { id: backlink.id }, query: { mode: 'preview' } }"
           class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline block"
         >
           {{ backlink.title }}

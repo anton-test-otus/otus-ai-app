@@ -57,7 +57,8 @@
                   icon="pi pi-pencil"
                   text
                   rounded
-                  @click.stop="openNote(note.id)"
+                  @click.stop="openNoteInEditMode(note.id)"
+                  v-tooltip.bottom="'Редактировать'"
                 />
                 <Button
                   icon="pi pi-trash"
@@ -65,6 +66,7 @@
                   text
                   rounded
                   @click.stop="confirmDelete(note)"
+                  v-tooltip.bottom="'Удалить'"
                 />
               </div>
             </template>
@@ -118,7 +120,7 @@ async function createNewNote() {
       title: 'Новая заметка',
       content: '',
     })
-    router.push({ name: 'note', params: { id: note.id } })
+    router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -130,7 +132,11 @@ async function createNewNote() {
 }
 
 function openNote(id: string) {
-  router.push({ name: 'note', params: { id } })
+  router.push({ name: 'note', params: { id }, query: { mode: 'preview' } })
+}
+
+function openNoteInEditMode(id: string) {
+  router.push({ name: 'note', params: { id }, query: { mode: 'edit' } })
 }
 
 function confirmDelete(note: Note) {

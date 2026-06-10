@@ -128,6 +128,6 @@ export interface UpdateNoteRequest {
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
-export type ViewMode = 'edit' | 'preview' | 'split'
+export type ViewMode = 'edit' | 'preview'
 
 export type Theme = 'light' | 'dark'

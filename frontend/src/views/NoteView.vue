@@ -22,27 +22,25 @@
                 v-tooltip.bottom="'История версий'"
               />
               
-              <Button
-                icon="pi pi-link"
-                severity="secondary"
-                text
-                @click="showLinkModal = true"
-                v-tooltip.bottom="'Вставить ссылку на заметку'"
-              />
-              
               <SaveIndicator :status="saveStatus" />
               
-              <SelectButton
-                v-model="viewMode"
-                :options="viewModeOptions"
-                optionLabel="label"
-                optionValue="value"
-                class="hidden md:flex"
-              >
-                <template #option="slotProps">
-                  <i :class="slotProps.option.icon"></i>
-                </template>
-              </SelectButton>
+              <Button
+                v-if="viewMode === 'preview'"
+                icon="pi pi-pencil"
+                severity="secondary"
+                text
+                @click="switchToEditMode"
+                v-tooltip.bottom="'Редактировать'"
+              />
+              
+              <Button
+                v-else
+                icon="pi pi-eye"
+                severity="secondary"
+                text
+                @click="switchToPreviewMode"
+                v-tooltip.bottom="'Просмотр'"
+              />
 
               <Button
                 icon="pi pi-trash"
@@ -80,26 +78,21 @@
       </div>
 
       <div v-else class="flex-1 overflow-hidden flex">
-        <div class="flex-1 flex flex-col md:flex-row">
+        <div class="flex-1 flex flex-col">
           <div
-            v-show="viewMode === 'edit' || viewMode === 'split'"
-            :class="[
-              'flex-1 border-r border-gray-200 dark:border-gray-700 overflow-auto',
-              viewMode === 'split' ? 'w-full md:w-1/2' : 'w-full'
-            ]"
+            v-if="viewMode === 'edit'"
+            class="flex-1 border-r border-gray-200 dark:border-gray-700 overflow-auto"
           >
             <MarkdownEditor
               v-model="noteContent"
               @update:modelValue="handleContentChange"
+              @insertWikiLink="showLinkModal = true"
             />
           </div>
 
           <div
-            v-show="viewMode === 'preview' || viewMode === 'split'"
-            :class="[
-              'flex-1 overflow-auto',
-              viewMode === 'split' ? 'w-full md:w-1/2' : 'w-full'
-            ]"
+            v-else
+            class="flex-1 overflow-auto"
           >
             <MarkdownPreview :content="noteContent" />
           </div>
@@ -149,23 +142,6 @@
           </div>
         </NoteMetadata>
       </div>
-
-      <div class="md:hidden border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-2">
-        <SelectButton
-          v-model="viewMode"
-          :options="viewModeOptions"
-          optionLabel="label"
-          optionValue="value"
-          class="w-full"
-        >
-          <template #option="slotProps">
-            <div class="flex items-center space-x-2">
-              <i :class="slotProps.option.icon"></i>
-              <span>{{ slotProps.option.label }}</span>
-            </div>
-          </template>
-        </SelectButton>
-      </div>
     </div>
 
     <Toast />
@@ -184,7 +160,6 @@ import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import SelectButton from 'primevue/selectbutton'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -214,15 +189,9 @@ const noteTitle = ref('')
 const noteContent = ref('')
 const noteFolderId = ref<string | null>(null)
 const noteTags = ref<string[]>([])
-const viewMode = ref<ViewMode>('split')
+const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
-
-const viewModeOptions = [
-  { label: 'Редактор', value: 'edit', icon: 'pi pi-pencil' },
-  { label: 'Разделение', value: 'split', icon: 'pi pi-table' },
-  { label: 'Превью', value: 'preview', icon: 'pi pi-eye' },
-]
 
 const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
   if (!notesStore.currentNote) return
@@ -237,6 +206,13 @@ const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
 
 onMounted(async () => {
   const noteId = route.params.id as string
+  
+  // Определяем режим просмотра из query параметра или по умолчанию 'preview'
+  const modeFromQuery = route.query.mode as ViewMode | undefined
+  if (modeFromQuery === 'edit' || modeFromQuery === 'preview') {
+    viewMode.value = modeFromQuery
+  }
+  
   try {
     const note = await notesStore.fetchNoteById(noteId)
     noteTitle.value = note.title
@@ -268,6 +244,24 @@ function handleFolderChange() {
 
 function handleTagsChange() {
   triggerSave()
+}
+
+function switchToEditMode() {
+  viewMode.value = 'edit'
+  router.replace({ 
+    name: 'note', 
+    params: { id: route.params.id },
+    query: { mode: 'edit' }
+  })
+}
+
+function switchToPreviewMode() {
+  viewMode.value = 'preview'
+  router.replace({ 
+    name: 'note', 
+    params: { id: route.params.id },
+    query: { mode: 'preview' }
+  })
 }
 
 function goBack() {
@@ -321,7 +315,7 @@ function handleLinkSelect(noteTitle: string) {
   });
 }
 
-async function handleVersionRestore(versionId: string, mode: RestoreVersionRequest['mode']) {
+async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequest['mode']) {
   try {
     // Reload the note after restore
     const noteId = route.params.id as string

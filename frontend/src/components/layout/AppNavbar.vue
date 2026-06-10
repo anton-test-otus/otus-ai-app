@@ -96,7 +96,7 @@ async function createNewNote() {
       title: 'Новая заметка',
       content: '',
     })
-    router.push({ name: 'note', params: { id: note.id } })
+    router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
   } catch (error) {
     console.error('Ошибка создания заметки:', error)
   }
