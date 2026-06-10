@@ -1,23 +1,14 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+  <AppLayout>
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Header -->
       <div class="mb-8">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <Button
-              icon="pi pi-arrow-left"
-              text
-              rounded
-              @click="router.push({ name: 'dashboard' })"
-              v-tooltip.bottom="'К заметкам'"
-            />
-            <div>
-              <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Корзина</h1>
-              <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                Заметки хранятся 30 дней после удаления
-              </p>
-            </div>
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Корзина</h1>
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Заметки хранятся 30 дней после удаления
+            </p>
           </div>
           <div class="flex gap-3">
             <Button
@@ -158,12 +149,12 @@
         <Button label="Очистить" severity="danger" @click="emptyTrash" />
       </template>
     </Dialog>
-  </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import AppLayout from '@/components/layout/AppLayout.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
 import Button from 'primevue/button';
@@ -184,7 +175,6 @@ interface TrashNote {
   } | null;
 }
 
-const router = useRouter();
 const toast = useToast();
 
 const notes = ref<TrashNote[]>([]);

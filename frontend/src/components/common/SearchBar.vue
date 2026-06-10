@@ -5,6 +5,7 @@
         <i v-if="searchQuery.length === 0" class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-10"></i>
         
         <InputText
+          ref="inputRef"
           v-model="searchQuery"
           placeholder="Поиск заметок..."
           class="search-input w-full"
@@ -38,7 +39,8 @@
     <!-- Quick results dropdown -->
     <div
       v-if="showQuickResults && quickResults.length > 0 && !showFullResults"
-      class="quick-results absolute top-full left-0 right-0 mt-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg shadow-lg overflow-hidden z-50"
+      class="quick-results mt-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg shadow-lg overflow-hidden z-50"
+      :class="inModal ? 'relative' : 'absolute top-full left-0 right-0'"
     >
       <div class="p-2 border-b border-surface-200 dark:border-surface-700 text-xs text-surface-500 dark:text-surface-400">
         Быстрый поиск (нажмите Enter для полного поиска)
@@ -124,6 +126,16 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
+
+const props = withDefaults(defineProps<{
+  inModal?: boolean
+}>(), {
+  inModal: false,
+})
+
+const emit = defineEmits<{
+  'note-opened': []
+}>()
 import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
@@ -136,6 +148,7 @@ import type { Note } from '../../types';
 
 const router = useRouter();
 const searchBarRef = ref<HTMLElement | null>(null);
+const inputRef = ref<InstanceType<typeof InputText> | null>(null);
 const searchQuery = ref('');
 const quickResults = ref<Note[]>([]);
 const fullResults = ref<Note[]>([]);
@@ -236,7 +249,18 @@ function closeResults() {
 function openNote(noteId: string) {
   router.push({ name: 'note', params: { id: noteId }, query: { mode: 'preview' } });
   clearSearch();
+  emit('note-opened');
 }
+
+function focusInput() {
+  const root = inputRef.value?.$el as HTMLElement | undefined
+  const input = root?.querySelector('input') ?? root
+  if (input instanceof HTMLInputElement) {
+    input.focus()
+  }
+}
+
+defineExpose({ focusInput })
 
 function highlightMatch(text: string): string {
   if (!searchQuery.value) return text;

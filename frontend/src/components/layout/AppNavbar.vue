@@ -18,6 +18,16 @@
         <!-- Actions -->
         <div class="flex items-center space-x-2 flex-shrink-0">
           <Button
+            v-if="authStore.isAuthenticated"
+            icon="pi pi-search"
+            severity="secondary"
+            text
+            rounded
+            class="md:hidden"
+            @click="openMobileSearch"
+            v-tooltip.bottom="'Поиск'"
+          />
+          <Button
             v-if="authStore.isAdmin"
             icon="pi pi-users"
             severity="secondary"
@@ -76,12 +86,29 @@
         </div>
       </div>
     </div>
+
+    <Dialog
+      v-model:visible="showMobileSearch"
+      modal
+      header="Поиск заметок"
+      class="search-mobile-dialog"
+      :style="{ width: '90vw', maxWidth: '50rem' }"
+      @show="onMobileSearchShow"
+    >
+      <SearchBar
+        ref="mobileSearchRef"
+        in-modal
+        @note-opened="showMobileSearch = false"
+      />
+    </Dialog>
   </nav>
 </template>
 
 <script setup lang="ts">
+import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Dialog from 'primevue/dialog'
 import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotesStore } from '@/stores/notes'
@@ -89,6 +116,18 @@ import { useNotesStore } from '@/stores/notes'
 const router = useRouter()
 const authStore = useAuthStore()
 const notesStore = useNotesStore()
+
+const showMobileSearch = ref(false)
+const mobileSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)
+
+function openMobileSearch() {
+  showMobileSearch.value = true
+}
+
+async function onMobileSearchShow() {
+  await nextTick()
+  mobileSearchRef.value?.focusInput()
+}
 
 async function createNewNote() {
   try {

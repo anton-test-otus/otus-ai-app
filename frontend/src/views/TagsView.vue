@@ -1,14 +1,9 @@
 <template>
-  <div class="tags-management p-6 max-w-4xl mx-auto">
+  <AppLayout>
+    <div class="tags-management p-6 max-w-4xl mx-auto">
     <div class="header mb-6">
-      <div class="flex items-center justify-between mb-4">
+      <div class="mb-4">
         <h1 class="text-3xl font-bold">Управление тегами</h1>
-        <Button
-          label="Назад"
-          icon="pi pi-arrow-left"
-          outlined
-          @click="$router.back()"
-        />
       </div>
       <p class="text-surface-600 dark:text-surface-400">
         Управляйте тегами для организации ваших заметок
@@ -162,11 +157,13 @@
         />
       </template>
     </Dialog>
-  </div>
+    </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import AppLayout from '@/components/layout/AppLayout.vue';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';
@@ -263,8 +260,3 @@ onMounted(async () => {
 });
 </script>
 
-<style scoped>
-.tags-management {
-  @apply min-h-screen;
-}
-</style>
