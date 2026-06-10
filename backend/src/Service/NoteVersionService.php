@@ -11,19 +11,27 @@ use Doctrine\ORM\EntityManagerInterface;
 class NoteVersionService
 {
     private const MAX_VERSIONS = 50;
-    private const CONSOLIDATION_WINDOW_MINUTES = 5;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
-        private NoteVersionRepository $versionRepository
+        private NoteVersionRepository $versionRepository,
+        private int $consolidationWindowMinutes,
     ) {
+        if ($this->consolidationWindowMinutes < 1) {
+            $this->consolidationWindowMinutes = 5;
+        }
     }
 
     /**
      * Фиксирует версию при обновлении заметки: сравнивает состояние до и после сохранения.
+     * Новая версия создаётся только если с момента предыдущего updatedAt заметки прошло ≥ N минут.
      */
-    public function recordVersionOnUpdate(Note $note, NoteSnapshot $previousState, NoteSnapshot $newState): ?NoteVersion
-    {
+    public function recordVersionOnUpdate(
+        Note $note,
+        NoteSnapshot $previousState,
+        NoteSnapshot $newState,
+        \DateTimeImmutable $previousNoteUpdatedAt,
+    ): ?NoteVersion {
         if ($previousState->equals($newState)) {
             return null;
         }
@@ -34,12 +42,8 @@ class NoteVersionService
             return null;
         }
 
-        if ($lastVersion !== null && $this->isWithinConsolidationWindow($lastVersion)) {
-            $lastVersion->setTitle($previousState->title);
-            $lastVersion->setContent($previousState->content);
-            $this->entityManager->flush();
-
-            return $lastVersion;
+        if ($this->isWithinConsolidationWindow($previousNoteUpdatedAt)) {
+            return null;
         }
 
         return $this->createVersion($note, $previousState);
@@ -55,14 +59,6 @@ class NoteVersionService
 
         if ($lastVersion !== null && NoteSnapshot::fromVersion($lastVersion)->equals($currentState)) {
             return null;
-        }
-
-        if ($lastVersion !== null && $this->isWithinConsolidationWindow($lastVersion)) {
-            $lastVersion->setTitle($currentState->title);
-            $lastVersion->setContent($currentState->content);
-            $this->entityManager->flush();
-
-            return $lastVersion;
         }
 
         return $this->createVersion($note, $currentState);
@@ -133,12 +129,15 @@ class NoteVersionService
         return $version;
     }
 
-    private function isWithinConsolidationWindow(NoteVersion $version): bool
+    /**
+     * Окно консолидации: если заметка менялась менее N минут назад — новую версию не создаём.
+     */
+    private function isWithinConsolidationWindow(\DateTimeImmutable $previousNoteUpdatedAt): bool
     {
         $now = new \DateTimeImmutable();
-        $diffSeconds = $now->getTimestamp() - $version->getCreatedAt()->getTimestamp();
+        $diffSeconds = $now->getTimestamp() - $previousNoteUpdatedAt->getTimestamp();
 
-        return $diffSeconds < self::CONSOLIDATION_WINDOW_MINUTES * 60;
+        return $diffSeconds < $this->consolidationWindowMinutes * 60;
     }
 
     /**

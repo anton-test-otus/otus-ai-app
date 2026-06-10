@@ -1,0 +1,3 @@
+parameters:
+    env(NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES): '5'
+    note_version.consolidation_window_minutes: '%env(int:NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES)%'

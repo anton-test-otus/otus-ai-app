@@ -56,13 +56,16 @@ class NoteProcessor implements ProcessorInterface
 
         $previousState = null;
         $newState = null;
+        $previousNoteUpdatedAt = null;
         if (
             $operation->getMethod() === 'PUT'
             && isset($context['previous_data'])
             && $context['previous_data'] instanceof Note
         ) {
-            $previousState = NoteSnapshot::fromNote($context['previous_data']);
+            $previousNote = $context['previous_data'];
+            $previousState = NoteSnapshot::fromNote($previousNote);
             $newState = NoteSnapshot::fromNote($data);
+            $previousNoteUpdatedAt = $previousNote->getUpdatedAt();
         }
 
         $note = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
@@ -70,8 +73,13 @@ class NoteProcessor implements ProcessorInterface
             return null;
         }
 
-        if ($previousState !== null && $newState !== null) {
-            $this->versionService->recordVersionOnUpdate($note, $previousState, $newState);
+        if ($previousState !== null && $newState !== null && $previousNoteUpdatedAt !== null) {
+            $this->versionService->recordVersionOnUpdate(
+                $note,
+                $previousState,
+                $newState,
+                $previousNoteUpdatedAt,
+            );
         }
 
         // Parse and update wiki-links after save (POST/PUT)

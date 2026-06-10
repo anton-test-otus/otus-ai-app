@@ -188,7 +188,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
@@ -233,6 +233,76 @@ const mobileMenu = ref<InstanceType<typeof Menu> | null>(null)
 const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
 
+interface NoteDraftSnapshot {
+  title: string
+  content: string
+  folderId: string | null
+  tags: string[]
+}
+
+let savedSnapshot: NoteDraftSnapshot = {
+  title: '',
+  content: '',
+  folderId: null,
+  tags: [],
+}
+
+function createSnapshot(): NoteDraftSnapshot {
+  return {
+    title: noteTitle.value,
+    content: noteContent.value,
+    folderId: noteFolderId.value,
+    tags: [...noteTags.value].sort(),
+  }
+}
+
+function syncSavedSnapshot() {
+  savedSnapshot = createSnapshot()
+}
+
+function hasUnsavedChanges(): boolean {
+  const current = createSnapshot()
+  return (
+    current.title !== savedSnapshot.title
+    || current.content !== savedSnapshot.content
+    || current.folderId !== savedSnapshot.folderId
+    || current.tags.join('\0') !== savedSnapshot.tags.join('\0')
+  )
+}
+
+function syncEditorContent() {
+  if (viewMode.value === 'edit') {
+    const latestContent = editorRef.value?.getMarkdown()
+    if (latestContent !== undefined) {
+      noteContent.value = latestContent
+    }
+  }
+}
+
+async function saveNoteIfChanged() {
+  if (!notesStore.currentNote || !hasUnsavedChanges()) {
+    return
+  }
+
+  await notesStore.updateNote(notesStore.currentNote.id, {
+    title: noteTitle.value,
+    content: noteContent.value,
+    folderId: noteFolderId.value,
+    tags: noteTags.value,
+  })
+  syncSavedSnapshot()
+}
+
+const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = useAutosave(
+  saveNoteIfChanged,
+  { hasChanges: hasUnsavedChanges },
+)
+
+async function leaveNote(): Promise<void> {
+  syncEditorContent()
+  await flushSave()
+}
+
 const mobileMenuItems = computed(() => [
   {
     label: showVersionHistory.value ? 'Скрыть историю' : 'История версий',
@@ -254,35 +324,24 @@ function openMetadata() {
   metadataRef.value?.open()
 }
 
-const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
-  if (!notesStore.currentNote) return
-
-  await notesStore.updateNote(notesStore.currentNote.id, {
-    title: noteTitle.value,
-    content: noteContent.value,
-    folderId: noteFolderId.value,
-    tags: noteTags.value,
-  })
-}, 2000)
-
-onMounted(async () => {
-  const noteId = route.params.id as string
+async function loadNote(noteId: string) {
   isNoteReady.value = false
-  
-  // Определяем режим просмотра из query параметра или по умолчанию 'preview'
+  resetAutosave()
+
   const modeFromQuery = route.query.mode as ViewMode | undefined
   if (modeFromQuery === 'edit' || modeFromQuery === 'preview') {
     viewMode.value = modeFromQuery
   }
-  
+
   try {
     const note = await notesStore.fetchNoteById(noteId)
     noteTitle.value = note.title
     noteContent.value = note.content
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
+    syncSavedSnapshot()
     isNoteReady.value = true
-  } catch (error) {
+  } catch {
     toast.add({
       severity: 'error',
       summary: 'Ошибка',
@@ -290,6 +349,38 @@ onMounted(async () => {
       life: 3000,
     })
     router.push({ name: 'dashboard' })
+  }
+}
+
+onMounted(() => {
+  loadNote(route.params.id as string)
+})
+
+watch(
+  () => route.params.id,
+  async (newId, oldId) => {
+    if (!oldId || newId === oldId) return
+
+    try {
+      await leaveNote()
+    } catch {
+      return
+    }
+
+    await loadNote(newId as string)
+  },
+)
+
+onBeforeRouteLeave(async () => {
+  if (!isNoteReady.value) {
+    return true
+  }
+
+  try {
+    await leaveNote()
+    return true
+  } catch {
+    return false
   }
 })
 
@@ -328,21 +419,24 @@ function switchToEditMode() {
 }
 
 function switchToPreviewMode() {
-  const latestContent = editorRef.value?.getMarkdown()
-  if (latestContent !== undefined) {
-    noteContent.value = latestContent
-  }
+  syncEditorContent()
+  triggerSave()
 
   viewMode.value = 'preview'
-  router.replace({ 
-    name: 'note', 
+  router.replace({
+    name: 'note',
     params: { id: route.params.id },
-    query: { mode: 'preview' }
+    query: { mode: 'preview' },
   })
 }
 
-function goBack() {
-  router.push({ name: 'dashboard' })
+async function goBack() {
+  try {
+    await leaveNote()
+    router.push({ name: 'dashboard' })
+  } catch {
+    // Ошибка отображается через watch(saveError)
+  }
 }
 
 function confirmDelete() {
@@ -411,6 +505,7 @@ async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequ
     noteContent.value = note.content
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
+    syncSavedSnapshot()
     
     let message = 'Версия восстановлена'
     if (mode === 'copy') {
