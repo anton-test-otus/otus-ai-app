@@ -45,8 +45,16 @@
               </div>
             </template>
             <template #subtitle>
-              <div class="text-sm text-gray-500 dark:text-gray-400">
-                {{ formatDate(note.updatedAt) }}
+              <div class="flex items-center justify-between gap-2 text-sm text-gray-500 dark:text-gray-400">
+                <span class="shrink-0">{{ formatDate(note.updatedAt) }}</span>
+                <span
+                  v-if="!foldersStore.selectedFolderId && note.folder"
+                  class="flex items-center gap-1 min-w-0 max-w-[55%]"
+                  v-tooltip.top="note.folder.name"
+                >
+                  <i class="pi pi-folder shrink-0 text-xs" />
+                  <span class="truncate">{{ note.folder.name }}</span>
+                </span>
               </div>
             </template>
             <template #content>

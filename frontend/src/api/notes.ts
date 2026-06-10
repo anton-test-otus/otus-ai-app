@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import { normalizeNote } from '@/utils/note'
 import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
 export const notesApi = {
@@ -9,7 +10,7 @@ export const notesApi = {
     }
     const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
     
-    const data = response['hydra:member'] || response['member'] || [];
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote);
     const total = response['hydra:totalItems'] || response['totalItems'] || 0;
     
     return {
@@ -24,7 +25,8 @@ export const notesApi = {
   },
 
   async getById(id: string): Promise<Note> {
-    return apiClient.get<Note>(`/notes/${id}`)
+    const note = await apiClient.get<Note>(`/notes/${id}`)
+    return normalizeNote(note)
   },
 
   async create(data: CreateNoteRequest): Promise<Note> {
@@ -38,7 +40,8 @@ export const notesApi = {
       payload.folder = `/api/folders/${data.folderId}`
     }
     
-    return apiClient.post<Note>('/notes', payload)
+    const note = await apiClient.post<Note>('/notes', payload)
+    return normalizeNote(note)
   },
 
   async update(id: string, data: UpdateNoteRequest): Promise<Note> {
@@ -56,7 +59,8 @@ export const notesApi = {
       }
     }
     
-    return apiClient.put<Note>(`/notes/${id}`, payload)
+    const note = await apiClient.put<Note>(`/notes/${id}`, payload)
+    return normalizeNote(note)
   },
 
   async delete(id: string): Promise<void> {
@@ -71,7 +75,7 @@ export const notesApi = {
     }
     const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
     
-    const data = response['hydra:member'] || response['member'] || [];
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote);
     const total = response['hydra:totalItems'] || response['totalItems'] || 0;
     
     return {

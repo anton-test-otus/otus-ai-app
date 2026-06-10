@@ -112,10 +112,12 @@ import Dialog from 'primevue/dialog'
 import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotesStore } from '@/stores/notes'
+import { useFoldersStore } from '@/stores/folders'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const notesStore = useNotesStore()
+const foldersStore = useFoldersStore()
 
 const showMobileSearch = ref(false)
 const mobileSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)
@@ -134,6 +136,7 @@ async function createNewNote() {
     const note = await notesStore.createNote({
       title: 'Новая заметка',
       content: '',
+      folderId: foldersStore.selectedFolderId,
     })
     router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
   } catch (error) {
