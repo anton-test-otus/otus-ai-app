@@ -1757,3 +1757,22 @@ Frontend:
 **Результат:** фон сайдбара и его правая граница совпадают с началом основного контента.
 
 ---
+
+## Промпт 54
+
+> Обсуждение и реализация перекомпоновки адаптивного layout: левый сайдбар, правый сайдбар метаданных, кнопки 4b
+
+### Выполненные действия:
+
+- Согласован план: левый сайдбар fixed `≥ lg`, drawer `< lg` (кнопка в navbar); правый `NoteMetadata` fixed `≥ 1400px`, drawer `< 1400px` (кнопка в toolbar `NoteView`)
+- Создан `AppSidePanel.vue` — общая логика fixed/drawer для left/right панелей
+- Рефакторинг `AppSidebar` и `NoteMetadata` на базе `AppSidePanel`
+- `AppLayout` + `useLayoutPanels`: provide/inject для кнопки навигации в navbar
+- `AppNavbar`: кнопка `☰` вместо floating-кнопки
+- `NoteView`: кнопка `ℹ️` метаданных в toolbar при `< 1400px`
+- `useBreakpoints`: `isBelow3xl` (1400px) вместо `isBelowXl`
+- Обновлены `ARCHITECTURE.md`, `PHASES.md`
+
+**Результат:** единая система боковых панелей; на планшете редактор не зажат двумя fixed-панелями; floating-кнопки убраны.
+
+---

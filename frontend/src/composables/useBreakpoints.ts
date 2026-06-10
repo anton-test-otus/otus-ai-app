@@ -4,7 +4,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 export const BREAKPOINTS = {
   md: 768,
   lg: 1024,
-  xl: 1400,
+  /** Соответствует tailwind `3xl` */
+  threeXl: 1400,
 } as const
 
 /** Tailwind-классы адаптивной ширины боковых панелей (lg: 288px, 3xl: 320px) */
@@ -27,12 +28,12 @@ export function useBreakpoints() {
 
   const isBelowMd = computed(() => windowWidth.value < BREAKPOINTS.md)
   const isBelowLg = computed(() => windowWidth.value < BREAKPOINTS.lg)
-  const isBelowXl = computed(() => windowWidth.value < BREAKPOINTS.xl)
+  const isBelow3xl = computed(() => windowWidth.value < BREAKPOINTS.threeXl)
 
   return {
     windowWidth,
     isBelowMd,
     isBelowLg,
-    isBelowXl,
+    isBelow3xl,
   }
 }

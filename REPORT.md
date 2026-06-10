@@ -407,3 +407,28 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Рефакторинг: адаптивный layout боковых панелей
+
+**Проблема:**
+- Floating-кнопки сайдбаров (`fixed top-[4.5rem]`) визуально оторваны от navbar
+- Разные breakpoints у левого (`lg`) и правого (`md`) сайдбаров сжимали редактор на планшете
+- Дублирование логики fixed/drawer в `AppSidebar` и `NoteMetadata`
+
+**Решение:**
+- Общий компонент `AppSidePanel` (fixed + spacer + drawer)
+- Левый сайдбар: fixed `≥ 1024px`, drawer `< 1024px`, toggle в navbar
+- Правый сайдбар метаданных (только `NoteView`): fixed `≥ 1400px`, drawer `< 1400px`, toggle в toolbar заметки
+- `useLayoutPanels` (provide/inject) для связи navbar ↔ sidebar
+
+**Затронутые файлы:**
+- `frontend/src/components/layout/AppSidePanel.vue` (новый)
+- `frontend/src/composables/useLayoutPanels.ts` (новый)
+- `frontend/src/components/layout/AppSidebar.vue`
+- `frontend/src/components/layout/NoteMetadata.vue`
+- `frontend/src/components/layout/AppLayout.vue`
+- `frontend/src/components/layout/AppNavbar.vue`
+- `frontend/src/views/NoteView.vue`
+- `frontend/src/composables/useBreakpoints.ts`
+
+---
+

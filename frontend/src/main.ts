@@ -19,11 +19,11 @@ app.use(createPinia())
 app.use(router)
 app.use(PrimeVue, {
   zIndex: {
-    modal: 1100,        // dialog, sidebar
-    overlay: 1000,      // dropdown, multiselect
+    modal: 1100,        // dialog
+    overlay: 1200,      // dropdown, multiselect (above dialog)
     menu: 1000,         // menu
-    tooltip: 1100       // tooltip
-  }
+    tooltip: 1300,      // tooltip
+  },
 })
 app.use(ToastService)
 app.use(ConfirmationService)

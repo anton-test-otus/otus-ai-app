@@ -35,25 +35,27 @@
 }
 
 /* PrimeVue overlays z-index fix */
+.p-sidebar,
+.p-sidebar-mask {
+  z-index: 1050 !important;
+}
+
+.p-dialog,
+.p-dialog-mask {
+  z-index: 1100 !important;
+}
+
 .p-dropdown-panel,
 .p-multiselect-panel,
 .p-autocomplete-panel {
-  z-index: 9999 !important;
-}
-
-.p-dialog {
   z-index: 1200 !important;
 }
 
-.p-dialog-mask {
-  z-index: 1200 !important;
-}
-
-/* Force dropdown panels to be on top */
+/* Force dropdown panels to be on top when teleported to body */
 body > .p-dropdown-panel,
 body > .p-multiselect-panel,
 body > .p-autocomplete-panel {
-  z-index: 9999 !important;
+  z-index: 1200 !important;
   position: fixed !important;
 }
 

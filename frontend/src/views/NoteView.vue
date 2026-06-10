@@ -47,6 +47,17 @@
                 />
 
                 <Button
+                  v-if="isBelow3xl"
+                  icon="pi pi-info-circle"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn"
+                  @click="openMetadata"
+                  v-tooltip.bottom="'Метаданные'"
+                />
+
+                <Button
                   icon="pi pi-history"
                   severity="secondary"
                   text
@@ -121,7 +132,7 @@
         </div>
 
         <!-- Note Metadata Panel -->
-        <NoteMetadata>
+        <NoteMetadata ref="metadataRef">
           <div class="space-y-6">
             <FolderSelector
               v-model="noteFolderId"
@@ -200,6 +211,7 @@ import LinkNoteModal from '@/components/LinkNoteModal.vue'
 import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
+import { useBreakpoints } from '@/composables/useBreakpoints'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
 
 const route = useRoute()
@@ -207,6 +219,7 @@ const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
 const notesStore = useNotesStore()
+const { isBelow3xl } = useBreakpoints()
 
 const noteTitle = ref('')
 const noteContent = ref('')
@@ -217,6 +230,7 @@ const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 const mobileMenu = ref<InstanceType<typeof Menu> | null>(null)
+const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
 
 const mobileMenuItems = computed(() => [
@@ -234,6 +248,10 @@ const mobileMenuItems = computed(() => [
 
 function toggleMobileMenu(event: Event) {
   mobileMenu.value?.toggle(event)
+}
+
+function openMetadata() {
+  metadataRef.value?.open()
 }
 
 const { saveStatus, saveError, triggerSave } = useAutosave(async () => {

@@ -2,8 +2,18 @@
   <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16 gap-4">
-        <!-- Logo -->
-        <div class="flex items-center flex-shrink-0">
+        <!-- Logo + navigation toggle -->
+        <div class="flex items-center flex-shrink-0 gap-1">
+          <Button
+            v-if="layoutPanels?.showNavToggle"
+            icon="pi pi-bars"
+            severity="secondary"
+            text
+            rounded
+            class="lg:hidden"
+            @click="layoutPanels.openNavigation()"
+            v-tooltip.bottom="'Навигация'"
+          />
           <router-link to="/" class="flex items-center space-x-2">
             <i class="pi pi-book text-2xl text-blue-600"></i>
             <span class="text-xl font-bold text-gray-900 dark:text-white hidden sm:inline">База знаний</span>
@@ -113,11 +123,13 @@ import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
+import { useLayoutPanels } from '@/composables/useLayoutPanels'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const notesStore = useNotesStore()
 const foldersStore = useFoldersStore()
+const layoutPanels = useLayoutPanels()
 
 const showMobileSearch = ref(false)
 const mobileSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)

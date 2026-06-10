@@ -145,7 +145,7 @@ const tools: Array<{
   { name: 'italic', label: 'I', labelClass: 'italic', title: 'Курсив (Ctrl+I)', command: 'italic' },
   { name: 'list', icon: 'pi pi-list', title: 'Маркированный список', command: 'bullet_list' },
   { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: 'Нумерованный список', command: 'ordered_list' },
-  { name: 'quote', icon: 'pi pi-quote-left', title: 'Цитата', command: 'blockquote' },
+  { name: 'quote', icon: 'pi pi-comment', title: 'Цитата', command: 'blockquote' },
   { name: 'code', icon: 'pi pi-code', title: 'Код', command: 'code' },
   { name: 'link', icon: 'pi pi-link', title: 'Ссылка', command: 'link' },
   { name: 'wiki-link', icon: 'pi pi-sitemap', title: 'Ссылка на заметку', command: 'wiki_link' },
