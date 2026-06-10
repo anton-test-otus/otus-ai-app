@@ -2,6 +2,7 @@
 
 namespace App\State;
 
+use ApiPlatform\Doctrine\Common\State\PersistProcessor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Folder;
@@ -12,7 +13,8 @@ class FolderProcessor implements ProcessorInterface
 {
     public function __construct(
         private EntityManagerInterface $em,
-        private Security $security
+        private Security $security,
+        private PersistProcessor $persistProcessor,
     ) {
     }
 
@@ -36,10 +38,8 @@ class FolderProcessor implements ProcessorInterface
             return $data;
         }
 
-        // PUT и PATCH обрабатываются одинаково
-        $this->em->persist($data);
-        $this->em->flush();
+        $result = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
 
-        return $data;
+        return $result instanceof Folder ? $result : null;
     }
 }

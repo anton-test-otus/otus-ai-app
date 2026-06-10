@@ -337,3 +337,53 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Проблема 12: PUT создавал дубликаты заметок вместо обновления
+
+**Дата:** 2026-06-10
+
+**Симптомы:**
+- Переименование заметки (автосохранение title через PUT) создавало новую запись с другим UUID
+- Старый заголовок оставался в списке, появлялся дубликат с новым именем
+- Та же проблема затрагивала PUT для папок и тегов
+
+**Причина:**
+Кастомные `NoteProcessor`, `FolderProcessor` и `TagProcessor` вызывали `$em->persist()` напрямую, полностью обходя `api_platform.doctrine.orm.state.persist_processor`. В API Platform 4 стандартный `PersistProcessor` для PUT мержит входные данные в существующую managed-сущность через `$context['previous_data']`. Без этого Doctrine создавал новую entity с новым UUID.
+
+**Решение:**
+1. В процессоры добавлена делегация в `PersistProcessor` через DI (`#[Autowire(service: 'api_platform.doctrine.orm.state.persist_processor')]`)
+2. DELETE и soft delete оставлены в кастомной логике (до делегации)
+3. Для истории версий: снимок `title/content` берётся из `previous_data` до persist, версия создаётся после persist через новый метод `NoteVersionService::createVersionSnapshot()` — чтобы связь `NoteVersion#note` указывала на managed-сущность
+
+**Затронутые файлы:**
+- `backend/src/State/NoteProcessor.php`
+- `backend/src/State/FolderProcessor.php`
+- `backend/src/State/TagProcessor.php`
+- `backend/src/Service/NoteVersionService.php`
+
+---
+
+## Проблема 13: Рефакторинг логики версий заметок
+
+**Дата:** 2026-06-10
+
+**Контекст:**
+Временный метод `createVersionSnapshot()` решал проблему detached-сущности при PUT, но не давал сравнивать старое и новое состояние. По плану нужна полноценная логика консолидации версий при автосохранении.
+
+**Решение:**
+1. Добавлен `NoteSnapshot` (`title` + `content`) с фабриками `fromNote()` / `fromVersion()` и `equals()`
+2. `NoteVersionService::recordVersionOnUpdate()` — единая точка входа при PUT:
+   - пропуск, если `previousState === newState` (нет изменений в запросе);
+   - пропуск, если `newState` совпадает с последней версией (пробел + backspace);
+   - в окне 5 минут — обновление последней версии снимком `previousState`;
+   - иначе — создание новой версии
+3. `backupCurrentState()` — для восстановления из истории (замена старого `createVersion()`)
+4. `NoteProcessor` передаёт снимки из `previous_data` и входящих данных, версия создаётся после `PersistProcessor`
+
+**Затронутые файлы:**
+- `backend/src/Dto/NoteSnapshot.php`
+- `backend/src/Service/NoteVersionService.php`
+- `backend/src/Repository/NoteVersionRepository.php`
+- `backend/src/State/NoteProcessor.php`
+
+---
+

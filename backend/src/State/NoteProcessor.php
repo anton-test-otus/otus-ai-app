@@ -2,8 +2,10 @@
 
 namespace App\State;
 
+use ApiPlatform\Doctrine\Common\State\PersistProcessor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use App\Dto\NoteSnapshot;
 use App\Entity\Note;
 use App\Entity\NoteLink;
 use App\Repository\NoteRepository;
@@ -19,7 +21,8 @@ class NoteProcessor implements ProcessorInterface
         private Security $security,
         private WikiLinkParser $wikiLinkParser,
         private NoteRepository $noteRepository,
-        private NoteVersionService $versionService
+        private NoteVersionService $versionService,
+        private PersistProcessor $persistProcessor,
     ) {
     }
 
@@ -51,21 +54,32 @@ class NoteProcessor implements ProcessorInterface
             return $data;
         }
 
-        // Создать версию перед обновлением (PUT)
-        if ($operation->getMethod() === 'PUT' && $data->getId()) {
-            // Создаем версию с учетом debounce
-            $this->versionService->createVersion($data);
+        $previousState = null;
+        $newState = null;
+        if (
+            $operation->getMethod() === 'PUT'
+            && isset($context['previous_data'])
+            && $context['previous_data'] instanceof Note
+        ) {
+            $previousState = NoteSnapshot::fromNote($context['previous_data']);
+            $newState = NoteSnapshot::fromNote($data);
         }
 
-        $this->em->persist($data);
-        $this->em->flush();
+        $note = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
+        if (!$note instanceof Note) {
+            return null;
+        }
+
+        if ($previousState !== null && $newState !== null) {
+            $this->versionService->recordVersionOnUpdate($note, $previousState, $newState);
+        }
 
         // Parse and update wiki-links after save (POST/PUT)
-        if (in_array($operation->getMethod(), ['POST', 'PUT'])) {
-            $this->updateWikiLinks($data);
+        if (in_array($operation->getMethod(), ['POST', 'PUT'], true)) {
+            $this->updateWikiLinks($note);
         }
 
-        return $data;
+        return $note;
     }
 
     private function updateWikiLinks(Note $note): void

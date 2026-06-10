@@ -2,6 +2,7 @@
 
 namespace App\Service;
 
+use App\Dto\NoteSnapshot;
 use App\Entity\Note;
 use App\Entity\NoteVersion;
 use App\Repository\NoteVersionRepository;
@@ -10,7 +11,7 @@ use Doctrine\ORM\EntityManagerInterface;
 class NoteVersionService
 {
     private const MAX_VERSIONS = 50;
-    private const DEBOUNCE_SECONDS = 30;
+    private const CONSOLIDATION_WINDOW_MINUTES = 5;
 
     public function __construct(
         private EntityManagerInterface $entityManager,
@@ -19,74 +20,52 @@ class NoteVersionService
     }
 
     /**
-     * Создание новой версии заметки с учетом debounce
+     * Фиксирует версию при обновлении заметки: сравнивает состояние до и после сохранения.
      */
-    public function createVersion(Note $note): ?NoteVersion
+    public function recordVersionOnUpdate(Note $note, NoteSnapshot $previousState, NoteSnapshot $newState): ?NoteVersion
     {
-        if ($this->shouldSkipVersion($note)) {
+        if ($previousState->equals($newState)) {
             return null;
         }
 
-        $version = new NoteVersion();
-        $version->setNote($note);
-        $version->setTitle($note->getTitle());
-        $version->setContent($note->getContent());
+        $lastVersion = $this->versionRepository->findLastVersionForNote($note);
 
-        $this->entityManager->persist($version);
-        $this->entityManager->flush();
-
-        $this->cleanupOldVersions($note);
-
-        return $version;
-    }
-
-    /**
-     * Проверка нужно ли пропустить создание версии (debounce)
-     */
-    private function shouldSkipVersion(Note $note): bool
-    {
-        $lastVersion = $this->versionRepository->createQueryBuilder('v')
-            ->where('v.note = :note')
-            ->setParameter('note', $note)
-            ->orderBy('v.createdAt', 'DESC')
-            ->setMaxResults(1)
-            ->getQuery()
-            ->getOneOrNullResult();
-
-        if (!$lastVersion) {
-            return false;
+        if ($lastVersion !== null && NoteSnapshot::fromVersion($lastVersion)->equals($newState)) {
+            return null;
         }
 
-        $now = new \DateTimeImmutable();
-        $lastVersionTime = $lastVersion->getCreatedAt();
-        $diff = $now->getTimestamp() - $lastVersionTime->getTimestamp();
-
-        return $diff < self::DEBOUNCE_SECONDS;
-    }
-
-    /**
-     * Удаление старых версий, если их больше MAX_VERSIONS
-     */
-    private function cleanupOldVersions(Note $note): void
-    {
-        $versions = $this->versionRepository->createQueryBuilder('v')
-            ->where('v.note = :note')
-            ->setParameter('note', $note)
-            ->orderBy('v.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-
-        $count = count($versions);
-        
-        if ($count > self::MAX_VERSIONS) {
-            $versionsToDelete = array_slice($versions, self::MAX_VERSIONS);
-            
-            foreach ($versionsToDelete as $version) {
-                $this->entityManager->remove($version);
-            }
-            
+        if ($lastVersion !== null && $this->isWithinConsolidationWindow($lastVersion)) {
+            $lastVersion->setTitle($previousState->title);
+            $lastVersion->setContent($previousState->content);
             $this->entityManager->flush();
+
+            return $lastVersion;
         }
+
+        return $this->createVersion($note, $previousState);
+    }
+
+    /**
+     * Сохраняет текущее состояние заметки перед восстановлением из версии.
+     */
+    public function backupCurrentState(Note $note): ?NoteVersion
+    {
+        $currentState = NoteSnapshot::fromNote($note);
+        $lastVersion = $this->versionRepository->findLastVersionForNote($note);
+
+        if ($lastVersion !== null && NoteSnapshot::fromVersion($lastVersion)->equals($currentState)) {
+            return null;
+        }
+
+        if ($lastVersion !== null && $this->isWithinConsolidationWindow($lastVersion)) {
+            $lastVersion->setTitle($currentState->title);
+            $lastVersion->setContent($currentState->content);
+            $this->entityManager->flush();
+
+            return $lastVersion;
+        }
+
+        return $this->createVersion($note, $currentState);
     }
 
     /**
@@ -94,14 +73,7 @@ class NoteVersionService
      */
     public function getVersionsForNote(Note $note, int $limit = 50, int $offset = 0): array
     {
-        return $this->versionRepository->createQueryBuilder('v')
-            ->where('v.note = :note')
-            ->setParameter('note', $note)
-            ->orderBy('v.createdAt', 'DESC')
-            ->setMaxResults($limit)
-            ->setFirstResult($offset)
-            ->getQuery()
-            ->getResult();
+        return $this->versionRepository->findByNote($note, $limit, $offset);
     }
 
     /**
@@ -109,12 +81,7 @@ class NoteVersionService
      */
     public function countVersionsForNote(Note $note): int
     {
-        return $this->versionRepository->createQueryBuilder('v')
-            ->select('COUNT(v.id)')
-            ->where('v.note = :note')
-            ->setParameter('note', $note)
-            ->getQuery()
-            ->getSingleScalarResult();
+        return $this->versionRepository->countByNote($note);
     }
 
     /**
@@ -123,7 +90,7 @@ class NoteVersionService
     public function restoreFromVersion(Note $note, NoteVersion $version, bool $createNewVersion = true): Note
     {
         if ($createNewVersion) {
-            $this->createVersion($note);
+            $this->backupCurrentState($note);
         }
 
         $note->setTitle($version->getTitle());
@@ -149,5 +116,46 @@ class NoteVersionService
         $this->entityManager->flush();
 
         return $newNote;
+    }
+
+    private function createVersion(Note $note, NoteSnapshot $snapshot): NoteVersion
+    {
+        $version = new NoteVersion();
+        $version->setNote($note);
+        $version->setTitle($snapshot->title);
+        $version->setContent($snapshot->content);
+
+        $this->entityManager->persist($version);
+        $this->entityManager->flush();
+
+        $this->cleanupOldVersions($note);
+
+        return $version;
+    }
+
+    private function isWithinConsolidationWindow(NoteVersion $version): bool
+    {
+        $now = new \DateTimeImmutable();
+        $diffSeconds = $now->getTimestamp() - $version->getCreatedAt()->getTimestamp();
+
+        return $diffSeconds < self::CONSOLIDATION_WINDOW_MINUTES * 60;
+    }
+
+    /**
+     * Удаление старых версий, если их больше MAX_VERSIONS
+     */
+    private function cleanupOldVersions(Note $note): void
+    {
+        $excessVersions = $this->versionRepository->findExcessVersions($note, self::MAX_VERSIONS);
+
+        if ($excessVersions === []) {
+            return;
+        }
+
+        foreach ($excessVersions as $version) {
+            $this->entityManager->remove($version);
+        }
+
+        $this->entityManager->flush();
     }
 }
