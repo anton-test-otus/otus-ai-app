@@ -1,13 +1,13 @@
 <template>
   <div class="version-history-panel">
     <div class="versions-header flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold">Version History</h3>
+      <h3 class="section-title">История версий</h3>
       <Button
         icon="pi pi-times"
         text
         rounded
         @click="$emit('close')"
-        v-tooltip.top="'Close'"
+        v-tooltip.top="'Закрыть'"
       />
     </div>
 
@@ -17,51 +17,49 @@
 
     <div
       v-else-if="error"
-      class="text-sm text-red-600 bg-red-50 p-3 rounded-md"
+      class="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-md"
     >
       {{ error }}
     </div>
 
-    <div
+    <EmptyState
       v-else-if="!versions || versions.length === 0"
-      class="text-sm text-surface-500 dark:text-surface-400 text-center py-4"
-    >
-      No versions yet
-    </div>
+      icon="pi-history"
+      title="Версий пока нет"
+      compact
+    />
 
-    <div v-else class="versions-list space-y-2">
-      <!-- Current version indicator -->
-      <div class="current-version-indicator px-3 py-2 bg-blue-50 border border-blue-200 rounded-md">
+    <div v-else class="versions-list stack-items">
+      <div class="current-version-indicator px-3 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
         <div class="flex items-center gap-2">
-          <i class="pi pi-file text-blue-600" />
-          <span class="text-sm font-medium text-blue-900">Current Version</span>
+          <i class="pi pi-file text-blue-600 dark:text-blue-400" />
+          <span class="text-sm font-medium text-blue-900 dark:text-blue-100">Текущая версия</span>
         </div>
       </div>
 
-      <!-- Version items -->
       <div
         v-for="(version, index) in versions"
         :key="version.id"
-        class="version-item px-3 py-3 rounded-md cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors border"
-        :class="selectedVersion?.id === version.id ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500' : 'border-gray-200'"
+        class="version-item px-3 py-3 rounded-md cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors border app-border"
+        :class="selectedVersion?.id === version.id ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-500' : ''"
         @click="selectVersion(version)"
       >
         <div class="flex items-start justify-between">
-          <div class="flex-1">
+          <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2 mb-1">
               <i class="pi pi-history text-sm text-primary-500" />
-              <span class="text-xs text-gray-500">
-                {{ formatDate(version.createdAt) }}
+              <span class="text-xs text-muted">
+                {{ formatRelativeDate(version.createdAt) }}
               </span>
             </div>
-            <p class="text-sm font-medium text-gray-900 truncate">
+            <p class="text-sm font-medium text-surface-900 dark:text-surface-100 truncate">
               {{ version.title }}
             </p>
-            <p class="text-xs text-gray-600 mt-1">
-              Version {{ versions.length - index }} of {{ versions.length }}
+            <p class="text-xs text-muted mt-1">
+              Версия {{ versions.length - index }} из {{ versions.length }}
             </p>
           </div>
-          <div class="flex items-center gap-1 ml-2">
+          <div class="flex items-center gap-1 ml-2 shrink-0">
             <Button
               v-if="selectedVersion?.id === version.id"
               icon="pi pi-eye"
@@ -69,7 +67,7 @@
               size="small"
               rounded
               @click.stop="showDiff"
-              v-tooltip.top="'View changes'"
+              v-tooltip.top="'Просмотр изменений'"
             />
             <Button
               icon="pi pi-history"
@@ -78,18 +76,17 @@
               rounded
               severity="success"
               @click.stop="confirmRestore(version)"
-              v-tooltip.top="'Restore this version'"
+              v-tooltip.top="'Восстановить эту версию'"
             />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Diff viewer modal -->
     <Dialog
       v-model:visible="showDiffModal"
       modal
-      :header="`Changes from ${selectedVersion ? formatDate(selectedVersion.createdAt) : ''}`"
+      :header="diffModalHeader"
       :style="MODAL_WIDTH.xl"
       :breakpoints="{ '960px': '90vw', '640px': '95vw' }"
     >
@@ -102,7 +99,6 @@
       />
     </Dialog>
 
-    <!-- Restore confirmation modal -->
     <RestoreVersionModal
       v-model="showRestoreModal"
       :version-date="versionToRestore?.createdAt || ''"
@@ -112,11 +108,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { MODAL_WIDTH } from '@/constants/modal'
+import { formatRelativeDate } from '@/utils/date'
 import { useNoteVersions } from '@/composables/useNoteVersions'
 import VersionDiff from './VersionDiff.vue'
 import RestoreVersionModal from './RestoreVersionModal.vue'
@@ -142,31 +140,10 @@ const showDiffModal = ref(false)
 const showRestoreModal = ref(false)
 const versionToRestore = ref<NoteVersion | null>(null)
 
-// Format date for display
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-
-  if (diffInHours < 1) {
-    const minutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-    return `${minutes} minute${minutes !== 1 ? 's' : ''} ago`
-  } else if (diffInHours < 24) {
-    const hours = Math.floor(diffInHours)
-    return `${hours} hour${hours !== 1 ? 's' : ''} ago`
-  } else if (diffInHours < 168) {
-    const days = Math.floor(diffInHours / 24)
-    return `${days} day${days !== 1 ? 's' : ''} ago`
-  } else {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date)
-  }
-}
+const diffModalHeader = computed(() => {
+  if (!selectedVersion.value) return 'Изменения'
+  return `Изменения от ${formatRelativeDate(selectedVersion.value.createdAt)}`
+})
 
 const selectVersion = (version: NoteVersion) => {
   selectedVersion.value = version
@@ -195,7 +172,6 @@ const handleRestore = async (mode: RestoreVersionRequest['mode']) => {
   }
 }
 
-// Watch for noteId changes and fetch versions
 watch(
   () => props.noteId,
   async (newNoteId) => {
@@ -203,7 +179,7 @@ watch(
       await fetchVersions(newNoteId)
     }
   },
-  { immediate: true }
+  { immediate: true },
 )
 </script>
 

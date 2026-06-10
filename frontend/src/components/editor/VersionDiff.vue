@@ -9,11 +9,11 @@
             'px-4 py-2 text-sm font-medium border',
             viewMode === 'inline'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              : 'app-chrome text-surface-700 dark:text-surface-300 border-surface-300 dark:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800'
           ]"
           class="rounded-l-md"
         >
-          Inline
+          Подсветка
         </button>
         <button
           @click="viewMode = 'unified'"
@@ -21,20 +21,20 @@
             'px-4 py-2 text-sm font-medium border-t border-b border-r',
             viewMode === 'unified'
               ? 'bg-blue-600 text-white border-blue-600'
-              : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+              : 'app-chrome text-surface-700 dark:text-surface-300 border-surface-300 dark:border-surface-600 hover:bg-surface-50 dark:hover:bg-surface-800'
           ]"
           class="rounded-r-md"
         >
-          Unified
+          Построчно
         </button>
       </div>
     </div>
 
     <!-- Diff Content -->
-    <div class="diff-container bg-white rounded-lg border border-gray-200 p-4 overflow-auto">
+    <div class="diff-container app-chrome rounded-lg border app-border content-padding overflow-auto">
       <!-- Title Diff -->
       <div v-if="titleDiff.length > 0" class="mb-6">
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">Title Changes:</h3>
+        <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Изменения заголовка:</h3>
         <div v-if="viewMode === 'inline'" class="inline-diff">
           <span
             v-for="(part, index) in titleDiff"
@@ -53,7 +53,7 @@
 
       <!-- Content Diff -->
       <div>
-        <h3 class="text-sm font-semibold text-gray-700 mb-2">Content Changes:</h3>
+        <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Изменения содержимого:</h3>
         <div v-if="viewMode === 'inline'" class="inline-diff whitespace-pre-wrap font-mono text-sm">
           <span
             v-for="(part, index) in contentDiff"

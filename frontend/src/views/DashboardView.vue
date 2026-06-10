@@ -18,18 +18,19 @@
         <Message severity="error">{{ notesStore.error }}</Message>
       </div>
 
-      <div v-else-if="notesStore.notes && notesStore.notes.length === 0" class="text-center py-12">
-        <i class="pi pi-book text-6xl text-muted mb-4"></i>
-        <p class="empty-state-text mb-4">
-          {{ emptyMessage }}
-        </p>
-        <Button
-          v-if="!foldersStore.selectedFolderId"
-          label="Создать первую заметку"
-          icon="pi pi-plus"
-          @click="createNewNote"
-        />
-      </div>
+      <EmptyState
+        v-else-if="notesStore.notes && notesStore.notes.length === 0"
+        :icon="foldersStore.selectedFolderId ? 'pi-folder-open' : 'pi-book'"
+        :title="emptyMessage"
+      >
+        <template #actions>
+          <Button
+            :label="foldersStore.selectedFolderId ? 'Создать заметку' : 'Создать первую заметку'"
+            icon="pi pi-plus"
+            @click="createNewNote"
+          />
+        </template>
+      </EmptyState>
 
       <div v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
@@ -109,6 +110,7 @@ import Paginator from 'primevue/paginator'
 import ConfirmDialog from 'primevue/confirmdialog'
 import Toast from 'primevue/toast'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import type { Note } from '@/types'

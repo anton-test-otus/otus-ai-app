@@ -1824,3 +1824,20 @@ Frontend:
 **Результат:** единая база spacing/palette/modals; остались локализация версий, touch actions, `EmptyState`.
 
 ---
+
+## Промпт 58
+
+> Да
+
+### Выполненные действия:
+
+**PR 2: локализация версий, touch actions, EmptyState**
+- `utils/date.ts`: `formatRelativeDate`, `formatDateTime` (`ru-RU`)
+- Локализация `VersionHistoryPanel`, `VersionDiff`; `RestoreVersionModal` переписан на PrimeVue `Dialog` + `RadioButton`
+- `EmptyState.vue`: dashboard (все заметки / пустая папка), корзина, поиск без результатов
+- Touch actions на карточках dashboard: media queries `(hover: hover/none)`, min 44px для кнопок
+- `PHASES.md`: блок «Консистентность» и **Фаза 5** отмечены завершёнными
+
+**Результат:** фаза 5 полностью закрыта; следующий этап — фаза 6 (финальная доработка).
+
+---

@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h1 class="page-title">Корзина</h1>
-            <p class="page-subtitle">
+            <p v-if="!isLoading && notes.length > 0" class="page-subtitle">
               Заметки хранятся 30 дней после удаления
             </p>
           </div>
@@ -31,16 +31,12 @@
         </div>
       </div>
 
-      <!-- Empty State -->
-      <div v-if="!isLoading && notes && notes.length === 0" class="text-center py-12">
-        <i class="pi pi-trash text-6xl text-muted mb-4"></i>
-        <h3 class="empty-state-title mb-2">
-          Корзина пуста
-        </h3>
-        <p class="page-subtitle mt-0">
-          Удалённые заметки будут отображаться здесь
-        </p>
-      </div>
+      <EmptyState
+        v-if="!isLoading && notes && notes.length === 0"
+        icon="pi-trash"
+        title="Корзина пуста"
+        description="Удалённые заметки будут отображаться здесь"
+      />
 
       <!-- Loading State -->
       <div v-if="isLoading" class="flex justify-center py-12">
@@ -155,6 +151,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
+import EmptyState from '@/components/common/EmptyState.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
 import { getNoteContentPreview } from '@/utils/note';

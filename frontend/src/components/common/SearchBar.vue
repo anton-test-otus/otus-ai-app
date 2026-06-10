@@ -77,10 +77,13 @@
         <ProgressSpinner style="width: 50px; height: 50px" stroke-width="4" />
       </div>
 
-      <div v-else-if="fullResults.length === 0" class="text-center py-8 text-surface-500 dark:text-surface-400">
-        <i class="pi pi-search text-4xl mb-4" />
-        <p>Ничего не найдено</p>
-      </div>
+      <EmptyState
+        v-else-if="fullResults.length === 0"
+        icon="pi-search"
+        title="Ничего не найдено"
+        description="Попробуйте изменить запрос или проверить орфографию"
+        compact
+      />
 
       <div v-else>
         <div class="space-y-4">
@@ -144,6 +147,7 @@ import Tag from 'primevue/tag';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';
+import EmptyState from '@/components/common/EmptyState.vue';
 import { searchApi } from '../../api/search';
 import type { Note } from '../../types';
 
