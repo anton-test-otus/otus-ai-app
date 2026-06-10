@@ -387,3 +387,23 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Проблема 14: Не отображались версии заметки в UI
+
+**Дата:** 2026-06-10
+
+**Симптомы:**
+- Панель «Version History» не показывала версии (пустой список или 404)
+- В БД версии создавались при автосохранении
+- `GET /api/note_versions` работал, `GET /api/notes/{noteId}/versions` — нет
+
+**Причина:**
+В `NoteVersion.php` для кастомных операций с `{noteId}` в URI не были настроены `uriVariables` (Link). API Platform 4 возвращал 404 `Invalid uri variables` до вызова провайдера.
+
+**Решение:**
+Добавлены `uriVariables` с `Link(fromClass: Note::class, toProperty: 'note')` для списка версий и restore.
+
+**Затронутые файлы:**
+- `backend/src/Entity/NoteVersion.php`
+
+---
+

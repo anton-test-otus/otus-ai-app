@@ -5,6 +5,7 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
 use App\Repository\NoteVersionRepository;
 use App\State\NoteVersionCollectionProvider;
@@ -23,12 +24,19 @@ use Symfony\Component\Uid\Uuid;
         new GetCollection(provider: NoteVersionCollectionProvider::class),
         new GetCollection(
             uriTemplate: '/notes/{noteId}/versions',
+            uriVariables: [
+                'noteId' => new Link(fromClass: Note::class, toProperty: 'note'),
+            ],
             provider: NoteVersionsByNoteProvider::class,
             name: 'note_versions_by_note'
         ),
         new Get(),
         new Post(
             uriTemplate: '/notes/{noteId}/versions/{id}/restore',
+            uriVariables: [
+                'noteId' => new Link(fromClass: Note::class, toProperty: 'note'),
+                'id' => new Link(fromClass: NoteVersion::class),
+            ],
             processor: RestoreVersionProcessor::class,
             name: 'restore_version'
         ),
