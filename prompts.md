@@ -1776,3 +1776,19 @@ Frontend:
 **Результат:** единая система боковых панелей; на планшете редактор не зажат двумя fixed-панелями; floating-кнопки убраны.
 
 ---
+
+## Промпт 55
+
+> Продолжаем задачу 5, обсудим изменения по типографике (согласованы: 4 уровня breakpoints, семантические классы, navbar без изменений; карточки — меньший шрифт, кнопки внизу справа, без HTML в preview)
+
+### Выполненные действия:
+
+- Добавлены семантические классы типографики и spacing в `main.css`: `.page-container`, `.page-title`, `.page-subtitle`, `.section-title`, `.panel-padding`, `.content-padding`, `.card-title`, `.card-preview`, `.note-card-*` и др.
+- Применены классы в Dashboard, Trash, Tags, Admin, NoteView, sidebar, metadata, editor/preview
+- Карточки заметок на dashboard: flex-layout с кнопками в нижнем правом углу независимо от длины текста
+- `getNoteContentPreview()` в `utils/note.ts` — очистка HTML-тегов, markdown-символов и нормализация пробелов для preview
+- Обновлён `PHASES.md` — блок «Типографика и масштаб» завершён
+
+**Результат:** единая адаптивная типографика на всех экранах; карточки заметок показывают чистый текст без HTML.
+
+---

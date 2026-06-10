@@ -1,7 +1,7 @@
 <template>
   <div class="tags-panel">
     <div class="tags-header flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold">Теги</h3>
+      <h3 class="section-title">Теги</h3>
       <Button
         icon="pi pi-cog"
         text

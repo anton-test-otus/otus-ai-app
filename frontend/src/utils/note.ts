@@ -29,3 +29,16 @@ export function normalizeNote(raw: Note): Note {
     folderId: getNoteFolderId(raw),
   }
 }
+
+/** Plain-text preview for note lists: strips HTML/markdown and normalizes whitespace */
+export function getNoteContentPreview(content: string, maxLength = 150): string {
+  const withoutHtml = content.replace(/<[^>]*>/g, ' ')
+  const withoutMarkdown = withoutHtml.replace(/[#*`\[\]]/g, '')
+  const plainText = withoutMarkdown.replace(/\s+/g, ' ').trim()
+
+  if (plainText.length <= maxLength) {
+    return plainText
+  }
+
+  return `${plainText.substring(0, maxLength)}...`
+}

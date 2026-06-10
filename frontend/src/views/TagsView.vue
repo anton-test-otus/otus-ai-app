@@ -1,11 +1,11 @@
 <template>
   <AppLayout>
-    <div class="tags-management p-6 max-w-4xl mx-auto">
-    <div class="header mb-6">
-      <div class="mb-4">
-        <h1 class="text-3xl font-bold">Управление тегами</h1>
+    <div class="page-container-narrow">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Управление тегами</h1>
       </div>
-      <p class="text-surface-600 dark:text-surface-400">
+      <p class="page-subtitle mt-0 text-surface-600 dark:text-surface-400">
         Управляйте тегами для организации ваших заметок
       </p>
     </div>

@@ -1,11 +1,11 @@
 <template>
   <AppLayout>
-  <div class="container mx-auto px-4 py-8 max-w-7xl">
-    <div class="mb-6">
-      <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+  <div class="page-container">
+    <div class="page-header">
+      <h1 class="page-title">
         Управление пользователями
       </h1>
-      <p class="text-gray-600 dark:text-gray-400">
+      <p class="page-subtitle">
         Просмотр, активация/деактивация и удаление пользователей
       </p>
     </div>

@@ -8,7 +8,7 @@
     drawer-title="Метаданные"
   >
     <template #header>
-      <h3 class="text-lg font-semibold mb-4">Метаданные</h3>
+      <h3 class="section-title mb-4">Метаданные</h3>
     </template>
     <slot />
   </AppSidePanel>

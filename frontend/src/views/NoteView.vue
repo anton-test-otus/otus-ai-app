@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="h-[calc(100vh-4rem)] flex flex-col">
       <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+        <div class="max-w-full mx-auto note-toolbar-padding">
           <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <Button
@@ -16,7 +16,7 @@
               <InputText
                 v-model="noteTitle"
                 placeholder="Название заметки"
-                class="w-full min-w-0 text-xl lg:text-2xl font-bold"
+                class="w-full min-w-0 note-title-field"
                 @input="handleTitleChange"
               />
             </div>

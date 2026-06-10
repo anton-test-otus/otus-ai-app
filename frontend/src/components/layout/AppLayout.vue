@@ -8,7 +8,7 @@
         v-if="authStore.isAuthenticated && showSidebar"
         ref="sidebarRef"
       >
-        <div class="space-y-6">
+        <div class="stack-sections">
           <FolderTree
             :folders="foldersStore.folderTree"
             @select="handleFolderSelect"

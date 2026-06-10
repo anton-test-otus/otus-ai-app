@@ -1,5 +1,5 @@
 <template>
-  <div class="markdown-preview h-full overflow-auto bg-white dark:bg-gray-800 p-3 md:p-4 3xl:p-6">
+  <div class="markdown-preview h-full overflow-auto bg-white dark:bg-gray-800 content-padding">
     <div ref="rootRef" class="milkdown-preview-root markdown-prose min-h-full w-full max-w-full" />
   </div>
 </template>

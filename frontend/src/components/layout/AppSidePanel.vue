@@ -13,7 +13,7 @@
           SIDEBAR_WIDTH_CLASS,
         ]"
       >
-        <div class="p-4 lg:p-5 3xl:p-6 min-w-0">
+        <div class="panel-padding min-w-0">
           <slot name="header" />
           <slot />
         </div>

@@ -1,12 +1,12 @@
 <template>
   <AppLayout>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="page-container">
       <!-- Header -->
-      <div class="mb-8">
+      <div class="page-header">
         <div class="flex items-center justify-between">
           <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Корзина</h1>
-            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
+            <h1 class="page-title">Корзина</h1>
+            <p class="page-subtitle">
               Заметки хранятся 30 дней после удаления
             </p>
           </div>
@@ -34,10 +34,10 @@
       <!-- Empty State -->
       <div v-if="!isLoading && notes && notes.length === 0" class="text-center py-12">
         <i class="pi pi-trash text-6xl text-gray-400 mb-4"></i>
-        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <h3 class="empty-state-title mb-2">
           Корзина пуста
         </h3>
-        <p class="text-gray-600 dark:text-gray-400">
+        <p class="page-subtitle mt-0">
           Удалённые заметки будут отображаться здесь
         </p>
       </div>
@@ -66,11 +66,11 @@
 
               <!-- Note Content -->
               <div class="flex-1 min-w-0">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 class="card-title mb-2">
                   {{ note.title }}
                 </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3">
-                  {{ note.content }}
+                <p class="card-preview line-clamp-2 mb-3">
+                  {{ getNoteContentPreview(note.content) }}
                 </p>
                 <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
                   <span v-if="note.folder" class="flex items-center gap-1">
@@ -157,6 +157,7 @@ import { ref, onMounted } from 'vue';
 import AppLayout from '@/components/layout/AppLayout.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
+import { getNoteContentPreview } from '@/utils/note';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Checkbox from 'primevue/checkbox';

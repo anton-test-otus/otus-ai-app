@@ -1,7 +1,7 @@
 <template>
   <div class="folder-tree">
     <div class="folder-tree-header flex justify-between items-center mb-4">
-      <h3 class="text-lg font-semibold">Папки</h3>
+      <h3 class="section-title">Папки</h3>
       <Button
         icon="pi pi-plus"
         size="small"

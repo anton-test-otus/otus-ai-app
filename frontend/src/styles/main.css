@@ -32,6 +32,108 @@
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700;
   }
+
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 lg:py-6 3xl:py-8;
+  }
+
+  .page-container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5 lg:py-6 3xl:py-8;
+  }
+
+  .page-header {
+    @apply mb-4 md:mb-5 lg:mb-6;
+  }
+
+  .page-title {
+    @apply text-xl md:text-2xl 3xl:text-3xl font-bold text-gray-900 dark:text-white;
+  }
+
+  .page-subtitle {
+    @apply mt-1 md:mt-2 text-sm md:text-base text-gray-600 dark:text-gray-400;
+  }
+
+  .section-title {
+    @apply text-base lg:text-lg font-semibold;
+  }
+
+  .panel-padding {
+    @apply p-4 lg:p-5 3xl:p-6;
+  }
+
+  .content-padding {
+    @apply p-3 md:p-4 3xl:p-6;
+  }
+
+  .note-toolbar-padding {
+    @apply px-4 sm:px-6 lg:px-8 py-3 md:py-4;
+  }
+
+  .note-title-field {
+    @apply text-lg md:text-xl 3xl:text-2xl font-bold;
+  }
+
+  .stack-sections {
+    @apply space-y-4 md:space-y-5 lg:space-y-6;
+  }
+
+  .card-title {
+    @apply text-sm md:text-base lg:text-lg font-semibold text-gray-900 dark:text-white truncate;
+  }
+
+  .card-meta {
+    @apply text-xs md:text-sm text-gray-500 dark:text-gray-400;
+  }
+
+  .card-preview {
+    @apply text-xs md:text-sm text-gray-600 dark:text-gray-300 line-clamp-3;
+  }
+
+  .empty-state-title {
+    @apply text-base md:text-lg 3xl:text-xl font-semibold text-gray-900 dark:text-white;
+  }
+
+  .empty-state-text {
+    @apply text-base md:text-lg 3xl:text-xl text-gray-600 dark:text-gray-400;
+  }
+
+  .note-card.p-card {
+    @apply h-full flex flex-col;
+  }
+
+  .note-card .p-card-body {
+    @apply h-full flex flex-col flex-1;
+  }
+
+  .note-card .p-card-content {
+    @apply flex flex-col flex-1 pb-0;
+  }
+
+  .note-card .p-card-footer {
+    @apply pt-0 border-t-0;
+  }
+
+  .note-card-body {
+    @apply flex flex-col h-full min-h-[9rem];
+  }
+
+  .note-card-preview {
+    @apply flex-1 min-h-0;
+  }
+
+  .note-card-actions {
+    @apply flex justify-end gap-1 shrink-0;
+  }
+}
+
+/* Note card: actions in footer, no extra gap from content bottom padding */
+.note-card .p-card-content {
+  padding-bottom: 0 !important;
+}
+
+.note-card .p-card-footer {
+  padding-top: 0 !important;
+  border-top: none !important;
 }
 
 /* PrimeVue overlays z-index fix */

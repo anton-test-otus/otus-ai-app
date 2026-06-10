@@ -1,11 +1,11 @@
 <template>
   <AppLayout>
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+    <div class="page-container">
+      <div class="page-header">
+        <h1 class="page-title">
           {{ pageTitle }}
         </h1>
-        <p class="mt-2 text-gray-600 dark:text-gray-400">
+        <p class="page-subtitle">
           {{ pageSubtitle }}
         </p>
       </div>
@@ -20,7 +20,7 @@
 
       <div v-else-if="notesStore.notes && notesStore.notes.length === 0" class="text-center py-12">
         <i class="pi pi-book text-6xl text-gray-400 mb-4"></i>
-        <p class="text-xl text-gray-600 dark:text-gray-400 mb-4">
+        <p class="empty-state-text mb-4">
           {{ emptyMessage }}
         </p>
         <Button
@@ -32,38 +32,34 @@
       </div>
 
       <div v-else>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
           <Card
             v-for="note in notesStore.notes"
             :key="note.id"
-            class="cursor-pointer hover:shadow-lg transition-shadow"
+            class="note-card cursor-pointer hover:shadow-lg transition-shadow"
             @click="openNote(note.id)"
           >
-            <template #title>
-              <div class="text-lg font-semibold text-gray-900 dark:text-white truncate">
-                {{ note.title }}
-              </div>
-            </template>
-            <template #subtitle>
-              <div class="flex items-center justify-between gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <span class="shrink-0">{{ formatDate(note.updatedAt) }}</span>
-                <span
-                  v-if="!foldersStore.selectedFolderId && note.folder"
-                  class="flex items-center gap-1 min-w-0 max-w-[55%]"
-                  v-tooltip.top="note.folder.name"
-                >
-                  <i class="pi pi-folder shrink-0 text-xs" />
-                  <span class="truncate">{{ note.folder.name }}</span>
-                </span>
-              </div>
-            </template>
             <template #content>
-              <div class="text-gray-600 dark:text-gray-300 line-clamp-3">
-                {{ getPreview(note.content) }}
+              <div class="note-card-body">
+                <h3 class="card-title">{{ note.title }}</h3>
+                <div class="card-meta flex items-center justify-between gap-2 mt-1 mb-2">
+                  <span class="shrink-0">{{ formatDate(note.updatedAt) }}</span>
+                  <span
+                    v-if="!foldersStore.selectedFolderId && note.folder"
+                    class="flex items-center gap-1 min-w-0 max-w-[55%]"
+                    v-tooltip.top="note.folder.name"
+                  >
+                    <i class="pi pi-folder shrink-0 text-xs" />
+                    <span class="truncate">{{ note.folder.name }}</span>
+                  </span>
+                </div>
+                <div class="card-preview note-card-preview">
+                  {{ getNoteContentPreview(note.content) }}
+                </div>
               </div>
             </template>
             <template #footer>
-              <div class="flex justify-end space-x-2">
+              <div class="note-card-actions">
                 <Button
                   icon="pi pi-pencil"
                   text
@@ -116,6 +112,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import type { Note } from '@/types'
+import { getNoteContentPreview } from '@/utils/note'
 
 const router = useRouter()
 const notesStore = useNotesStore()
@@ -236,17 +233,4 @@ function formatDate(dateString: string): string {
   return date.toLocaleDateString('ru-RU')
 }
 
-function getPreview(content: string): string {
-  const plainText = content.replace(/[#*`\[\]]/g, '').trim()
-  return plainText.length > 150 ? plainText.substring(0, 150) + '...' : plainText
-}
 </script>
-
-<style scoped>
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-</style>

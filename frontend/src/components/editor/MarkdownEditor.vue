@@ -24,7 +24,7 @@
     </div>
     
     <!-- Редактор -->
-    <div ref="editorRef" class="milkdown-editor markdown-prose flex-1 overflow-auto p-3 md:p-4 3xl:p-6"></div>
+    <div ref="editorRef" class="milkdown-editor markdown-prose flex-1 overflow-auto content-padding"></div>
 
     <Dialog
       v-model:visible="showLinkDialog"
