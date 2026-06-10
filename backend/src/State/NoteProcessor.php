@@ -11,6 +11,7 @@ use App\Entity\NoteLink;
 use App\Repository\NoteRepository;
 use App\Service\WikiLinkParser;
 use App\Service\NoteVersionService;
+use App\Service\UserSettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -22,6 +23,7 @@ class NoteProcessor implements ProcessorInterface
         private WikiLinkParser $wikiLinkParser,
         private NoteRepository $noteRepository,
         private NoteVersionService $versionService,
+        private UserSettingsResolver $userSettingsResolver,
         private PersistProcessor $persistProcessor,
     ) {
     }
@@ -74,11 +76,17 @@ class NoteProcessor implements ProcessorInterface
         }
 
         if ($previousState !== null && $newState !== null && $previousNoteUpdatedAt !== null) {
+            $noteOwner = $note->getUser();
+            $consolidationWindowMinutes = $noteOwner !== null
+                ? $this->userSettingsResolver->resolveVersionConsolidationWindowMinutes($noteOwner)
+                : 5;
+
             $this->versionService->recordVersionOnUpdate(
                 $note,
                 $previousState,
                 $newState,
                 $previousNoteUpdatedAt,
+                $consolidationWindowMinutes,
             );
         }
 

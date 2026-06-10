@@ -72,9 +72,22 @@
           />
 
           <div v-if="authStore.isAuthenticated" class="flex items-center space-x-2">
-            <span class="text-sm text-surface-700 dark:text-surface-300 hidden lg:inline">
+            <Button
+              icon="pi pi-cog"
+              severity="secondary"
+              text
+              rounded
+              class="md:hidden"
+              @click="router.push({ name: 'settings' })"
+              v-tooltip.bottom="'Настройки'"
+            />
+            <button
+              type="button"
+              class="text-sm text-surface-700 dark:text-surface-300 hidden md:inline hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+              @click="router.push({ name: 'settings' })"
+            >
               {{ authStore.user?.email }}
-            </span>
+            </button>
             <Button
               icon="pi pi-sign-out"
               label="Выход"

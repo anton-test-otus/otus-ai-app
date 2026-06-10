@@ -3,11 +3,16 @@
 namespace App\EventListener;
 
 use App\Entity\User;
+use App\Service\UserSettingsResolver;
 use Lexik\Bundle\JWTAuthenticationBundle\Event\AuthenticationSuccessEvent;
-use Symfony\Component\Security\Core\User\UserInterface;
 
 class JWTCreatedListener
 {
+    public function __construct(
+        private UserSettingsResolver $userSettingsResolver,
+    ) {
+    }
+
     public function onAuthenticationSuccess(AuthenticationSuccessEvent $event): void
     {
         $data = $event->getData();
@@ -22,6 +27,8 @@ class JWTCreatedListener
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'isActive' => $user->isActive(),
+            'settings' => $this->userSettingsResolver->getSettingsForUser($user),
+            'defaults' => $this->userSettingsResolver->getDefaults(),
         ];
 
         $event->setData($data);

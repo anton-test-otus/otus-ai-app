@@ -1,13 +1,19 @@
-.PHONY: help init build up down restart logs install migrate admin cache-clear test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart
+.PHONY: help init build up down restart status logs install migrate admin cache-clear test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres
 
 help:
 	@echo "Доступные команды:"
 	@echo "  make init             - Первоначальная настройка проекта (копирование .env, сборка, запуск)"
 	@echo "  make build            - Сборка Docker образов"
+	@echo "  make rebuild          - Сборка Docker образов без кэша"
 	@echo "  make up               - Запуск контейнеров"
 	@echo "  make down             - Остановка контейнеров"
 	@echo "  make restart          - Перезапуск контейнеров"
+	@echo "  make status           - Статус контейнеров проекта"
 	@echo "  make logs             - Просмотр логов (Ctrl+C для выхода)"
+	@echo "  make console-php      - Интерактивная оболочка в контейнере PHP"
+	@echo "  make console-nginx    - Интерактивная оболочка в контейнере Nginx"
+	@echo "  make console-cron     - Интерактивная оболочка в контейнере Cron"
+	@echo "  make console-postgres - Интерактивная оболочка в контейнере PostgreSQL"
 	@echo "  make install          - Установка зависимостей Composer (backend)"
 	@echo "  make migrate          - Применение миграций базы данных"
 	@echo "  make admin            - Создание администратора из .env"
@@ -20,7 +26,10 @@ help:
 	@echo "  make frontend-restart - Перезапуск Vite dev server"
 	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
 
-init:
+volumes-init:
+	@mkdir -p volumes/postgres volumes/node_modules
+
+init: volumes-init
 	@echo "Инициализация проекта..."
 	@if [ ! -f backend/.env ]; then \
 		echo "Копирование .env.example в .env..."; \
@@ -48,9 +57,12 @@ init:
 	@echo "💻 Frontend dev server на http://localhost:5173"
 
 build:
+	docker compose build
+
+rebuild:
 	docker compose build --no-cache
 
-up:
+up: volumes-init
 	docker compose up -d
 
 down:
@@ -60,8 +72,23 @@ restart:
 	@$(MAKE) down
 	@$(MAKE) up
 
+status:
+	@docker compose ps
+
 logs:
 	docker compose logs -f
+
+console-php:
+	docker exec -it otus_php sh
+
+console-nginx:
+	docker exec -it otus_nginx sh
+
+console-cron:
+	docker exec -it otus_cron sh
+
+console-postgres:
+	docker exec -it otus_postgres sh
 
 install:
 	docker exec otus_php composer install --no-interaction
@@ -103,8 +130,10 @@ frontend-restart: frontend-kill
 	@$(MAKE) frontend-dev
 
 clean:
-	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и volumes!"
+	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и данные в volumes/"
 	@echo "Нажмите Ctrl+C для отмены или Enter для продолжения..."
 	@read dummy
-	docker compose down -v --rmi all
+	docker compose down --rmi all
+	rm -rf volumes/postgres volumes/node_modules
+	@$(MAKE) volumes-init
 	@echo "✅ Очистка завершена"

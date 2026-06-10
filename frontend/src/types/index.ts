@@ -1,10 +1,27 @@
+export interface UserSettings {
+  autosaveDelaySeconds: number | null
+  versionConsolidationWindowMinutes: number | null
+}
+
+export interface UserDefaults {
+  autosaveDelaySeconds: number
+  versionConsolidationWindowMinutes: number
+}
+
 export interface User {
   id: string
   email: string
   roles: string[]
   isActive: boolean
   createdAt?: string
+  settings?: UserSettings
+  defaults?: UserDefaults
   statistics?: UserStatistics
+}
+
+export interface UpdateUserSettingsRequest {
+  autosaveDelaySeconds?: number | null
+  versionConsolidationWindowMinutes?: number | null
 }
 
 export interface UserStatistics {

@@ -2,8 +2,11 @@
 
 namespace App\Controller;
 
+use App\Dto\UpdateUserSettingsDto;
 use App\Entity\User;
+use App\Service\UserSettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Serializer\SerializerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,7 +23,9 @@ class AuthController extends AbstractController
         private EntityManagerInterface $entityManager,
         private UserPasswordHasherInterface $passwordHasher,
         private ValidatorInterface $validator,
-        private JWTTokenManagerInterface $jwtManager
+        private JWTTokenManagerInterface $jwtManager,
+        private UserSettingsResolver $userSettingsResolver,
+        private SerializerInterface $serializer,
     ) {
     }
 
@@ -70,12 +75,7 @@ class AuthController extends AbstractController
 
         return $this->json([
             'token' => $token,
-            'user' => [
-                'id' => $user->getId()->toRfc4122(),
-                'email' => $user->getEmail(),
-                'roles' => $user->getRoles(),
-                'isActive' => $user->isActive(),
-            ]
+            'user' => $this->serializeUser($user),
         ], Response::HTTP_CREATED);
     }
 
@@ -88,12 +88,72 @@ class AuthController extends AbstractController
             return $this->json(['error' => 'Не авторизован'], Response::HTTP_UNAUTHORIZED);
         }
 
-        return $this->json([
+        return $this->json($this->serializeUser($user));
+    }
+
+    #[Route('/settings', name: 'api_auth_settings', methods: ['PATCH'])]
+    public function updateSettings(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Не авторизован'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
+
+        /** @var UpdateUserSettingsDto $dto */
+        $dto = $this->serializer->deserialize(
+            json_encode($data),
+            UpdateUserSettingsDto::class,
+            'json',
+        );
+
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+            }
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        }
+
+        if (array_key_exists('autosaveDelaySeconds', $data)) {
+            $user->setAutosaveDelaySeconds($dto->autosaveDelaySeconds);
+        }
+
+        if (array_key_exists('versionConsolidationWindowMinutes', $data)) {
+            $user->setVersionConsolidationWindowMinutes($dto->versionConsolidationWindowMinutes);
+        }
+
+        $entityErrors = $this->validator->validate($user);
+        if (count($entityErrors) > 0) {
+            $errorMessages = [];
+            foreach ($entityErrors as $error) {
+                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+            }
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        }
+
+        $this->entityManager->flush();
+
+        return $this->json($this->serializeUser($user));
+    }
+
+    private function serializeUser(User $user): array
+    {
+        return [
             'id' => $user->getId()->toRfc4122(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
             'isActive' => $user->isActive(),
             'createdAt' => $user->getCreatedAt()?->format('c'),
-        ]);
+            'settings' => $this->userSettingsResolver->getSettingsForUser($user),
+            'defaults' => $this->userSettingsResolver->getDefaults(),
+        ];
     }
 }

@@ -9,6 +9,8 @@
 /frontend/dist/
 /frontend/.env
 /frontend/.env.local
+/volumes/*
+!/volumes/.gitkeep
 .DS_Store
 .idea/
 .vscode/

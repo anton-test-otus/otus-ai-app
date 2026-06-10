@@ -1,5 +1,11 @@
 import { apiClient } from './client'
-import type { LoginRequest, RegisterRequest, AuthResponse, User } from '@/types'
+import type {
+  LoginRequest,
+  RegisterRequest,
+  AuthResponse,
+  User,
+  UpdateUserSettingsRequest,
+} from '@/types'
 
 export const authApi = {
   async login(credentials: LoginRequest): Promise<AuthResponse> {
@@ -16,5 +22,9 @@ export const authApi = {
 
   async refresh(refreshToken: string): Promise<AuthResponse> {
     return apiClient.post<AuthResponse>('/auth/refresh', { refreshToken })
+  },
+
+  async updateSettings(settings: UpdateUserSettingsRequest): Promise<User> {
+    return apiClient.patch<User>('/auth/settings', settings)
   },
 }

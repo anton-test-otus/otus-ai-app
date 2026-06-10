@@ -50,6 +50,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[Groups(['user:read'])]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(nullable: true)]
+    #[Assert\Choice(choices: [5, 10, 15, 30, 60])]
+    private ?int $autosaveDelaySeconds = null;
+
+    #[ORM\Column(nullable: true)]
+    #[Assert\Choice(choices: [1, 2, 3, 4, 5, 10, 15, 30, 60])]
+    private ?int $versionConsolidationWindowMinutes = null;
+
     #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $notes;
 
@@ -147,6 +155,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    public function getAutosaveDelaySeconds(): ?int
+    {
+        return $this->autosaveDelaySeconds;
+    }
+
+    public function setAutosaveDelaySeconds(?int $autosaveDelaySeconds): static
+    {
+        $this->autosaveDelaySeconds = $autosaveDelaySeconds;
+        return $this;
+    }
+
+    public function getVersionConsolidationWindowMinutes(): ?int
+    {
+        return $this->versionConsolidationWindowMinutes;
+    }
+
+    public function setVersionConsolidationWindowMinutes(?int $versionConsolidationWindowMinutes): static
+    {
+        $this->versionConsolidationWindowMinutes = $versionConsolidationWindowMinutes;
         return $this;
     }
 

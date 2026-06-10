@@ -78,6 +78,8 @@ erDiagram
         string password
         string role
         boolean is_active
+        int autosave_delay_seconds
+        int version_consolidation_window_minutes
         timestamp created_at
     }
     
@@ -169,6 +171,7 @@ otus-ai-app/
 │   │   │   ├── DashboardView.vue
 │   │   │   ├── NoteView.vue
 │   │   │   ├── TrashView.vue
+│   │   │   ├── SettingsView.vue
 │   │   │   └── admin/
 │   │   │       └── UsersView.vue
 │   │   ├── api/
@@ -238,7 +241,7 @@ otus-ai-app/
 
 ### 6. Автосохранение с уведомлением
 
-- Composable `useAutosave` с настраиваемым debounce (по умолчанию: 2 секунды)
+- Composable `useAutosave` с настраиваемым debounce (по умолчанию: 10 секунд; настраивается пользователем в `/settings`)
 - Индикатор статуса в UI: "Сохранение...", "Сохранено", "Ошибка"
 - Оптимистичные обновления UI
 - Обнаружение конфликтов (опционально: last-write-wins или запрос)
@@ -261,7 +264,8 @@ otus-ai-app/
 | POST | `/api/auth/register` | Регистрация пользователя |
 | POST | `/api/auth/login` | Получение JWT токена |
 | POST | `/api/auth/refresh` | Обновление JWT токена |
-| GET | `/api/auth/me` | Получение текущего пользователя |
+| GET | `/api/auth/me` | Получение текущего пользователя (включая `settings` и `defaults`) |
+| PATCH | `/api/auth/settings` | Обновление настроек текущего пользователя |
 
 ### Заметки
 

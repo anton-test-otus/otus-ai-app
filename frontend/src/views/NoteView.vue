@@ -211,6 +211,7 @@ import LinkNoteModal from '@/components/LinkNoteModal.vue'
 import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
+import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
 
@@ -220,6 +221,7 @@ const toast = useToast()
 const confirm = useConfirm()
 const notesStore = useNotesStore()
 const { isBelow3xl } = useBreakpoints()
+const { effectiveAutosaveDelayMs } = useUserSettings()
 
 const noteTitle = ref('')
 const noteContent = ref('')
@@ -295,7 +297,7 @@ async function saveNoteIfChanged() {
 
 const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = useAutosave(
   saveNoteIfChanged,
-  { hasChanges: hasUnsavedChanges },
+  { hasChanges: hasUnsavedChanges, delay: effectiveAutosaveDelayMs },
 )
 
 async function leaveNote(): Promise<void> {

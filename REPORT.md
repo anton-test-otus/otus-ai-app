@@ -448,3 +448,23 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Пользовательские настройки автосохранения и версионирования
+
+**Задача:** Вынести интервалы автосохранения и версионирования из захардкоженных/env-only значений в настраиваемые параметры пользователя.
+
+**Решение:**
+- Nullable-поля в `users`: `autosave_delay_seconds` (5/10/15/30/60), `version_consolidation_window_minutes` (1–60)
+- `NULL` в БД = использовать системный default из env (не записывать число при «очистке» селекта — при смене env default подхватится автоматически)
+- `UserSettingsResolver` — единая точка разрешения effective-значений
+- `NoteVersionService` принимает окно консолидации параметром (per-user через `NoteProcessor`)
+- API: `GET /api/auth/me` и `PATCH /api/auth/settings` возвращают `settings` + `defaults`
+- Frontend: `SettingsView`, `useUserSettings`, клик по email в navbar → `/settings`
+
+**Затронутые файлы:**
+- `backend/src/Entity/User.php`, `backend/migrations/Version20260609085911.php`
+- `backend/src/Service/UserSettingsResolver.php`, `backend/src/Dto/UpdateUserSettingsDto.php`
+- `backend/src/Controller/AuthController.php`, `backend/src/EventListener/JWTCreatedListener.php`
+- `frontend/src/views/SettingsView.vue`, `frontend/src/composables/useUserSettings.ts`
+
+---
+

@@ -38,7 +38,7 @@ final class Version20260609085911 extends AbstractMigration
         $this->addSql('CREATE TABLE tags (id UUID NOT NULL, name VARCHAR(50) NOT NULL, user_id UUID NOT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE INDEX IDX_6FBC9426A76ED395 ON tags (user_id)');
         $this->addSql('CREATE UNIQUE INDEX user_tag_unique ON tags (user_id, name)');
-        $this->addSql('CREATE TABLE users (id UUID NOT NULL, email VARCHAR(180) NOT NULL, roles JSON NOT NULL, password VARCHAR(255) NOT NULL, is_active BOOLEAN NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY (id))');
+        $this->addSql('CREATE TABLE users (id UUID NOT NULL, email VARCHAR(180) NOT NULL, roles JSON NOT NULL, password VARCHAR(255) NOT NULL, is_active BOOLEAN NOT NULL, created_at TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, autosave_delay_seconds INT DEFAULT NULL, version_consolidation_window_minutes INT DEFAULT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_1483A5E9E7927C74 ON users (email)');
         $this->addSql('ALTER TABLE folders ADD CONSTRAINT FK_FE37D30FA76ED395 FOREIGN KEY (user_id) REFERENCES users (id) NOT DEFERRABLE');
         $this->addSql('ALTER TABLE folders ADD CONSTRAINT FK_FE37D30F727ACA70 FOREIGN KEY (parent_id) REFERENCES folders (id) ON DELETE CASCADE NOT DEFERRABLE');

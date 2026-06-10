@@ -15,11 +15,7 @@ class NoteVersionService
     public function __construct(
         private EntityManagerInterface $entityManager,
         private NoteVersionRepository $versionRepository,
-        private int $consolidationWindowMinutes,
     ) {
-        if ($this->consolidationWindowMinutes < 1) {
-            $this->consolidationWindowMinutes = 5;
-        }
     }
 
     /**
@@ -31,6 +27,7 @@ class NoteVersionService
         NoteSnapshot $previousState,
         NoteSnapshot $newState,
         \DateTimeImmutable $previousNoteUpdatedAt,
+        int $consolidationWindowMinutes,
     ): ?NoteVersion {
         if ($previousState->equals($newState)) {
             return null;
@@ -42,7 +39,7 @@ class NoteVersionService
             return null;
         }
 
-        if ($this->isWithinConsolidationWindow($previousNoteUpdatedAt)) {
+        if ($this->isWithinConsolidationWindow($previousNoteUpdatedAt, $consolidationWindowMinutes)) {
             return null;
         }
 
@@ -132,12 +129,14 @@ class NoteVersionService
     /**
      * Окно консолидации: если заметка менялась менее N минут назад — новую версию не создаём.
      */
-    private function isWithinConsolidationWindow(\DateTimeImmutable $previousNoteUpdatedAt): bool
-    {
+    private function isWithinConsolidationWindow(
+        \DateTimeImmutable $previousNoteUpdatedAt,
+        int $consolidationWindowMinutes,
+    ): bool {
         $now = new \DateTimeImmutable();
         $diffSeconds = $now->getTimestamp() - $previousNoteUpdatedAt->getTimestamp();
 
-        return $diffSeconds < $this->consolidationWindowMinutes * 60;
+        return $diffSeconds < $consolidationWindowMinutes * 60;
     }
 
     /**

@@ -4,5 +4,9 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
 }
 
 export const appConfig = {
-  autosaveDebounceMs: parsePositiveInt(import.meta.env.VITE_AUTOSAVE_DEBOUNCE_MS, 2000),
+  autosaveDelaySeconds: parsePositiveInt(import.meta.env.VITE_AUTOSAVE_DELAY_SECONDS, 10),
+  versionConsolidationWindowMinutes: parsePositiveInt(
+    import.meta.env.VITE_VERSION_CONSOLIDATION_WINDOW_MINUTES,
+    5,
+  ),
 } as const

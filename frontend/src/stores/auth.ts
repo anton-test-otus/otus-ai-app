@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
-import type { User, LoginRequest, RegisterRequest } from '@/types'
+import type { User, LoginRequest, RegisterRequest, UpdateUserSettingsRequest } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -76,6 +76,20 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function updateSettings(settings: UpdateUserSettingsRequest) {
+    isLoading.value = true
+    error.value = null
+    try {
+      user.value = await authApi.updateSettings(settings)
+      return true
+    } catch (err: any) {
+      error.value = err.message || 'Ошибка сохранения настроек'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function logout() {
     user.value = null
     token.value = null
@@ -94,6 +108,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     fetchUser,
+    updateSettings,
     logout,
   }
 })

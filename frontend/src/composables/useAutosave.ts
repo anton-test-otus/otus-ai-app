@@ -1,10 +1,10 @@
-import { ref } from 'vue'
+import { ref, watch, toValue, type MaybeRefOrGetter } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { appConfig } from '@/config/app'
 import type { SaveStatus } from '@/types'
 
 interface UseAutosaveOptions {
-  delay?: number
+  delay?: MaybeRefOrGetter<number>
   hasChanges?: () => boolean
 }
 
@@ -12,11 +12,12 @@ export function useAutosave(
   saveFunction: () => Promise<void>,
   options: UseAutosaveOptions = {},
 ) {
-  const delay = options.delay ?? appConfig.autosaveDebounceMs
+  const delaySource = options.delay ?? appConfig.autosaveDelaySeconds * 1000
   const saveStatus = ref<SaveStatus>('idle')
   const saveError = ref<string | null>(null)
 
   let activeSave: Promise<void> | null = null
+  let currentDelay = toValue(delaySource)
 
   async function performSave(): Promise<void> {
     if (options.hasChanges && !options.hasChanges()) {
@@ -38,7 +39,7 @@ export function useAutosave(
           if (saveStatus.value === 'saved') {
             saveStatus.value = 'idle'
           }
-        }, delay)
+        }, currentDelay)
       } catch (error: unknown) {
         saveStatus.value = 'error'
         saveError.value = error instanceof Error ? error.message : 'Ошибка сохранения'
@@ -51,7 +52,19 @@ export function useAutosave(
     return activeSave
   }
 
-  const debouncedSave = useDebounceFn(() => performSave(), delay)
+  let debouncedSave = useDebounceFn(() => performSave(), currentDelay)
+
+  watch(
+    () => toValue(delaySource),
+    (newDelay) => {
+      if (newDelay === currentDelay) {
+        return
+      }
+      debouncedSave.cancel()
+      currentDelay = newDelay
+      debouncedSave = useDebounceFn(() => performSave(), currentDelay)
+    },
+  )
 
   function triggerSave() {
     if (saveStatus.value !== 'saving') {

@@ -1,3 +1,5 @@
 parameters:
+    env(AUTOSAVE_DELAY_SECONDS): '10'
     env(NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES): '5'
-    note_version.consolidation_window_minutes: '%env(int:NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES)%'
+    user_settings.default_autosave_delay_seconds: '%env(int:AUTOSAVE_DELAY_SECONDS)%'
+    user_settings.default_version_consolidation_window_minutes: '%env(int:NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES)%'

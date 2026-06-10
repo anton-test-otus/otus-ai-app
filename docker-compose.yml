@@ -7,7 +7,7 @@ services:
       POSTGRES_USER: ${DB_USER:-otus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-otus_password}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./volumes/postgres:/var/lib/postgresql/data
     networks:
       - otus_network
     healthcheck:
@@ -51,7 +51,7 @@ services:
     working_dir: /app
     volumes:
       - ./frontend:/app
-      - node_modules:/app/node_modules
+      - ./volumes/node_modules:/app/node_modules
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
@@ -78,10 +78,6 @@ services:
       - otus_network
     command: >
       sh -c "echo '0 0 * * * cd /var/www/backend && php bin/console app:cleanup-trash >> /var/log/cron.log 2>&1' | crontab - && crond -f -l 2"
-
-volumes:
-  postgres_data:
-  node_modules:
 
 networks:
   otus_network:
