@@ -56,3 +56,80 @@ body > .p-autocomplete-panel {
   z-index: 9999 !important;
   position: fixed !important;
 }
+
+/* Markdown preview: rendered HTML injected via innerHTML */
+.markdown-preview-content :where(p, ul, ol, blockquote, pre, table) {
+  margin-top: 0.75em;
+  margin-bottom: 0.75em;
+}
+
+.markdown-preview-content :where(h1, h2, h3, h4, h5, h6) {
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.markdown-preview-content :where(h1) { font-size: 1.875rem; }
+.markdown-preview-content :where(h2) { font-size: 1.5rem; }
+.markdown-preview-content :where(h3) { font-size: 1.25rem; }
+
+.markdown-preview-content :where(a) {
+  color: rgb(37 99 235);
+  text-decoration: underline;
+}
+
+.dark .markdown-preview-content :where(a) {
+  color: rgb(96 165 250);
+}
+
+.markdown-preview-content :where(code) {
+  border-radius: 0.25rem;
+  background-color: rgb(243 244 246);
+  padding: 0.125rem 0.25rem;
+  font-size: 0.875em;
+}
+
+.dark .markdown-preview-content :where(code) {
+  background-color: rgb(17 24 39);
+}
+
+.markdown-preview-content :where(pre) {
+  overflow-x: auto;
+  border-radius: 0.375rem;
+  background-color: rgb(243 244 246);
+  padding: 0.75rem 1rem;
+}
+
+.dark .markdown-preview-content :where(pre) {
+  background-color: rgb(17 24 39);
+}
+
+.markdown-preview-content :where(pre code) {
+  background: transparent;
+  padding: 0;
+}
+
+.markdown-preview-content :where(blockquote) {
+  border-left: 4px solid rgb(209 213 219);
+  padding-left: 1rem;
+  font-style: italic;
+}
+
+.dark .markdown-preview-content :where(blockquote) {
+  border-left-color: rgb(75 85 99);
+}
+
+.markdown-preview-content :where(ul) {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+}
+
+.markdown-preview-content :where(ol) {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+}
+
+.markdown-preview-content :where(strong) {
+  font-weight: 700;
+}

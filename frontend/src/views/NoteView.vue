@@ -69,7 +69,7 @@
         </div>
       </div>
 
-      <div v-if="notesStore.isLoading" class="flex-1 flex items-center justify-center">
+      <div v-if="!isNoteReady" class="flex-1 flex items-center justify-center">
         <ProgressSpinner />
       </div>
 
@@ -77,13 +77,14 @@
         <Message severity="error">{{ notesStore.error }}</Message>
       </div>
 
-      <div v-else class="flex-1 overflow-hidden flex">
-        <div class="flex-1 flex flex-col">
+      <div v-else class="flex-1 overflow-hidden flex min-w-0">
+        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
           <div
             v-if="viewMode === 'edit'"
-            class="flex-1 border-r border-gray-200 dark:border-gray-700 overflow-auto"
+            class="flex-1 min-w-0 overflow-hidden flex flex-col"
           >
             <MarkdownEditor
+              ref="editorRef"
               v-model="noteContent"
               @update:modelValue="handleContentChange"
               @insertWikiLink="showLinkModal = true"
@@ -92,7 +93,7 @@
 
           <div
             v-else
-            class="flex-1 overflow-auto"
+            class="flex-1 min-w-0 overflow-auto"
           >
             <MarkdownPreview :content="noteContent" />
           </div>
@@ -192,6 +193,8 @@ const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
+const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
+const isNoteReady = ref(false)
 
 const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
   if (!notesStore.currentNote) return
@@ -206,6 +209,7 @@ const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
 
 onMounted(async () => {
   const noteId = route.params.id as string
+  isNoteReady.value = false
   
   // Определяем режим просмотра из query параметра или по умолчанию 'preview'
   const modeFromQuery = route.query.mode as ViewMode | undefined
@@ -219,6 +223,7 @@ onMounted(async () => {
     noteContent.value = note.content
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
+    isNoteReady.value = true
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -229,6 +234,15 @@ onMounted(async () => {
     router.push({ name: 'dashboard' })
   }
 })
+
+watch(
+  () => route.query.mode,
+  (mode) => {
+    if (mode === 'edit' || mode === 'preview') {
+      viewMode.value = mode
+    }
+  },
+)
 
 function handleTitleChange() {
   triggerSave()
@@ -256,6 +270,11 @@ function switchToEditMode() {
 }
 
 function switchToPreviewMode() {
+  const latestContent = editorRef.value?.getMarkdown()
+  if (latestContent !== undefined) {
+    noteContent.value = latestContent
+  }
+
   viewMode.value = 'preview'
   router.replace({ 
     name: 'note', 

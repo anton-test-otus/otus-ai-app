@@ -1,15 +1,19 @@
 <template>
-  <div class="markdown-preview prose dark:prose-invert max-w-none p-4 overflow-auto h-full">
-    <div v-html="renderedContent" @click="handleClick"></div>
+  <div class="markdown-preview h-full overflow-auto bg-white dark:bg-gray-800 p-4">
+    <div ref="rootRef" class="milkdown-preview-root min-h-full w-full max-w-full" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue';
-import { marked } from 'marked';
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'primevue/usetoast';
+import { Editor, editorViewOptionsCtx, rootCtx } from '@milkdown/core';
+import { commonmark } from '@milkdown/preset-commonmark';
+import { gfm } from '@milkdown/preset-gfm';
+import { replaceAll } from '@milkdown/utils';
 import { wikiLinksApi, type ResolvedWikiLink } from '@/api/wikilinks';
+import { createWikiLinkPattern, parseWikiLinks, type ParsedWikiLink } from '@/lib/wikiLinks';
 
 interface Props {
   content: string;
@@ -18,121 +22,120 @@ interface Props {
 const props = defineProps<Props>();
 const router = useRouter();
 const toast = useToast();
+const rootRef = ref<HTMLElement>();
+let editor: Editor | null = null;
+let isReady = false;
 
 const resolvedLinks = ref<Map<string, ResolvedWikiLink | ResolvedWikiLink[] | null>>(new Map());
 
-interface ParsedWikiLink {
-  raw: string;
-  title: string;
-  alias: string | null;
-  placeholder: string;
-}
+async function resolveLinks(links: ParsedWikiLink[]) {
+  if (links.length === 0) {
+    resolvedLinks.value = new Map();
+    return;
+  }
 
-const parseWikiLinks = (content: string): { content: string; links: ParsedWikiLink[] } => {
-  const links: ParsedWikiLink[] = [];
-  const pattern = /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g;
-  let index = 0;
-  
-  const processedContent = content.replace(pattern, (raw, title, alias) => {
-    const placeholder = `__WIKILINK_${index}__`;
-    links.push({
-      raw,
-      title: title.trim(),
-      alias: alias ? alias.trim() : null,
-      placeholder,
-    });
-    index++;
-    return placeholder;
-  });
-  
-  return { content: processedContent, links };
-};
+  const titles = [...new Set(links.map((l) => l.title.toLowerCase()))];
 
-const resolveLinks = async (links: ParsedWikiLink[]) => {
-  if (links.length === 0) return;
-  
-  const titles = [...new Set(links.map(l => l.title.toLowerCase()))];
-  
   try {
     const response = await wikiLinksApi.resolveWikiLinks(titles);
-    
-    // Convert response to case-insensitive map
     const newMap = new Map<string, ResolvedWikiLink | ResolvedWikiLink[] | null>();
     for (const [title, value] of Object.entries(response)) {
       newMap.set(title.toLowerCase(), value);
     }
-    
     resolvedLinks.value = newMap;
   } catch (error) {
     console.error('Failed to resolve wiki links:', error);
   }
-};
+}
 
-const renderWikiLink = (link: ParsedWikiLink): string => {
-  const displayText = link.alias || link.title;
-  const lowerTitle = link.title.toLowerCase();
+function createWikiLinkAnchor(title: string, alias: string | null): HTMLAnchorElement {
+  const anchor = document.createElement('a');
+  anchor.href = '#';
+  anchor.className = 'wiki-link';
+  anchor.textContent = alias || title;
+
+  const lowerTitle = title.toLowerCase();
   const resolved = resolvedLinks.value.get(lowerTitle);
-  
-  if (resolved === null || resolved === undefined) {
-    // Non-existent note - gray style (Notion-like)
-    return `<a href="#" class="wiki-link wiki-link-missing" data-title="${link.title}" data-link-type="missing">
-      <svg class="wiki-link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-      </svg>
-      ${displayText}
-    </a>`;
-  } else if (Array.isArray(resolved)) {
-    // Multiple notes - show as ambiguous
-    return `<a href="#" class="wiki-link wiki-link-ambiguous" data-title="${link.title}" data-link-type="ambiguous">
-      <svg class="wiki-link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-      </svg>
-      ${displayText}
-    </a>`;
-  } else {
-    // Existing note - blue link (Notion-like)
-    return `<a href="#" class="wiki-link wiki-link-exists" data-note-id="${resolved.id}" data-link-type="exists">
-      <svg class="wiki-link-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-        <polyline points="14 2 14 8 20 8"></polyline>
-      </svg>
-      ${displayText}
-    </a>`;
-  }
-};
 
-const renderedContent = computed(() => {
-  try {
-    // Parse wiki-links
-    const { content: processedContent, links } = parseWikiLinks(props.content);
-    
-    // Parse markdown
-    let html = marked.parse(processedContent) as string;
-    
-    // Replace placeholders with rendered wiki-links
-    for (const link of links) {
-      html = html.replace(link.placeholder, renderWikiLink(link));
-    }
-    
-    return html;
-  } catch (error) {
-    console.error('Markdown parsing error:', error);
-    return '<p>Ошибка отображения содержимого</p>';
+  if (resolved === null || resolved === undefined) {
+    anchor.classList.add('wiki-link-missing');
+    anchor.dataset.title = title;
+    anchor.dataset.linkType = 'missing';
+  } else if (Array.isArray(resolved)) {
+    anchor.classList.add('wiki-link-ambiguous');
+    anchor.dataset.title = title;
+    anchor.dataset.linkType = 'ambiguous';
+  } else {
+    anchor.classList.add('wiki-link-exists');
+    anchor.dataset.noteId = resolved.id;
+    anchor.dataset.linkType = 'exists';
   }
-});
+
+  return anchor;
+}
+
+function decorateWikiLinks() {
+  const root = rootRef.value;
+  if (!root) return;
+
+  const textNodes: Text[] = [];
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if (node.nodeValue?.includes('[[')) {
+      textNodes.push(node as Text);
+    }
+  }
+
+  for (const textNode of textNodes) {
+    const value = textNode.nodeValue ?? '';
+    const pattern = createWikiLinkPattern();
+
+    const fragment = document.createDocumentFragment();
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = pattern.exec(value)) !== null) {
+      if (match.index > lastIndex) {
+        fragment.appendChild(document.createTextNode(value.slice(lastIndex, match.index)));
+      }
+
+      fragment.appendChild(createWikiLinkAnchor(match[1].trim(), match[2]?.trim() || null));
+      lastIndex = match.index + match[0].length;
+    }
+
+    if (lastIndex === 0) continue;
+
+    if (lastIndex < value.length) {
+      fragment.appendChild(document.createTextNode(value.slice(lastIndex)));
+    }
+
+    textNode.parentNode?.replaceChild(fragment, textNode);
+  }
+}
+
+function syncContent(content: string) {
+  if (!editor || !isReady) return;
+
+  const links = parseWikiLinks(content ?? '');
+  editor.action(replaceAll(content ?? ''));
+
+  resolveLinks(links).then(async () => {
+    await nextTick();
+    requestAnimationFrame(() => decorateWikiLinks());
+  });
+}
 
 const handleClick = (event: MouseEvent) => {
   const target = event.target as HTMLElement;
   const link = target.closest('.wiki-link') as HTMLAnchorElement;
-  
   if (!link) return;
-  
+
   event.preventDefault();
-  
+
   const linkType = link.getAttribute('data-link-type');
-  
+
   if (linkType === 'exists') {
     const noteId = link.getAttribute('data-note-id');
     if (noteId) {
@@ -157,56 +160,142 @@ const handleClick = (event: MouseEvent) => {
   }
 };
 
-// Watch for content changes and resolve links
-watch(() => props.content, async () => {
-  const { links } = parseWikiLinks(props.content);
-  await resolveLinks(links);
-}, { immediate: true });
-
 onMounted(async () => {
-  const { links } = parseWikiLinks(props.content);
-  await resolveLinks(links);
+  if (!rootRef.value) return;
+
+  rootRef.value.addEventListener('click', handleClick);
+
+  try {
+    editor = await Editor.make()
+      .config((ctx) => {
+        ctx.set(rootCtx, rootRef.value!);
+        ctx.set(editorViewOptionsCtx, {
+          editable: () => false,
+          attributes: {
+            class: 'outline-none max-w-none cursor-default',
+          },
+        });
+      })
+      .use(commonmark)
+      .use(gfm)
+      .create();
+
+    isReady = true;
+    syncContent(props.content ?? '');
+  } catch (error) {
+    console.error('Failed to create Milkdown preview:', error);
+  }
+});
+
+watch(
+  () => props.content,
+  (content) => {
+    syncContent(content ?? '');
+  },
+);
+
+onBeforeUnmount(() => {
+  rootRef.value?.removeEventListener('click', handleClick);
+  editor?.destroy();
 });
 </script>
 
-<style scoped>
-.markdown-preview {
-  @apply bg-white dark:bg-gray-800;
+<style>
+.milkdown-preview-root .milkdown {
+  @apply h-full w-full max-w-full;
 }
 
-:deep(.wiki-link) {
-  @apply inline-flex items-center gap-1 no-underline border-b transition-colors;
+.milkdown-preview-root .milkdown .editor,
+.milkdown-preview-root .milkdown .ProseMirror {
+  @apply min-h-full w-full max-w-full outline-none;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror p {
+  @apply mb-4;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror strong {
+  @apply font-bold;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror em {
+  @apply italic;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror u {
+  @apply underline;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror h1 {
+  @apply text-3xl font-bold mb-4 mt-6;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror h2 {
+  @apply text-2xl font-bold mb-3 mt-5;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror h3 {
+  @apply text-xl font-bold mb-2 mt-4;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror ul {
+  @apply list-disc list-outside pl-6 mb-4;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror ol {
+  @apply list-decimal list-outside pl-6 mb-4;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror li {
+  @apply mb-1;
+}
+
+.milkdown-preview-root .wiki-link {
+  @apply no-underline border-b transition-colors;
   text-decoration: none !important;
 }
 
-:deep(.wiki-link-icon) {
-  @apply w-4 h-4 inline-block flex-shrink-0;
-}
-
-/* Existing links - Notion style (blue with underline) */
-:deep(.wiki-link-exists) {
+.milkdown-preview-root .wiki-link-exists {
   @apply text-blue-600 border-blue-300 hover:bg-blue-50;
 }
 
-:deep(.dark .wiki-link-exists) {
+.dark .milkdown-preview-root .wiki-link-exists {
   @apply text-blue-400 border-blue-700 hover:bg-blue-900/20;
 }
 
-/* Missing links - gray with dashed underline */
-:deep(.wiki-link-missing) {
+.milkdown-preview-root .wiki-link-missing {
   @apply text-gray-500 border-gray-300 border-dashed hover:bg-gray-50;
 }
 
-:deep(.dark .wiki-link-missing) {
+.dark .milkdown-preview-root .wiki-link-missing {
   @apply text-gray-500 border-gray-600 hover:bg-gray-800;
 }
 
-/* Ambiguous links - yellow/warning style */
-:deep(.wiki-link-ambiguous) {
+.milkdown-preview-root .wiki-link-ambiguous {
   @apply text-yellow-600 border-yellow-300 hover:bg-yellow-50;
 }
 
-:deep(.dark .wiki-link-ambiguous) {
+.dark .milkdown-preview-root .wiki-link-ambiguous {
   @apply text-yellow-500 border-yellow-700 hover:bg-yellow-900/20;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror blockquote {
+  @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror code {
+  @apply bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm font-mono;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror pre {
+  @apply bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror pre code {
+  @apply bg-transparent p-0;
+}
+
+.milkdown-preview-root .milkdown .ProseMirror a:not(.wiki-link) {
+  @apply text-blue-600 dark:text-blue-400 underline;
 }
 </style>

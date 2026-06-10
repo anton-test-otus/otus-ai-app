@@ -1,9 +1,9 @@
 <template>
   <div class="note-metadata">
-    <!-- Desktop: Fixed right panel -->
+    <!-- Desktop: side panel in flex layout -->
     <div
       v-if="!isMobile"
-      class="hidden lg:block fixed right-0 top-32 bottom-0 w-80 bg-surface-0 dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 z-10"
+      class="hidden lg:flex lg:flex-col w-80 shrink-0 bg-surface-0 dark:bg-surface-900 border-l border-surface-200 dark:border-surface-700 overflow-hidden"
     >
       <div class="h-full overflow-y-auto p-6">
         <h3 class="text-lg font-semibold mb-4">Метаданные</h3>
@@ -12,7 +12,7 @@
     </div>
 
     <!-- Mobile: Toggle button -->
-    <div v-else class="lg:hidden border-t border-surface-200 dark:border-surface-700 mt-4">
+    <div v-else class="lg:hidden border-t border-surface-200 dark:border-surface-700 mt-4 w-full">
       <Button
         :label="showMetadata ? 'Скрыть метаданные' : 'Показать метаданные'"
         :icon="showMetadata ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"

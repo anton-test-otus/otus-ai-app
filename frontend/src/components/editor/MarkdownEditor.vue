@@ -5,29 +5,76 @@
       <button
         v-for="tool in tools"
         :key="tool.name"
+        @mousedown.prevent
         @click="applyFormat(tool.command)"
         :title="tool.title"
         class="toolbar-button p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
         type="button"
       >
-        <i :class="tool.icon"></i>
+        <span
+          v-if="tool.label"
+          class="toolbar-label"
+          :class="tool.labelClass"
+        >{{ tool.label }}</span>
+        <i v-else :class="tool.icon"></i>
       </button>
     </div>
     
     <!-- Редактор -->
     <div ref="editorRef" class="milkdown-editor flex-1 overflow-auto"></div>
+
+    <Dialog
+      v-model:visible="showLinkDialog"
+      modal
+      header="Вставить ссылку"
+      :style="{ width: '90vw', maxWidth: '480px' }"
+      @hide="resetLinkDialog"
+    >
+      <div class="space-y-3">
+        <label for="link-url-input" class="text-sm font-medium">URL:</label>
+        <InputText
+          id="link-url-input"
+          v-model="linkUrl"
+          placeholder="https://example.com"
+          class="w-full"
+          autofocus
+          @keyup.enter="confirmLink"
+        />
+      </div>
+      <template #footer>
+        <Button label="Отмена" severity="secondary" text @click="showLinkDialog = false" />
+        <Button label="Вставить" :disabled="!linkUrl.trim()" @click="confirmLink" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { Editor, editorViewCtx, rootCtx } from '@milkdown/core'
+import Dialog from 'primevue/dialog'
+import InputText from 'primevue/inputtext'
+import Button from 'primevue/button'
+import { Editor, editorViewCtx, rootCtx, commandsCtx } from '@milkdown/core'
+import type { CmdKey } from '@milkdown/core'
 import { commonmark } from '@milkdown/preset-commonmark'
+import {
+  toggleStrongCommand,
+  toggleEmphasisCommand,
+  toggleInlineCodeCommand,
+  toggleLinkCommand,
+  wrapInBulletListCommand,
+  wrapInOrderedListCommand,
+  wrapInBlockquoteCommand,
+  wrapInHeadingCommand,
+} from '@milkdown/preset-commonmark'
 import { gfm } from '@milkdown/preset-gfm'
 import { history } from '@milkdown/plugin-history'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { clipboard } from '@milkdown/plugin-clipboard'
-import { replaceAll } from '@milkdown/utils'
+import { replaceAll, getMarkdown } from '@milkdown/utils'
+import { DOMParser } from '@milkdown/prose/model'
+import { TextSelection } from '@milkdown/prose/state'
+import { wikiLinkDecorationPlugin } from './wikiLinkDecorationPlugin'
 
 interface Props {
   modelValue: string
@@ -46,20 +93,44 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const editorRef = ref<HTMLElement>()
+const showLinkDialog = ref(false)
+const linkUrl = ref('')
 let editor: Editor | null = null
 let isUpdating = false
+let lastEmittedMarkdown: string | null = null
+let savedSelection: { from: number; to: number } | null = null
+
+function getCurrentMarkdown(): string {
+  if (!editor) return ''
+  try {
+    return editor.action(getMarkdown())
+  } catch {
+    return ''
+  }
+}
+
+function syncExternalContent(markdown: string) {
+  if (!editor) return
+
+  isUpdating = true
+  lastEmittedMarkdown = markdown
+  editor.action(replaceAll(markdown))
+  nextTick(() => {
+    isUpdating = false
+  })
+}
 
 const tools = [
-  { name: 'bold', icon: 'pi pi-bold', title: 'Жирный (Ctrl+B)', command: 'bold' },
-  { name: 'italic', icon: 'pi pi-italic', title: 'Курсив (Ctrl+I)', command: 'italic' },
-  { name: 'underline', icon: 'pi pi-underline', title: 'Подчеркнутый', command: 'underline' },
+  { name: 'bold', label: 'B', labelClass: 'font-bold', title: 'Жирный (Ctrl+B)', command: 'bold' },
+  { name: 'italic', label: 'I', labelClass: 'italic', title: 'Курсив (Ctrl+I)', command: 'italic' },
+  { name: 'underline', label: 'U', labelClass: 'underline', title: 'Подчеркнутый', command: 'underline' },
   { name: 'code', icon: 'pi pi-code', title: 'Код', command: 'code' },
   { name: 'link', icon: 'pi pi-link', title: 'Ссылка', command: 'link' },
   { name: 'wiki-link', icon: 'pi pi-file', title: 'Ссылка на заметку', command: 'wiki_link' },
   { name: 'list', icon: 'pi pi-list', title: 'Список', command: 'bullet_list' },
   { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: 'Нумерованный список', command: 'ordered_list' },
   { name: 'quote', icon: 'pi pi-comments', title: 'Цитата', command: 'blockquote' },
-  { name: 'heading', icon: 'pi pi-heading', title: 'Заголовок', command: 'heading' },
+  { name: 'heading', label: 'H', labelClass: 'font-semibold', title: 'Заголовок', command: 'heading' },
 ]
 
 onMounted(async () => {
@@ -71,9 +142,14 @@ onMounted(async () => {
         ctx.set(rootCtx, editorRef.value!)
         
         ctx.get(listenerCtx).markdownUpdated((_ctx, markdown) => {
-          if (!isUpdating) {
-            emit('update:modelValue', markdown)
-          }
+          if (isUpdating) return
+
+          isUpdating = true
+          lastEmittedMarkdown = markdown
+          emit('update:modelValue', markdown)
+          nextTick(() => {
+            isUpdating = false
+          })
         })
       })
       .use(commonmark)
@@ -81,15 +157,18 @@ onMounted(async () => {
       .use(history)
       .use(listener)
       .use(clipboard)
+      .use(wikiLinkDecorationPlugin)
       .create()
 
     // Устанавливаем начальное значение
     await nextTick()
     if (props.modelValue && editor) {
-      isUpdating = true
-      editor.action(replaceAll(props.modelValue))
-      isUpdating = false
+      syncExternalContent(props.modelValue)
+    } else {
+      lastEmittedMarkdown = props.modelValue
     }
+
+    editor.action((ctx) => ctx.get(editorViewCtx)).focus()
   } catch (error) {
     console.error('Failed to create Milkdown editor:', error)
   }
@@ -98,18 +177,14 @@ onMounted(async () => {
 watch(
   () => props.modelValue,
   (newValue) => {
-    if (editor && !isUpdating) {
-      try {
-        isUpdating = true
-        editor.action(replaceAll(newValue))
-      } catch (error) {
-        console.error('Failed to update editor content:', error)
-      } finally {
-        setTimeout(() => {
-          isUpdating = false
-        }, 100)
-      }
+    if (!editor || isUpdating) return
+    if (newValue === lastEmittedMarkdown) return
+    if (newValue === getCurrentMarkdown()) {
+      lastEmittedMarkdown = newValue
+      return
     }
+
+    syncExternalContent(newValue)
   }
 )
 
@@ -119,16 +194,16 @@ const applyFormat = (command: string) => {
   try {
     switch (command) {
       case 'bold':
-        wrapSelection('**', '**')
+        runMilkdownCommand(toggleStrongCommand.key)
         break
       case 'italic':
-        wrapSelection('*', '*')
+        runMilkdownCommand(toggleEmphasisCommand.key)
         break
       case 'underline':
-        wrapSelection('__', '__')
+        wrapSelectionInHtmlTag('u')
         break
       case 'code':
-        wrapSelection('`', '`')
+        runMilkdownCommand(toggleInlineCodeCommand.key)
         break
       case 'link':
         insertLink()
@@ -137,16 +212,16 @@ const applyFormat = (command: string) => {
         emit('insertWikiLink')
         break
       case 'bullet_list':
-        insertAtLineStart('- ')
+        runMilkdownCommand(wrapInBulletListCommand.key)
         break
       case 'ordered_list':
-        insertAtLineStart('1. ')
+        runMilkdownCommand(wrapInOrderedListCommand.key)
         break
       case 'blockquote':
-        insertAtLineStart('> ')
+        runMilkdownCommand(wrapInBlockquoteCommand.key)
         break
       case 'heading':
-        insertAtLineStart('## ')
+        runMilkdownCommand(wrapInHeadingCommand.key, 2)
         break
     }
   } catch (error) {
@@ -154,99 +229,102 @@ const applyFormat = (command: string) => {
   }
 }
 
-const wrapSelection = (prefix: string, suffix: string) => {
+function runMilkdownCommand<T = unknown>(commandKey: CmdKey<T>, payload?: T) {
   if (!editor) return
 
-  try {
-    const view = editor.action((ctx) => ctx.get(editorViewCtx))
-    const { state, dispatch } = view
-    const { from, to } = state.selection
-    const selectedText = state.doc.textBetween(from, to)
-
-    const tr = state.tr.replaceWith(
-      from,
-      to,
-      state.schema.text(prefix + selectedText + suffix)
-    )
-    dispatch(tr)
-    
-    // Устанавливаем курсор после вставки
-    const newPos = from + prefix.length + selectedText.length + suffix.length
-    setTimeout(() => {
-      const newView = editor!.action((ctx) => ctx.get(editorViewCtx))
-      const tr = newView.state.tr.setSelection(
-        // @ts-ignore - ProseMirror types
-        newView.state.selection.constructor.near(newView.state.doc.resolve(newPos))
-      )
-      newView.dispatch(tr)
-      newView.focus()
-    }, 0)
-  } catch (error) {
-    console.error('Failed to wrap selection:', error)
-  }
+  editor.action((ctx) => {
+    const commands = ctx.get(commandsCtx)
+    return payload === undefined
+      ? commands.call(commandKey)
+      : commands.call(commandKey, payload)
+  })
 }
 
-const insertAtLineStart = (prefix: string) => {
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+function wrapSelectionInHtmlTag(tag: string) {
   if (!editor) return
 
-  try {
-    const view = editor.action((ctx) => ctx.get(editorViewCtx))
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
     const { state, dispatch } = view
-    const { from } = state.selection
-    
-    // Находим начало строки
-    const $from = state.doc.resolve(from)
-    const lineStart = $from.start()
+    const { from, to } = state.selection
 
-    const tr = state.tr.insertText(prefix, lineStart)
-    dispatch(tr)
-    
-    setTimeout(() => {
-      const newView = editor!.action((ctx) => ctx.get(editorViewCtx))
-      newView.focus()
-    }, 0)
-  } catch (error) {
-    console.error('Failed to insert at line start:', error)
-  }
+    if (from === to) return
+
+    const selectedText = state.doc.textBetween(from, to)
+    const container = document.createElement('div')
+    container.innerHTML = `<${tag}>${escapeHtml(selectedText)}</${tag}>`
+    const slice = DOMParser.fromSchema(state.schema).parseSlice(container)
+    dispatch(state.tr.replaceRange(from, to, slice))
+  })
 }
 
 const insertLink = () => {
   if (!editor) return
 
-  const url = prompt('Введите URL:')
-  if (!url) return
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const { from, to } = view.state.selection
+    savedSelection = { from, to }
+  })
 
-  try {
-    const view = editor.action((ctx) => ctx.get(editorViewCtx))
-    const { state, dispatch } = view
-    const { from, to } = state.selection
-    const selectedText = state.doc.textBetween(from, to) || 'ссылка'
+  linkUrl.value = ''
+  showLinkDialog.value = true
+}
 
-    const linkText = `[${selectedText}](${url})`
-    const tr = state.tr.replaceWith(from, to, state.schema.text(linkText))
-    dispatch(tr)
-    
-    setTimeout(() => {
-      const newView = editor!.action((ctx) => ctx.get(editorViewCtx))
-      newView.focus()
-    }, 0)
-  } catch (error) {
-    console.error('Failed to insert link:', error)
-  }
+function resetLinkDialog() {
+  linkUrl.value = ''
+  savedSelection = null
+}
+
+function confirmLink() {
+  const url = linkUrl.value.trim()
+  if (!url || !editor) return
+
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const commands = ctx.get(commandsCtx)
+
+    if (savedSelection) {
+      const { from, to } = savedSelection
+      const selection = TextSelection.create(view.state.doc, from, to)
+      view.dispatch(view.state.tr.setSelection(selection))
+    }
+
+    commands.call(toggleLinkCommand.key, { href: url })
+  })
+
+  showLinkDialog.value = false
+  resetLinkDialog()
 }
 
 onBeforeUnmount(() => {
   editor?.destroy()
 })
+
+defineExpose({
+  getMarkdown: getCurrentMarkdown,
+})
 </script>
 
 <style>
 .markdown-editor {
-  @apply bg-white dark:bg-gray-800;
+  @apply bg-white dark:bg-gray-800 min-w-0 overflow-hidden;
 }
 
 .toolbar-button {
   @apply flex items-center justify-center w-8 h-8 text-gray-700 dark:text-gray-300;
+}
+
+.toolbar-label {
+  @apply text-sm leading-none select-none;
 }
 
 .toolbar-button:hover {
@@ -254,63 +332,114 @@ onBeforeUnmount(() => {
 }
 
 .milkdown-editor {
-  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4;
+  @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 min-w-0 w-full;
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
-/* Milkdown стили */
-:deep(.milkdown) {
-  @apply h-full;
+.milkdown-editor:focus,
+.milkdown-editor:focus-within {
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
-:deep(.milkdown .editor) {
-  @apply min-h-full outline-none;
+/* Без scoped :deep() не компилируется — используем обычные селекторы */
+.markdown-editor .milkdown {
+  @apply h-full w-full max-w-full;
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
-:deep(.milkdown .ProseMirror) {
-  @apply outline-none min-h-full;
+.markdown-editor .milkdown .editor,
+.markdown-editor .milkdown .ProseMirror {
+  @apply min-h-full w-full max-w-full cursor-text;
+  caret-color: currentColor;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 
-:deep(.milkdown .ProseMirror p) {
+.markdown-editor .milkdown .ProseMirror:focus,
+.markdown-editor .milkdown .ProseMirror:focus-visible,
+.markdown-editor .milkdown .ProseMirror-focused {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.markdown-editor .milkdown .ProseMirror-selectednode,
+.markdown-editor .milkdown .ProseMirror .ProseMirror-selectednode {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.markdown-editor .milkdown .ProseMirror p {
   @apply mb-4;
 }
 
-:deep(.milkdown .ProseMirror h1) {
+.markdown-editor .milkdown .ProseMirror strong {
+  @apply font-bold;
+}
+
+.markdown-editor .milkdown .ProseMirror em {
+  @apply italic;
+}
+
+.markdown-editor .milkdown .ProseMirror u {
+  @apply underline;
+}
+
+.markdown-editor .milkdown .ProseMirror h1 {
   @apply text-3xl font-bold mb-4 mt-6;
 }
 
-:deep(.milkdown .ProseMirror h2) {
+.markdown-editor .milkdown .ProseMirror h2 {
   @apply text-2xl font-bold mb-3 mt-5;
 }
 
-:deep(.milkdown .ProseMirror h3) {
+.markdown-editor .milkdown .ProseMirror h3 {
   @apply text-xl font-bold mb-2 mt-4;
 }
 
-:deep(.milkdown .ProseMirror ul) {
-  @apply list-disc list-inside mb-4;
+.markdown-editor .milkdown .ProseMirror ul {
+  @apply list-disc list-outside pl-6 mb-4;
 }
 
-:deep(.milkdown .ProseMirror ol) {
-  @apply list-decimal list-inside mb-4;
+.markdown-editor .milkdown .ProseMirror ol {
+  @apply list-decimal list-outside pl-6 mb-4;
 }
 
-:deep(.milkdown .ProseMirror blockquote) {
+.markdown-editor .milkdown .ProseMirror li {
+  @apply mb-1;
+}
+
+.markdown-editor .milkdown .ProseMirror blockquote {
   @apply border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic my-4;
 }
 
-:deep(.milkdown .ProseMirror code) {
+.markdown-editor .milkdown .ProseMirror code {
   @apply bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm font-mono;
 }
 
-:deep(.milkdown .ProseMirror pre) {
+.markdown-editor .milkdown .ProseMirror pre {
   @apply bg-gray-100 dark:bg-gray-900 p-4 rounded my-4 overflow-x-auto;
 }
 
-:deep(.milkdown .ProseMirror pre code) {
+.markdown-editor .milkdown .ProseMirror pre code {
   @apply bg-transparent p-0;
 }
 
-:deep(.milkdown .ProseMirror a) {
+.markdown-editor .milkdown .ProseMirror a {
   @apply text-blue-600 dark:text-blue-400 underline;
+}
+
+.markdown-editor .milkdown .ProseMirror .wiki-link-edit {
+  @apply text-blue-600 dark:text-blue-400 no-underline border-b border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-sm;
+  text-decoration: none !important;
 }
 </style>
