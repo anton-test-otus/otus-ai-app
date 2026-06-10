@@ -1792,3 +1792,35 @@ Frontend:
 **Результат:** единая адаптивная типографика на всех экранах; карточки заметок показывают чистый текст без HTML.
 
 ---
+
+## Промпт 56
+
+> Продолжаем с фазой 5. Обсудим задачи по консистентности. Предложи план имплементации.
+
+### Выполненные действия:
+
+- Проанализировано текущее состояние: spacing-классы в `main.css`, смешение `gray-*`/`surface-*`, разные ширины `Dialog`, английский UI в блоке версий, пустые состояния
+- Согласован порядок имплементации: design tokens → палитра → модалки → EmptyState + локализация → touch actions
+- Обновлён раздел **Консистентность** в `PHASES.md`: 6 задач с подпунктами (отступы, палитра, `MODAL_WIDTH`, локализация версий, touch actions на карточках, `EmptyState`)
+
+**Результат:** детальный план консистентности зафиксирован в фазах; готов к поэтапной реализации.
+
+---
+
+## Промпт 57
+
+> ок
+
+### Выполненные действия:
+
+**design tokens, палитра, модалки**
+- `main.css`: semantic-алиасы `.app-chrome`, `.app-ground`, `.app-border`, `.text-muted`; классы `.stack-items`, `.list-row-padding`; типографика и `.card` на `surface-*`
+- `constants/modal.ts`: `MODAL_WIDTH` (sm/md/lg/xl), `DRAWER_WIDTH.sidebar`
+- Миграция палитры: `AppNavbar`, `AppLayout`, `NoteView` toolbar, `SearchBar` quick results
+- Миграция отступов: `AppSidePanel` drawer → `panel-padding`; sidebar (`FolderTree`, `FolderTreeItem`, `TagsPanel`)
+- Все `Dialog` переведены на `MODAL_WIDTH` (SearchBar, папки, теги, корзина, ссылки, diff версий, mobile search)
+- Обновлён `PHASES.md` — первые 3 задачи блока «Консистентность» отмечены выполненными
+
+**Результат:** единая база spacing/palette/modals; остались локализация версий, touch actions, `EmptyState`.
+
+---

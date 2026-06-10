@@ -30,7 +30,7 @@
       v-model:visible="showLinkDialog"
       modal
       header="Вставить ссылку"
-      :style="{ width: '90vw', maxWidth: '480px' }"
+      :style="MODAL_WIDTH.md"
       @hide="resetLinkDialog"
     >
       <div class="space-y-3">
@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { MODAL_WIDTH } from '@/constants/modal'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'

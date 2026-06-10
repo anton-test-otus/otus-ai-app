@@ -90,7 +90,7 @@
       v-model:visible="showDiffModal"
       modal
       :header="`Changes from ${selectedVersion ? formatDate(selectedVersion.createdAt) : ''}`"
-      :style="{ width: '90vw', maxWidth: '1200px' }"
+      :style="MODAL_WIDTH.xl"
       :breakpoints="{ '960px': '90vw', '640px': '95vw' }"
     >
       <VersionDiff
@@ -116,6 +116,7 @@ import { ref, watch } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import ProgressSpinner from 'primevue/progressspinner'
+import { MODAL_WIDTH } from '@/constants/modal'
 import { useNoteVersions } from '@/composables/useNoteVersions'
 import VersionDiff from './VersionDiff.vue'
 import RestoreVersionModal from './RestoreVersionModal.vue'

@@ -1,7 +1,7 @@
 <template>
   <div class="folder-item">
     <div
-      class="group folder-content relative flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors min-w-0"
+      class="group folder-content relative flex items-center gap-1 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors min-w-0"
       :class="{
         'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isSelected,
         'border-l-2 border-transparent pl-[6px]': !isSelected,
@@ -80,7 +80,7 @@
       v-model:visible="showCreateDialog"
       modal
       header="Создать подпапку"
-      :style="{ width: '25rem' }"
+      :style="MODAL_WIDTH.sm"
     >
       <div class="flex flex-col gap-4 py-4">
         <div class="flex flex-col gap-2">
@@ -108,7 +108,7 @@
       v-model:visible="showEditDialog"
       modal
       header="Редактировать папку"
-      :style="{ width: '25rem' }"
+      :style="MODAL_WIDTH.sm"
     >
       <div class="flex flex-col gap-4 py-4">
         <div class="flex flex-col gap-2">
@@ -133,7 +133,7 @@
       v-model:visible="showDeleteDialog"
       modal
       header="Удаление папки"
-      :style="{ width: '30rem' }"
+      :style="MODAL_WIDTH.md"
     >
       <div class="py-4">
         <Message severity="warn" :closable="false">
@@ -167,6 +167,7 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
+import { MODAL_WIDTH } from '@/constants/modal';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 

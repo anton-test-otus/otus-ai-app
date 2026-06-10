@@ -95,12 +95,30 @@
 
 ### Консистентность
 
-- [ ] Единая система отступов во всех компонентах
-- [ ] Унифицировать палитру `gray-*` и `surface-*` (сейчас смешаны в navbar, sidebar, main)
-- [ ] Адаптивная ширина модальных окон (единый паттерн `90vw` + `maxWidth`; `SearchBar` сейчас `50rem`)
-- [ ] Локализация `VersionHistoryPanel` (сейчас на английском)
-- [ ] Карточки заметок на dashboard: actions видимы на touch-устройствах (не только по hover)
-- [ ] Пустые состояния: dashboard, корзина, поиск без результатов
+- [x] **Единая система отступов** — зафиксировать шкалу в `main.css` и применить во всех layout-компонентах:
+  - расширить существующие классы (`.page-container`, `.panel-padding`, `.stack-sections` и др.);
+  - добавить `.stack-items`, `.list-row-padding` для списков и строк дерева;
+  - заменить ad-hoc `p-*` / `mb-*` в `AppSidePanel`, sidebar, views (dashboard, корзина, теги, админка);
+  - не трогать spacing в `.markdown-prose`
+- [x] **Палитра `surface-*` для хрома UI** — унифицировать смешение `gray-*` и `surface-*` (navbar, sidebar, main, карточки):
+  - semantic-алиасы в `main.css`: `.app-chrome`, `.app-ground`, `.app-border`, `.text-muted`;
+  - миграция layout/views на `surface-*`; `gray-*` оставить в markdown и legacy `.btn-*`
+- [x] **Адаптивные модальные окна** — единый паттерн `90vw` + `maxWidth`:
+  - константы размеров в `frontend/src/constants/modal.ts` (`sm` / `md` / `lg` / `xl`);
+  - применить ко всем `Dialog` (`SearchBar`, папки, теги, корзина, diff версий, mobile search);
+  - исправить `SearchBar` (сейчас фиксированные `50rem`)
+- [ ] **Локализация истории версий** — перевести на русский и унифицировать даты:
+  - `VersionHistoryPanel`, `RestoreVersionModal`, `VersionDiff`;
+  - вынести `formatRelativeDate` в `utils/date.ts` (формат как на dashboard, `ru-RU`);
+  - опционально: `RestoreVersionModal` → PrimeVue `Dialog` + `MODAL_WIDTH.md`
+- [ ] **Actions на карточках dashboard (touch)** — заметные действия без hover:
+  - `@media (hover: hover)` — приглушение actions, полная видимость при hover карточки;
+  - `@media (hover: none)` — actions всегда видимы;
+  - touch targets ≥ 44px (размер кнопок или overflow-меню на мобильных)
+- [ ] **Пустые состояния** — общий компонент `EmptyState.vue` (icon → title → description → slot actions):
+  - dashboard (нет заметок / пустая папка);
+  - корзина;
+  - поиск без результатов (full results в `SearchBar`)
 
 ## Фаза 6: Финальная доработка
 

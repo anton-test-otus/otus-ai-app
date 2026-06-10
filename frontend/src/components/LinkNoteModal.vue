@@ -3,7 +3,7 @@
     v-model:visible="isVisible"
     modal
     :header="disambiguationMode ? 'Выберите заметку' : 'Вставить ссылку на заметку'"
-    :style="{ width: '90vw', maxWidth: '600px' }"
+    :style="MODAL_WIDTH.md"
     @hide="onHide"
   >
     <!-- Disambiguation mode: show list of notes with same title -->
@@ -71,6 +71,7 @@ import { ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
+import { MODAL_WIDTH } from '@/constants/modal';
 import { notesApi } from '@/api/notes';
 import type { Note } from '@/types';
 

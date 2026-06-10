@@ -1,5 +1,5 @@
 <template>
-  <nav class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 fixed top-0 left-0 right-0 z-40">
+  <nav class="app-chrome border-b app-border fixed top-0 left-0 right-0 z-40">
     <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16 gap-4">
         <!-- Logo + navigation toggle -->
@@ -16,7 +16,7 @@
           />
           <router-link to="/" class="flex items-center space-x-2">
             <i class="pi pi-book text-2xl text-blue-600"></i>
-            <span class="text-xl font-bold text-gray-900 dark:text-white hidden sm:inline">База знаний</span>
+            <span class="text-xl font-bold text-surface-900 dark:text-white hidden sm:inline">База знаний</span>
           </router-link>
         </div>
 
@@ -72,7 +72,7 @@
           />
 
           <div v-if="authStore.isAuthenticated" class="flex items-center space-x-2">
-            <span class="text-sm text-gray-700 dark:text-gray-300 hidden lg:inline">
+            <span class="text-sm text-surface-700 dark:text-surface-300 hidden lg:inline">
               {{ authStore.user?.email }}
             </span>
             <Button
@@ -102,7 +102,7 @@
       modal
       header="Поиск заметок"
       class="search-mobile-dialog"
-      :style="{ width: '90vw', maxWidth: '50rem' }"
+      :style="MODAL_WIDTH.lg"
       @show="onMobileSearchShow"
     >
       <SearchBar
@@ -119,6 +119,7 @@ import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import { MODAL_WIDTH } from '@/constants/modal'
 import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useNotesStore } from '@/stores/notes'

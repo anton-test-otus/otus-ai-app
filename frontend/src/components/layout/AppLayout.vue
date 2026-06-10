@@ -22,7 +22,7 @@
       </AppSidebar>
 
       <!-- Main content -->
-      <main class="flex-1 min-w-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
+      <main class="flex-1 min-w-0 overflow-y-auto app-ground">
         <slot />
       </main>
     </div>

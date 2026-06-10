@@ -37,7 +37,7 @@
         <div class="flex items-center justify-between">
           <span>Ваши теги ({{ tags.length }})</span>
           <div class="relative w-64">
-            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
             <InputText
               v-model="searchQuery"
               placeholder="Поиск..."
@@ -104,7 +104,7 @@
       v-model:visible="showEditDialog"
       modal
       header="Редактировать тег"
-      :style="{ width: '25rem' }"
+      :style="MODAL_WIDTH.sm"
     >
       <div class="flex flex-col gap-4 py-4">
         <div class="flex flex-col gap-2">
@@ -134,7 +134,7 @@
       v-model:visible="showDeleteDialog"
       modal
       header="Удаление тега"
-      :style="{ width: '30rem' }"
+      :style="MODAL_WIDTH.md"
     >
       <div class="py-4">
         <Message severity="warn" :closable="false">
@@ -172,6 +172,7 @@ import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
 import Message from 'primevue/message';
 import ProgressSpinner from 'primevue/progressspinner';
+import { MODAL_WIDTH } from '@/constants/modal';
 import { useTagsStore } from '../stores/tags';
 import type { Tag } from '../types';
 

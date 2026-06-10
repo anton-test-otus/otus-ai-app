@@ -39,7 +39,7 @@
     <!-- Quick results dropdown -->
     <div
       v-if="showQuickResults && quickResults.length > 0 && !showFullResults"
-      class="quick-results mt-2 bg-white dark:bg-surface-800 border border-surface-200 dark:border-surface-700 rounded-lg shadow-lg overflow-hidden z-50"
+      class="quick-results mt-2 app-chrome border app-border rounded-lg shadow-lg overflow-hidden z-50"
       :class="inModal ? 'relative' : 'absolute top-full left-0 right-0'"
     >
       <div class="p-2 border-b border-surface-200 dark:border-surface-700 text-xs text-surface-500 dark:text-surface-400">
@@ -70,7 +70,7 @@
       v-model:visible="showFullResults"
       modal
       header="Результаты поиска"
-      :style="{ width: '50rem' }"
+      :style="MODAL_WIDTH.lg"
       :maximizable="true"
     >
       <div v-if="searching" class="flex justify-center py-8">
@@ -143,6 +143,7 @@ import Card from 'primevue/card';
 import Tag from 'primevue/tag';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
+import { MODAL_WIDTH } from '@/constants/modal';
 import { searchApi } from '../../api/search';
 import type { Note } from '../../types';
 

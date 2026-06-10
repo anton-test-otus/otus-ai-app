@@ -19,7 +19,7 @@
       </div>
 
       <div v-else-if="notesStore.notes && notesStore.notes.length === 0" class="text-center py-12">
-        <i class="pi pi-book text-6xl text-gray-400 mb-4"></i>
+        <i class="pi pi-book text-6xl text-muted mb-4"></i>
         <p class="empty-state-text mb-4">
           {{ emptyMessage }}
         </p>

@@ -25,7 +25,7 @@
       v-if="collapsed"
       v-model:visible="drawerVisible"
       :position="position"
-      :style="{ width: '85vw', maxWidth: '400px' }"
+      :style="DRAWER_WIDTH.sidebar"
     >
       <template #header>
         <slot name="drawer-header">
@@ -33,7 +33,7 @@
         </slot>
       </template>
 
-      <div class="p-4">
+      <div class="panel-padding min-w-0">
         <slot />
       </div>
     </Sidebar>
@@ -43,6 +43,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import Sidebar from 'primevue/sidebar'
+import { DRAWER_WIDTH } from '@/constants/modal'
 import { SIDEBAR_WIDTH_CLASS } from '@/composables/useBreakpoints'
 
 interface Props {

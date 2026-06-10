@@ -19,11 +19,11 @@
       Нет тегов
     </div>
 
-    <div v-else class="tags-list space-y-1">
+    <div v-else class="tags-list stack-items">
       <div
         v-for="tag in tags"
         :key="tag.id"
-        class="tag-item flex items-center justify-between px-3 py-2 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        class="tag-item flex items-center justify-between list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         :class="{ 'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500': isTagSelected(tag.id) }"
         @click="toggleTag(tag.id)"
       >

@@ -33,7 +33,7 @@
 
       <!-- Empty State -->
       <div v-if="!isLoading && notes && notes.length === 0" class="text-center py-12">
-        <i class="pi pi-trash text-6xl text-gray-400 mb-4"></i>
+        <i class="pi pi-trash text-6xl text-muted mb-4"></i>
         <h3 class="empty-state-title mb-2">
           Корзина пуста
         </h3>
@@ -72,7 +72,7 @@
                 <p class="card-preview line-clamp-2 mb-3">
                   {{ getNoteContentPreview(note.content) }}
                 </p>
-                <div class="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-500">
+                <div class="flex items-center gap-4 text-xs text-muted">
                   <span v-if="note.folder" class="flex items-center gap-1">
                     <i class="pi pi-folder"></i>
                     {{ note.folder.name }}
@@ -121,7 +121,7 @@
       v-model:visible="showDeleteDialog"
       header="Окончательное удаление"
       :modal="true"
-      :style="{ width: '450px' }"
+      :style="MODAL_WIDTH.md"
     >
       <p class="mb-4">
         Вы уверены, что хотите окончательно удалить эту заметку?
@@ -138,7 +138,7 @@
       v-model:visible="showEmptyDialog"
       header="Очистить корзину"
       :modal="true"
-      :style="{ width: '450px' }"
+      :style="MODAL_WIDTH.md"
     >
       <p class="mb-4">
         Вы уверены, что хотите очистить корзину? Будут удалены все
@@ -158,6 +158,7 @@ import AppLayout from '@/components/layout/AppLayout.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
 import { getNoteContentPreview } from '@/utils/note';
+import { MODAL_WIDTH } from '@/constants/modal';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Checkbox from 'primevue/checkbox';
