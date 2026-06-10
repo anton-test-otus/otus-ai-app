@@ -5,10 +5,13 @@
       <button
         v-for="tool in tools"
         :key="tool.name"
+        v-tooltip.bottom="tool.title"
         @mousedown.prevent
         @click="applyFormat(tool.command)"
-        :title="tool.title"
-        class="toolbar-button p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        :class="[
+          'toolbar-button p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors',
+          { 'toolbar-button--active': isToolbarCommand(tool.command) && activeCommands.has(tool.command) },
+        ]"
         type="button"
       >
         <span
@@ -72,9 +75,11 @@ import { history } from '@milkdown/plugin-history'
 import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { replaceAll, getMarkdown } from '@milkdown/utils'
-import { DOMParser } from '@milkdown/prose/model'
 import { TextSelection } from '@milkdown/prose/state'
+import { formatWikiLink } from '@/lib/wikiLinks'
 import { wikiLinkDecorationPlugin } from './wikiLinkDecorationPlugin'
+import { toolbarStatePlugin, registerToolbarStateCallback } from './toolbarStatePlugin'
+import type { ToolbarCommand } from './toolbarActiveState'
 
 interface Props {
   modelValue: string
@@ -95,10 +100,13 @@ const emit = defineEmits<Emits>()
 const editorRef = ref<HTMLElement>()
 const showLinkDialog = ref(false)
 const linkUrl = ref('')
+const activeCommands = ref(new Set<ToolbarCommand>())
 let editor: Editor | null = null
+let unregisterToolbarState: (() => void) | null = null
 let isUpdating = false
 let lastEmittedMarkdown: string | null = null
 let savedSelection: { from: number; to: number } | null = null
+let savedWikiSelection: { from: number; to: number } | null = null
 
 function getCurrentMarkdown(): string {
   if (!editor) return ''
@@ -120,23 +128,37 @@ function syncExternalContent(markdown: string) {
   })
 }
 
-const tools = [
+function isToolbarCommand(command: ToolbarCommand | 'wiki_link'): command is ToolbarCommand {
+  return command !== 'wiki_link'
+}
+
+const tools: Array<{
+  name: string
+  title: string
+  command: ToolbarCommand | 'wiki_link'
+  label?: string
+  labelClass?: string
+  icon?: string
+}> = [
+  { name: 'heading', label: 'H', labelClass: 'font-semibold', title: 'Заголовок', command: 'heading' },
   { name: 'bold', label: 'B', labelClass: 'font-bold', title: 'Жирный (Ctrl+B)', command: 'bold' },
   { name: 'italic', label: 'I', labelClass: 'italic', title: 'Курсив (Ctrl+I)', command: 'italic' },
-  { name: 'underline', label: 'U', labelClass: 'underline', title: 'Подчеркнутый', command: 'underline' },
+  { name: 'list', icon: 'pi pi-list', title: 'Маркированный список', command: 'bullet_list' },
+  { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: 'Нумерованный список', command: 'ordered_list' },
+  { name: 'quote', icon: 'pi pi-quote-left', title: 'Цитата', command: 'blockquote' },
   { name: 'code', icon: 'pi pi-code', title: 'Код', command: 'code' },
   { name: 'link', icon: 'pi pi-link', title: 'Ссылка', command: 'link' },
-  { name: 'wiki-link', icon: 'pi pi-file', title: 'Ссылка на заметку', command: 'wiki_link' },
-  { name: 'list', icon: 'pi pi-list', title: 'Список', command: 'bullet_list' },
-  { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: 'Нумерованный список', command: 'ordered_list' },
-  { name: 'quote', icon: 'pi pi-comments', title: 'Цитата', command: 'blockquote' },
-  { name: 'heading', label: 'H', labelClass: 'font-semibold', title: 'Заголовок', command: 'heading' },
+  { name: 'wiki-link', icon: 'pi pi-sitemap', title: 'Ссылка на заметку', command: 'wiki_link' },
 ]
 
 onMounted(async () => {
   if (!editorRef.value) return
 
   try {
+    unregisterToolbarState = registerToolbarStateCallback((active) => {
+      activeCommands.value = new Set(active)
+    })
+
     editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, editorRef.value!)
@@ -158,6 +180,7 @@ onMounted(async () => {
       .use(listener)
       .use(clipboard)
       .use(wikiLinkDecorationPlugin)
+      .use(toolbarStatePlugin)
       .create()
 
     // Устанавливаем начальное значение
@@ -199,9 +222,6 @@ const applyFormat = (command: string) => {
       case 'italic':
         runMilkdownCommand(toggleEmphasisCommand.key)
         break
-      case 'underline':
-        wrapSelectionInHtmlTag('u')
-        break
       case 'code':
         runMilkdownCommand(toggleInlineCodeCommand.key)
         break
@@ -209,7 +229,7 @@ const applyFormat = (command: string) => {
         insertLink()
         break
       case 'wiki_link':
-        emit('insertWikiLink')
+        openWikiLinkModal()
         break
       case 'bullet_list':
         runMilkdownCommand(wrapInBulletListCommand.key)
@@ -240,32 +260,6 @@ function runMilkdownCommand<T = unknown>(commandKey: CmdKey<T>, payload?: T) {
   })
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function wrapSelectionInHtmlTag(tag: string) {
-  if (!editor) return
-
-  editor.action((ctx) => {
-    const view = ctx.get(editorViewCtx)
-    const { state, dispatch } = view
-    const { from, to } = state.selection
-
-    if (from === to) return
-
-    const selectedText = state.doc.textBetween(from, to)
-    const container = document.createElement('div')
-    container.innerHTML = `<${tag}>${escapeHtml(selectedText)}</${tag}>`
-    const slice = DOMParser.fromSchema(state.schema).parseSlice(container)
-    dispatch(state.tr.replaceRange(from, to, slice))
-  })
-}
-
 const insertLink = () => {
   if (!editor) return
 
@@ -277,6 +271,46 @@ const insertLink = () => {
 
   linkUrl.value = ''
   showLinkDialog.value = true
+}
+
+function openWikiLinkModal() {
+  if (!editor) return
+
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const { from, to } = view.state.selection
+    savedWikiSelection = { from, to }
+  })
+
+  emit('insertWikiLink')
+}
+
+function insertWikiLinkAtCursor(noteTitle: string): boolean {
+  const title = noteTitle.trim()
+  if (!title || !editor) return false
+
+  let inserted = false
+
+  editor.action((ctx) => {
+    const view = ctx.get(editorViewCtx)
+    const { state, dispatch } = view
+
+    const selection = savedWikiSelection ?? {
+      from: state.selection.from,
+      to: state.selection.to,
+    }
+    const { from, to } = selection
+
+    const alias = from !== to ? state.doc.textBetween(from, to) : null
+    const wikiLinkText = formatWikiLink(title, alias)
+    const tr = state.tr.insertText(wikiLinkText, from, to)
+
+    dispatch(tr.setSelection(TextSelection.create(tr.doc, from + wikiLinkText.length)))
+    inserted = true
+  })
+
+  savedWikiSelection = null
+  return inserted
 }
 
 function resetLinkDialog() {
@@ -306,11 +340,14 @@ function confirmLink() {
 }
 
 onBeforeUnmount(() => {
+  unregisterToolbarState?.()
+  unregisterToolbarState = null
   editor?.destroy()
 })
 
 defineExpose({
   getMarkdown: getCurrentMarkdown,
+  insertWikiLinkAtCursor,
 })
 </script>
 
@@ -329,6 +366,10 @@ defineExpose({
 
 .toolbar-button:hover {
   @apply bg-gray-200 dark:bg-gray-700;
+}
+
+.toolbar-button--active {
+  @apply bg-gray-300 dark:bg-gray-600 text-gray-900 dark:text-gray-100;
 }
 
 .milkdown-editor {
@@ -388,10 +429,6 @@ defineExpose({
 
 .markdown-editor .milkdown .ProseMirror em {
   @apply italic;
-}
-
-.markdown-editor .milkdown .ProseMirror u {
-  @apply underline;
 }
 
 .markdown-editor .milkdown .ProseMirror h1 {

@@ -320,18 +320,26 @@ function confirmDelete() {
 }
 
 function handleLinkSelect(noteTitle: string) {
-  // Insert wiki-link at the end of content
-  // In a real implementation, this would insert at cursor position in the editor
-  const wikiLink = `[[${noteTitle}]]`;
-  noteContent.value = noteContent.value ? `${noteContent.value}\n\n${wikiLink}` : wikiLink;
-  triggerSave();
-  
+  const inserted = editorRef.value?.insertWikiLinkAtCursor(noteTitle)
+
+  if (!inserted) {
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: 'Не удалось вставить ссылку на заметку',
+      life: 3000,
+    })
+    return
+  }
+
+  triggerSave()
+
   toast.add({
     severity: 'success',
     summary: 'Ссылка добавлена',
-    detail: `Ссылка на "${noteTitle}" добавлена в конец заметки`,
+    detail: `Ссылка на «${noteTitle}» вставлена в позицию курсора`,
     life: 3000,
-  });
+  })
 }
 
 async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequest['mode']) {

@@ -16,6 +16,17 @@ export function createWikiLinkPattern(): RegExp {
   return /\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
 }
 
+export function formatWikiLink(title: string, alias?: string | null): string {
+  const trimmedTitle = title.trim()
+  const trimmedAlias = alias?.trim()
+
+  if (trimmedAlias && trimmedAlias !== trimmedTitle) {
+    return `[[${trimmedTitle}|${trimmedAlias}]]`
+  }
+
+  return `[[${trimmedTitle}]]`
+}
+
 export function parseWikiLinks(content: string): ParsedWikiLink[] {
   const links: ParsedWikiLink[] = []
   const pattern = createWikiLinkPattern()
