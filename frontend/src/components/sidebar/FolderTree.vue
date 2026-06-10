@@ -14,7 +14,7 @@
 
     <div class="space-y-0.5">
       <div
-        class="group flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+        class="folder-row group flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         :class="{
           'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': !foldersStore.selectedFolderId,
           'border-l-2 border-transparent pl-[6px]': foldersStore.selectedFolderId,
@@ -151,6 +151,14 @@ function handleDelete() {
 
 <style scoped>
 .folder-tree {
-  @apply select-none;
+  @apply select-none min-w-0 w-full;
+}
+
+.folder-row {
+  @apply transition-all;
+}
+
+.folder-row:hover {
+  @apply scale-[1.02];
 }
 </style>

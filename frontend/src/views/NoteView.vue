@@ -2,68 +2,89 @@
   <AppLayout>
     <div class="h-[calc(100vh-4rem)] flex flex-col">
       <div class="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-            <div class="flex-1 min-w-0">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
+          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
+              <Button
+                icon="pi pi-arrow-left"
+                text
+                rounded
+                class="note-action-btn md:hidden shrink-0"
+                @click="goBack"
+                v-tooltip.bottom="'Назад'"
+              />
               <InputText
                 v-model="noteTitle"
                 placeholder="Название заметки"
-                class="w-full text-xl lg:text-2xl font-bold"
+                class="w-full min-w-0 text-xl lg:text-2xl font-bold"
                 @input="handleTitleChange"
               />
             </div>
-            
-            <div class="flex items-center space-x-4">
-              <Button
-                icon="pi pi-history"
-                severity="secondary"
-                text
-                @click="showVersionHistory = !showVersionHistory"
-                v-tooltip.bottom="'История версий'"
-              />
-              
+
+            <div class="flex items-center justify-between md:justify-end gap-2 md:gap-4 shrink-0">
               <SaveIndicator :status="saveStatus" />
-              
-              <Button
-                v-if="viewMode === 'preview'"
-                icon="pi pi-pencil"
-                severity="secondary"
-                text
-                @click="switchToEditMode"
-                v-tooltip.bottom="'Редактировать'"
-              />
-              
-              <Button
-                v-else
-                icon="pi pi-eye"
-                severity="secondary"
-                text
-                @click="switchToPreviewMode"
-                v-tooltip.bottom="'Просмотр'"
-              />
 
-              <Button
-                icon="pi pi-trash"
-                severity="danger"
-                text
-                @click="confirmDelete"
-                v-tooltip.bottom="'Удалить заметку'"
-              />
+              <div class="flex items-center gap-1 md:gap-2">
+                <Button
+                  v-if="viewMode === 'preview'"
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn"
+                  @click="switchToEditMode"
+                  v-tooltip.bottom="'Редактировать'"
+                />
+                <Button
+                  v-else
+                  icon="pi pi-eye"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn"
+                  @click="switchToPreviewMode"
+                  v-tooltip.bottom="'Просмотр'"
+                />
 
-              <Button
-                icon="pi pi-arrow-left"
-                label="Назад"
-                text
-                @click="goBack"
-                class="hidden sm:flex"
-              />
-              <Button
-                icon="pi pi-arrow-left"
-                text
-                @click="goBack"
-                class="sm:hidden"
-                rounded
-              />
+                <Button
+                  icon="pi pi-history"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn hidden md:inline-flex"
+                  @click="showVersionHistory = !showVersionHistory"
+                  v-tooltip.bottom="'История версий'"
+                />
+
+                <Button
+                  icon="pi pi-trash"
+                  severity="danger"
+                  text
+                  rounded
+                  class="note-action-btn hidden md:inline-flex"
+                  @click="confirmDelete"
+                  v-tooltip.bottom="'Удалить заметку'"
+                />
+
+                <Button
+                  icon="pi pi-ellipsis-v"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn md:hidden"
+                  @click="toggleMobileMenu"
+                  v-tooltip.bottom="'Ещё'"
+                />
+                <Menu ref="mobileMenu" :model="mobileMenuItems" popup />
+
+                <Button
+                  icon="pi pi-arrow-left"
+                  label="Назад"
+                  text
+                  class="hidden md:flex"
+                  @click="goBack"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -155,12 +176,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import Menu from 'primevue/menu'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -194,7 +216,25 @@ const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
+const mobileMenu = ref<InstanceType<typeof Menu> | null>(null)
 const isNoteReady = ref(false)
+
+const mobileMenuItems = computed(() => [
+  {
+    label: showVersionHistory.value ? 'Скрыть историю' : 'История версий',
+    icon: 'pi pi-history',
+    command: () => { showVersionHistory.value = !showVersionHistory.value },
+  },
+  {
+    label: 'Удалить заметку',
+    icon: 'pi pi-trash',
+    command: () => confirmDelete(),
+  },
+])
+
+function toggleMobileMenu(event: Event) {
+  mobileMenu.value?.toggle(event)
+}
 
 const { saveStatus, saveError, triggerSave } = useAutosave(async () => {
   if (!notesStore.currentNote) return
@@ -393,3 +433,9 @@ watch(saveError, (error) => {
   }
 })
 </script>
+
+<style scoped>
+.note-action-btn {
+  @apply !w-11 !h-11 md:!w-auto md:!h-auto;
+}
+</style>

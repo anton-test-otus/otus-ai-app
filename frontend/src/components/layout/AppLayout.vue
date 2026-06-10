@@ -2,7 +2,7 @@
   <div class="min-h-screen flex flex-col pt-16">
     <AppNavbar />
     
-    <div class="flex-1 flex">
+    <div class="flex-1 flex min-w-0">
       <!-- Sidebar with folders and tags -->
       <AppSidebar v-if="authStore.isAuthenticated && showSidebar">
         <div class="space-y-6">
@@ -19,13 +19,7 @@
       </AppSidebar>
 
       <!-- Main content -->
-      <main 
-        class="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900"
-        :class="{
-          'lg:ml-80': authStore.isAuthenticated && showSidebar,
-          'pt-16 lg:pt-0': authStore.isAuthenticated && showSidebar,
-        }"
-      >
+      <main class="flex-1 min-w-0 overflow-y-auto bg-gray-50 dark:bg-gray-900">
         <slot />
       </main>
     </div>
@@ -43,7 +37,6 @@ import TagsPanel from '@/components/sidebar/TagsPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
-
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()

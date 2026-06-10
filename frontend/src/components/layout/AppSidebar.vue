@@ -4,21 +4,29 @@
     <Button
       v-if="isCollapsed"
       icon="pi pi-bars"
-      class="fixed top-20 left-4 z-40 lg:hidden"
+      class="fixed top-[4.5rem] left-4 z-40 lg:hidden"
       rounded
       @click="visible = true"
       v-tooltip.right="'Папки'"
     />
 
-    <!-- Desktop: Fixed sidebar -->
-    <div
+    <!-- Desktop: in-flow spacer + fixed panel (ширина всегда синхронизирована с контентом) -->
+    <aside
       v-if="!isCollapsed"
-      class="hidden lg:block fixed left-0 top-16 h-[calc(100vh-4rem)] w-80 bg-surface-0 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 overflow-y-auto z-30"
+      :class="['hidden lg:block shrink-0', SIDEBAR_WIDTH_CLASS]"
+      aria-label="Папки и теги"
     >
-      <div class="p-6">
-        <slot />
+      <div
+        :class="[
+          'fixed left-0 top-16 z-30 h-[calc(100vh-4rem)] bg-surface-0 dark:bg-surface-900 border-r border-surface-200 dark:border-surface-700 overflow-y-auto',
+          SIDEBAR_WIDTH_CLASS,
+        ]"
+      >
+        <div class="p-4 lg:p-5 3xl:p-6 min-w-0">
+          <slot />
+        </div>
       </div>
-    </div>
+    </aside>
 
     <!-- Collapsed: Sidebar drawer -->
     <Sidebar
@@ -41,33 +49,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import Button from 'primevue/button';
-import Sidebar from 'primevue/sidebar';
+import { ref, watch } from 'vue'
+import Button from 'primevue/button'
+import Sidebar from 'primevue/sidebar'
+import { useBreakpoints, SIDEBAR_WIDTH_CLASS } from '@/composables/useBreakpoints'
 
-const SIDEBAR_BREAKPOINT = 1024;
+const { isBelowLg } = useBreakpoints()
 
-const visible = ref(false);
-const windowWidth = ref(window.innerWidth);
+const visible = ref(false)
+const isCollapsed = isBelowLg
 
-const isCollapsed = computed(() => windowWidth.value < SIDEBAR_BREAKPOINT);
-
-function updateWidth() {
-  windowWidth.value = window.innerWidth;
-  if (!isCollapsed.value && visible.value) {
-    visible.value = false;
+watch(isBelowLg, (collapsed) => {
+  if (!collapsed) {
+    visible.value = false
   }
-}
-
-onMounted(() => {
-  window.addEventListener('resize', updateWidth);
-});
-
-onUnmounted(() => {
-  window.removeEventListener('resize', updateWidth);
-});
+})
 
 defineExpose({
-  close: () => visible.value = false,
-});
+  close: () => { visible.value = false },
+})
 </script>

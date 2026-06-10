@@ -1,7 +1,7 @@
 <template>
   <div class="folder-item">
     <div
-      class="group folder-content flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+      class="group folder-content relative flex items-center gap-1 px-2 py-1.5 rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors min-w-0"
       :class="{
         'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isSelected,
         'border-l-2 border-transparent pl-[6px]': !isSelected,
@@ -22,9 +22,16 @@
         :class="hasChildren && isExpanded ? 'pi-folder-open' : 'pi-folder'"
       />
 
-      <span class="flex-1 min-w-0 text-sm truncate">{{ folder.name }}</span>
+      <span class="folder-name relative flex-1 min-w-0 overflow-hidden">
+        <span class="folder-name-text block text-sm truncate">{{ folder.name }}</span>
+      </span>
 
-      <div class="folder-actions flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div
+        class="folder-actions absolute right-0 top-0 bottom-0 flex w-[7.5rem] items-center justify-end gap-0 pr-0.5 pl-2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity rounded-r"
+        :class="isSelected
+          ? 'bg-primary-50 dark:bg-primary-900/20'
+          : 'bg-surface-100 dark:bg-surface-800'"
+      >
         <Button
           icon="pi pi-plus"
           text
@@ -263,6 +270,24 @@ function pluralize(count: number, one: string, few: string, many: string): strin
 
 <style scoped>
 .folder-item {
-  @apply select-none;
+  @apply select-none min-w-0;
+}
+
+.folder-content {
+  @apply transition-all;
+}
+
+.folder-content:hover {
+  @apply scale-[1.02];
+}
+
+.group:hover .folder-name {
+  margin-right: 7.5rem;
+}
+
+.group:hover .folder-name-text {
+  text-overflow: clip;
+  -webkit-mask-image: linear-gradient(to right, #000 0%, #000 35%, rgb(0 0 0 / 0.55) 65%, transparent 100%);
+  mask-image: linear-gradient(to right, #000 0%, #000 35%, rgb(0 0 0 / 0.55) 65%, transparent 100%);
 }
 </style>
