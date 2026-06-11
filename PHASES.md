@@ -200,16 +200,14 @@
 - [x] **На остальных страницах**: папка — `foldersStore.selectedFolderId`; теги — выбранные в фильтре сайдбара (`tagsStore.selectedTags`)
 - [x] Frontend: расширить `CreateNoteRequest` и `notesApi.create` поддержкой `tags` (API уже принимает `tags` в `note:write`)
 
-## Фаза 10: Оптимизация списков заметок
+## Фаза 10: Оптимизация списков заметок ✅ ЗАВЕРШЕНА
 
 > Подготовка (выполнено): описание стейтов на фронтенде — раздел «Управление состоянием на фронтенде» в `ARCHITECTURE.md`
 
-Фундамент для последующих фаз: стабильный контракт list-DTO до новых UI-фич.
-
-- [ ] **Список заметок без полного `content` в store:**
-  - **бэкенд:** отдельная группа сериализации для collection (`note:list`: id, title, folder, tags, isFavorite, dates; без `content` или с укороченным `contentPreview`);
+- [x] **Список заметок без полного `content` в store:**
+  - **бэкенд:** группа сериализации `note:list` для collection (`GET /notes`, `/notes/trash`, `/notes/search`); виртуальное поле `contentPreview` через `NotePreviewService` (150 символов);
   - **фронтенд:** тип `NoteListItem` vs `Note`; `notes` / `favoriteNotes` в Pinia — только list-DTO; полный `content` — в `currentNote` и локальных refs редактора;
-  - обновить `NoteCard`, API-клиент, поиск/фильтрацию; превью на карточке — из `contentPreview` с бэкенда
+  - обновлены `NoteCard`, API-клиент, поиск/фильтрацию, корзина; превью — из `contentPreview` с бэкенда; `toNoteListItem()` для синхронизации списков после мутаций
 
 ## Фаза 11: Настройки аккаунта
 

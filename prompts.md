@@ -2386,3 +2386,19 @@ Frontend:
 **Результат:** задокументировано разделение глобального (Pinia) и локального состояния, жизненный цикл черновика (POST → PUT) и связь фильтров сайдбара со stores.
 
 ---
+
+## Промпт 99
+
+**Промпт пользователя:**
+Реализация фазы 10 (list-DTO без полного content). Уточнение: весь запуск PHP — только внутри Docker-контейнера.
+
+### Выполненные действия:
+
+- **Backend:** группа сериализации `note:list` на collection (`GET /notes`, `/notes/trash`, `/notes/search`); `NotePreviewService::buildPreview()`; поле `contentPreview` на сущности `Note`
+- **Frontend:** тип `NoteListItem`, `normalizeNoteListItem` / `toNoteListItem`; store `notes` / `favoriteNotes` — list-DTO; обновлены API-клиент, `NoteCard`, `SearchBar`, `TrashView`, `LinkNoteModal`
+- Обновлены `PHASES.md` (фаза 10 завершена), `ARCHITECTURE.md` (stores, API)
+- Проверка PHP через `docker exec otus_php` (без локальной установки PHP)
+
+**Результат:** списки заметок не содержат полный `content`; preview приходит с бэкенда; полный `Note` остаётся в `currentNote` и редакторе.
+
+---

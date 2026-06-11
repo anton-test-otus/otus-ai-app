@@ -1,24 +1,14 @@
 import { apiClient } from './client';
-import type { Note, PaginatedResponse, HydraCollection } from '../types';
-
-interface TrashNote {
-  id: string;
-  title: string;
-  content: string;
-  deletedAt: string;
-  folder: {
-    id: string;
-    name: string;
-  } | null;
-}
+import { normalizeNoteListItem } from '@/utils/note';
+import type { Note, NoteListItem, PaginatedResponse, HydraCollection } from '../types';
 
 export const trashApi = {
-  async getTrash(page = 1, perPage = 20): Promise<PaginatedResponse<TrashNote>> {
-    const response = await apiClient.get<HydraCollection<TrashNote>>('/notes/trash', { 
+  async getTrash(page = 1, perPage = 20): Promise<PaginatedResponse<NoteListItem>> {
+    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes/trash', { 
       params: { page, itemsPerPage: perPage } 
     });
     
-    const data = response['hydra:member'] || response['member'] || [];
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
     const total = response['hydra:totalItems'] || response['totalItems'] || 0;
     
     return {

@@ -46,7 +46,7 @@ class Tag
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['tag:read', 'note:read'])]
+    #[Groups(['tag:read', 'note:read', 'note:list'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'tags')]
@@ -56,7 +56,7 @@ class Tag
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank(message: 'Название тега обязательно')]
     #[Assert\Length(max: 50, maxMessage: 'Название тега не может превышать {{ limit }} символов')]
-    #[Groups(['tag:read', 'tag:write', 'note:read'])]
+    #[Groups(['tag:read', 'tag:write', 'note:read', 'note:list'])]
     private ?string $name = null;
 
     #[ORM\ManyToMany(targetEntity: Note::class, mappedBy: 'tags')]

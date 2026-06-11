@@ -2,11 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { notesApi } from '@/api/notes'
 import { useTrashStore } from '@/stores/trash'
-import type { Note, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from '@/types'
+import { toNoteListItem } from '@/utils/note'
+import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from '@/types'
 
 export const useNotesStore = defineStore('notes', () => {
-  const notes = ref<Note[]>([])
-  const favoriteNotes = ref<Note[]>([])
+  const notes = ref<NoteListItem[]>([])
+  const favoriteNotes = ref<NoteListItem[]>([])
   const currentNote = ref<Note | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -72,7 +73,7 @@ export const useNotesStore = defineStore('notes', () => {
     error.value = null
     try {
       const note = await notesApi.create(data)
-      notes.value.unshift(note)
+      notes.value.unshift(toNoteListItem(note))
       currentNote.value = note
       return note
     } catch (err: any) {
@@ -84,9 +85,10 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   function syncNoteInLists(note: Note) {
+    const item = toNoteListItem(note)
     const index = notes.value.findIndex((n) => n.id === note.id)
     if (index !== -1) {
-      notes.value[index] = note
+      notes.value[index] = item
     }
     if (currentNote.value?.id === note.id) {
       currentNote.value = note
@@ -94,12 +96,13 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   function syncFavoriteNotes(note: Note) {
+    const item = toNoteListItem(note)
     if (note.isFavorite) {
       const index = favoriteNotes.value.findIndex((n) => n.id === note.id)
       if (index !== -1) {
-        favoriteNotes.value[index] = note
+        favoriteNotes.value[index] = item
       } else {
-        favoriteNotes.value.unshift(note)
+        favoriteNotes.value.unshift(item)
       }
       favoriteNotes.value.sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
@@ -116,7 +119,7 @@ export const useNotesStore = defineStore('notes', () => {
     if (pagination.value.currentPage === 1) {
       const index = notes.value.findIndex((n) => n.id === note.id)
       if (index === -1) {
-        notes.value.push(note)
+        notes.value.push(item)
         notes.value.sort(
           (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
         )
@@ -126,7 +129,7 @@ export const useNotesStore = defineStore('notes', () => {
     pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
   }
 
-  async function toggleFavorite(note: Note) {
+  async function toggleFavorite(note: NoteListItem | Note) {
     error.value = null
     try {
       const updated = await notesApi.toggleFavorite(note.id, !note.isFavorite)

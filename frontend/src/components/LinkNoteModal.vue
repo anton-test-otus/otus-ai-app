@@ -73,7 +73,7 @@ import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';
 import { notesApi } from '@/api/notes';
-import type { Note } from '@/types';
+import type { NoteListItem } from '@/types';
 
 const props = defineProps<{
   visible: boolean;
@@ -86,11 +86,11 @@ const emit = defineEmits<{
 
 const isVisible = ref(props.visible);
 const searchQuery = ref('');
-const searchResults = ref<Note[]>([]);
+const searchResults = ref<NoteListItem[]>([]);
 const searching = ref(false);
 const disambiguationMode = ref(false);
 const disambiguationTitle = ref('');
-const disambiguationNotes = ref<Note[]>([]);
+const disambiguationNotes = ref<NoteListItem[]>([]);
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -132,12 +132,12 @@ const onSearchInput = () => {
   }, 300);
 };
 
-const selectNote = (note: Note) => {
+const selectNote = (note: NoteListItem) => {
   emit('select', note.title);
   isVisible.value = false;
 };
 
-const selectDisambiguatedNote = (note: Note) => {
+const selectDisambiguatedNote = (note: NoteListItem) => {
   emit('select', note.title);
   isVisible.value = false;
 };
@@ -169,7 +169,7 @@ const formatDate = (dateString: string) => {
 };
 
 // Expose method to show disambiguation dialog
-const showDisambiguation = (title: string, notes: Note[]) => {
+const showDisambiguation = (title: string, notes: NoteListItem[]) => {
   disambiguationMode.value = true;
   disambiguationTitle.value = title;
   disambiguationNotes.value = notes;

@@ -65,7 +65,7 @@
                   {{ note.title }}
                 </h3>
                 <p class="card-preview line-clamp-2 mb-3">
-                  {{ getNoteContentPreview(note.content) }}
+                  {{ note.contentPreview }}
                 </p>
                 <div class="flex items-center gap-4 text-xs text-muted">
                   <span v-if="note.folder" class="flex items-center gap-1">
@@ -74,7 +74,7 @@
                   </span>
                   <span class="flex items-center gap-1">
                     <i class="pi pi-clock"></i>
-                    Удалена {{ formatDate(note.deletedAt) }}
+                    Удалена {{ formatDate(note.deletedAt ?? note.updatedAt) }}
                   </span>
                 </div>
               </div>
@@ -151,8 +151,8 @@ import EmptyState from '@/components/common/EmptyState.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
 import { useTrashStore } from '@/stores/trash';
-import { getNoteContentPreview } from '@/utils/note';
 import { MODAL_WIDTH } from '@/constants/modal';
+import type { NoteListItem } from '@/types';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import Checkbox from 'primevue/checkbox';
@@ -160,21 +160,10 @@ import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
 
-interface TrashNote {
-  id: string;
-  title: string;
-  content: string;
-  deletedAt: string;
-  folder: {
-    id: string;
-    name: string;
-  } | null;
-}
-
 const toast = useToast();
 const trashStore = useTrashStore();
 
-const notes = ref<TrashNote[]>([]);
+const notes = ref<NoteListItem[]>([]);
 const selectedIds = ref<string[]>([]);
 const isLoading = ref(false);
 const isRestoring = ref(false);

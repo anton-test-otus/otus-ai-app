@@ -107,7 +107,7 @@ import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import { useCreateNote } from '@/composables/useCreateNote'
-import type { Note } from '@/types'
+import type { NoteListItem } from '@/types'
 
 const router = useRouter()
 const notesStore = useNotesStore()
@@ -196,11 +196,11 @@ function openNoteInEditMode(id: string) {
   router.push({ name: 'note', params: { id }, query: { mode: 'edit' } })
 }
 
-async function handleToggleFavorite(note: Note) {
+async function handleToggleFavorite(note: NoteListItem) {
   await toggleFavorite(note)
 }
 
-function confirmDelete(note: Note) {
+function confirmDelete(note: NoteListItem) {
   confirm.require({
     message: `Вы уверены, что хотите удалить заметку "${note.title}"?`,
     header: 'Подтверждение удаления',

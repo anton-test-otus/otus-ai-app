@@ -47,6 +47,6 @@ class NoteSearchController extends AbstractController
                 'total' => $result['total'],
                 'totalPages' => (int) ceil($result['total'] / $perPage),
             ],
-        ], 200, [], ['groups' => ['note:read']]);
+        ], 200, [], ['groups' => ['note:list']]);
     }
 }

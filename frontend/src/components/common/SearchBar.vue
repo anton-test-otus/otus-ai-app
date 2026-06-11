@@ -99,7 +99,7 @@
             <template #content>
               <div
                 class="text-sm text-surface-600 dark:text-surface-400 line-clamp-3"
-                v-html="highlightMatch(getContentPreview(note.content))"
+                v-html="highlightMatch(note.contentPreview)"
               />
               <div class="flex items-center gap-4 mt-3 text-xs text-surface-500 dark:text-surface-400">
                 <span><i class="pi pi-calendar mr-1" />{{ formatDate(note.updatedAt) }}</span>
@@ -149,14 +149,14 @@ import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';
 import EmptyState from '@/components/common/EmptyState.vue';
 import { searchApi } from '../../api/search';
-import type { Note } from '../../types';
+import type { NoteListItem } from '../../types';
 
 const router = useRouter();
 const searchBarRef = ref<HTMLElement | null>(null);
 const inputRef = ref<InstanceType<typeof InputText> | null>(null);
 const searchQuery = ref('');
-const quickResults = ref<Note[]>([]);
-const fullResults = ref<Note[]>([]);
+const quickResults = ref<NoteListItem[]>([]);
+const fullResults = ref<NoteListItem[]>([]);
 const showQuickResults = ref(false);
 const showFullResults = ref(false);
 const searching = ref(false);
@@ -276,10 +276,6 @@ function highlightMatch(text: string): string {
 
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function getContentPreview(content: string, length = 200): string {
-  return content.length > length ? content.substring(0, length) + '...' : content;
 }
 
 function formatDate(dateString: string): string {

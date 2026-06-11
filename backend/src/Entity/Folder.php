@@ -48,7 +48,7 @@ class Folder
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['folder:read', 'note:read'])]
+    #[Groups(['folder:read', 'note:read', 'note:list'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'folders')]
@@ -70,7 +70,7 @@ class Folder
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Название папки обязательно')]
     #[Assert\Length(max: 255, maxMessage: 'Название не может превышать {{ limit }} символов')]
-    #[Groups(['folder:read', 'folder:write', 'note:read'])]
+    #[Groups(['folder:read', 'folder:write', 'note:read', 'note:list'])]
     private ?string $name = null;
 
     #[ORM\Column(nullable: true)]

@@ -62,11 +62,10 @@ import { computed } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import NoteTagsPreview from '@/components/common/NoteTagsPreview.vue'
-import type { Note } from '@/types'
-import { getNoteContentPreview } from '@/utils/note'
+import type { NoteListItem } from '@/types'
 
 const props = defineProps<{
-  note: Note
+  note: NoteListItem
   showFolder?: boolean
   formatDate: (dateString: string) => string
 }>()
@@ -74,10 +73,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   open: [id: string]
   edit: [id: string]
-  delete: [note: Note]
-  'toggle-favorite': [note: Note]
+  delete: [note: NoteListItem]
+  'toggle-favorite': [note: NoteListItem]
 }>()
 
-const preview = computed(() => getNoteContentPreview(props.note.content))
+const preview = computed(() => props.note.contentPreview)
 const formattedDate = computed(() => props.formatDate(props.note.updatedAt))
 </script>

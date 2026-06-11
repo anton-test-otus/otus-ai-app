@@ -1,5 +1,6 @@
 import { apiClient } from './client';
-import type { Note, PaginatedResponse } from '../types';
+import { normalizeNoteListItem } from '@/utils/note';
+import type { NoteListItem, PaginatedResponse } from '../types';
 
 export interface SearchCriteria {
   q: string;
@@ -12,7 +13,7 @@ export interface SearchCriteria {
 }
 
 export const searchApi = {
-  async search(criteria: SearchCriteria): Promise<PaginatedResponse<Note>> {
+  async search(criteria: SearchCriteria): Promise<PaginatedResponse<NoteListItem>> {
     const params: Record<string, any> = {
       q: criteria.q,
       page: criteria.page || 1,
@@ -35,6 +36,10 @@ export const searchApi = {
       params.dateTo = criteria.dateTo;
     }
 
-    return apiClient.get<PaginatedResponse<Note>>('/notes/search', { params });
+    const response = await apiClient.get<PaginatedResponse<NoteListItem>>('/notes/search', { params });
+    return {
+      ...response,
+      data: (response.data || []).map(normalizeNoteListItem),
+    };
   },
 };

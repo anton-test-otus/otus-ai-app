@@ -288,7 +288,7 @@ flowchart LR
 | Store | Файл | Назначение | Ключевые поля |
 |-------|------|------------|---------------|
 | `auth` | `stores/auth.ts` | Сессия пользователя | `user`, `token`, `isAuthenticated`, `isAdmin`; `user.settings` / `user.defaults` — задержка автосохранения и окно версионирования |
-| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` (общий список без избранных), `favoriteNotes`, `currentNote`, `pagination`, `isLoading`, `error` |
+| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` / `favoriteNotes` — `NoteListItem[]` (без `content`, с `contentPreview`); `currentNote` — полный `Note`; `pagination`, `isLoading`, `error` |
 | `folders` | `stores/folders.ts` | Дерево папок и выбор в сайдбаре | `folders`, `selectedFolderId`, `selectedFolder` |
 | `tags` | `stores/tags.ts` | Теги и фильтр в сайдбаре | `tags` (список с учётом контекста папки/фильтра), `selectedTags` |
 | `trash` | `stores/trash.ts` | Счётчик корзины в sidebar | `count` |
@@ -361,12 +361,14 @@ flowchart LR
 
 ### Заметки
 
+Сериализация: **`note:list`** — collection-ответы (без `content`, с `contentPreview`); **`note:read`** — одна заметка и ответы мутаций (с полным `content`).
+
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
-| GET | `/api/notes` | Список заметок пользователя (пагинация; фильтры: `folder.id`, `isFavorite`, `title`, `content`; сортировка: `order[updatedAt]`, по умолчанию `updatedAt` desc) |
-| GET | `/api/notes/search` | Поиск и фильтрация заметок (пагинация; параметры: `q`, `folderId`, `tags[]` — логика **И**, `isFavorite`, `dateFrom`, `dateTo`) |
+| GET | `/api/notes` | Список заметок (`note:list`; пагинация; фильтры: `folder.id`, `isFavorite`, `title`, `content`; сортировка: `order[updatedAt]`, по умолчанию `updatedAt` desc) |
+| GET | `/api/notes/search` | Поиск и фильтрация (`note:list`; пагинация; параметры: `q`, `folderId`, `tags[]` — логика **И**, `isFavorite`, `dateFrom`, `dateTo`) |
 | POST | `/api/notes` | Создание заметки |
-| GET | `/api/notes/{id}` | Получение заметки с содержимым |
+| GET | `/api/notes/{id}` | Получение заметки с содержимым (`note:read`) |
 | PUT | `/api/notes/{id}` | Обновление заметки |
 | DELETE | `/api/notes/{id}` | Мягкое удаление (перемещение в корзину) |
 | PUT | `/api/notes/{id}/move` | Перемещение в папку / изменение порядка |

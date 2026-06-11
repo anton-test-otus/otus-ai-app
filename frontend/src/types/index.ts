@@ -32,18 +32,32 @@ export interface UserStatistics {
   storageSize: number
 }
 
+export interface NoteListItem {
+  id: string
+  title: string
+  folderId: string | null
+  folder?: Folder
+  tags?: Tag[]
+  isFavorite: boolean
+  contentPreview: string
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
+}
+
 export interface Note {
   id: string
-  userId: string
+  userId?: string
   folderId: string | null
   folder?: Folder
   title: string
   content: string
+  contentPreview?: string
   isFavorite: boolean
   tags?: Tag[]
   createdAt: string
   updatedAt: string
-  deletedAt: string | null
+  deletedAt?: string | null
 }
 
 export interface Folder {

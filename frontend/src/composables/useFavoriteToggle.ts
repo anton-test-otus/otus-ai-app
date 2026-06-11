@@ -1,12 +1,12 @@
 import { useToast } from 'primevue/usetoast'
 import { useNotesStore } from '@/stores/notes'
-import type { Note } from '@/types'
+import type { Note, NoteListItem } from '@/types'
 
 export function useFavoriteToggle() {
   const notesStore = useNotesStore()
   const toast = useToast()
 
-  async function toggleFavorite(note: Note) {
+  async function toggleFavorite(note: NoteListItem | Note) {
     try {
       const updated = await notesStore.toggleFavorite(note)
       toast.add({

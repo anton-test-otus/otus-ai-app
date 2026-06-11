@@ -14,6 +14,7 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\NoteRepository;
+use App\Service\NotePreviewService;
 use App\State\TrashNotesProvider;
 use App\State\RestoreNoteProcessor;
 use App\State\EmptyTrashProcessor;
@@ -31,10 +32,13 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'notes')]
 #[ApiResource(
     operations: [
-        new GetCollection(),
+        new GetCollection(
+            normalizationContext: ['groups' => ['note:list']],
+        ),
         new GetCollection(
             uriTemplate: '/notes/trash',
             provider: TrashNotesProvider::class,
+            normalizationContext: ['groups' => ['note:list']],
             name: 'trash_list'
         ),
         new GetCollection(
@@ -89,7 +93,7 @@ class Note
     #[ORM\Column(type: UuidType::NAME, unique: true)]
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\CustomIdGenerator(class: 'doctrine.uuid_generator')]
-    #[Groups(['note:read'])]
+    #[Groups(['note:read', 'note:list'])]
     private ?Uuid $id = null;
 
     #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'notes')]
@@ -98,13 +102,13 @@ class Note
 
     #[ORM\ManyToOne(targetEntity: Folder::class, inversedBy: 'notes')]
     #[ORM\JoinColumn(onDelete: 'SET NULL')]
-    #[Groups(['note:read', 'note:write'])]
+    #[Groups(['note:read', 'note:write', 'note:list'])]
     private ?Folder $folder = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: 'Заголовок обязателен')]
     #[Assert\Length(max: 255, maxMessage: 'Заголовок не может превышать {{ limit }} символов')]
-    #[Groups(['note:read', 'note:write'])]
+    #[Groups(['note:read', 'note:write', 'note:list'])]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
@@ -116,15 +120,15 @@ class Note
     private bool $isFavorite = false;
 
     #[ORM\Column]
-    #[Groups(['note:read'])]
+    #[Groups(['note:read', 'note:list'])]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
-    #[Groups(['note:read'])]
+    #[Groups(['note:read', 'note:list'])]
     private ?\DateTimeImmutable $updatedAt = null;
 
     #[ORM\Column(nullable: true)]
-    #[Groups(['note:read'])]
+    #[Groups(['note:read', 'note:list'])]
     private ?\DateTimeImmutable $deletedAt = null;
 
     #[ORM\OneToMany(targetEntity: NoteVersion::class, mappedBy: 'note', orphanRemoval: true)]
@@ -132,7 +136,7 @@ class Note
 
     #[ORM\ManyToMany(targetEntity: Tag::class, inversedBy: 'notes')]
     #[ORM\JoinTable(name: 'note_tags')]
-    #[Groups(['note:read', 'note:write'])]
+    #[Groups(['note:read', 'note:write', 'note:list'])]
     private Collection $tags;
 
     #[ORM\OneToMany(targetEntity: NoteLink::class, mappedBy: 'sourceNote', orphanRemoval: true)]
@@ -206,10 +210,16 @@ class Note
         return $this;
     }
 
-    #[Groups(['note:read', 'note:write'])]
+    #[Groups(['note:read', 'note:write', 'note:list'])]
     public function getIsFavorite(): bool
     {
         return $this->isFavorite;
+    }
+
+    #[Groups(['note:list'])]
+    public function getContentPreview(): string
+    {
+        return NotePreviewService::buildPreview($this->content);
     }
 
     public function setIsFavorite(bool $isFavorite): static

@@ -1,4 +1,6 @@
-import type { Note } from '@/types'
+import type { Note, NoteListItem } from '@/types'
+
+export const NOTE_PREVIEW_MAX_LENGTH = 150
 
 type NoteWithFolder = {
   folderId?: string | null
@@ -33,12 +35,49 @@ export function normalizeNote(raw: Note): Note {
   }
 }
 
+type NoteListItemRaw = Omit<NoteListItem, 'folderId' | 'isFavorite' | 'contentPreview'> & {
+  folderId?: string | null
+  isFavorite?: boolean
+  contentPreview?: string
+  content?: string
+}
+
+export function normalizeNoteListItem(raw: NoteListItemRaw): NoteListItem {
+  return {
+    id: raw.id,
+    title: raw.title,
+    folderId: getNoteFolderId(raw),
+    folder: raw.folder,
+    tags: raw.tags,
+    isFavorite: raw.isFavorite ?? false,
+    contentPreview: raw.contentPreview ?? (raw.content ? getNoteContentPreview(raw.content) : ''),
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    deletedAt: raw.deletedAt ?? null,
+  }
+}
+
+export function toNoteListItem(note: Note): NoteListItem {
+  return {
+    id: note.id,
+    title: note.title,
+    folderId: getNoteFolderId(note),
+    folder: note.folder,
+    tags: note.tags,
+    isFavorite: note.isFavorite,
+    contentPreview: note.contentPreview ?? getNoteContentPreview(note.content),
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
+    deletedAt: note.deletedAt ?? null,
+  }
+}
+
 export function hasNoteBody(content: string): boolean {
   return content.trim().length > 0
 }
 
 /** Plain-text preview for note lists: strips HTML/markdown and normalizes whitespace */
-export function getNoteContentPreview(content: string, maxLength = 150): string {
+export function getNoteContentPreview(content: string, maxLength = NOTE_PREVIEW_MAX_LENGTH): string {
   const withoutHtml = content.replace(/<[^>]*>/g, ' ')
   const withoutMarkdown = withoutHtml.replace(/[#*`\[\]]/g, '')
   const plainText = withoutMarkdown.replace(/\s+/g, ' ').trim()

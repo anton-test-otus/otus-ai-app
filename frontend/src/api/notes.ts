@@ -1,7 +1,7 @@
 import { apiClient } from './client'
-import { normalizeNote } from '@/utils/note'
+import { normalizeNote, normalizeNoteListItem } from '@/utils/note'
 import { resolveTagNamesToIris } from '@/utils/tags'
-import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
+import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
 export interface NoteListCriteria {
   page?: number
@@ -33,15 +33,15 @@ function buildSearchParams(criteria: NoteListCriteria): Record<string, string | 
 }
 
 export const notesApi = {
-  async filter(criteria: NoteListCriteria): Promise<ApiResponse<Note[]>> {
+  async filter(criteria: NoteListCriteria): Promise<ApiResponse<NoteListItem[]>> {
     const page = criteria.page ?? 1
     const perPage = criteria.perPage ?? 20
     const response = await apiClient.get<{
-      data: Note[]
-      meta: ApiResponse<Note[]>['meta']
+      data: NoteListItem[]
+      meta: ApiResponse<NoteListItem[]>['meta']
     }>('/notes/search', { params: buildSearchParams(criteria) })
 
-    const data = (response.data || []).map(normalizeNote)
+    const data = (response.data || []).map(normalizeNoteListItem)
     const meta = response.meta ?? {
       currentPage: page,
       perPage,
@@ -52,7 +52,7 @@ export const notesApi = {
     return { data, meta }
   },
 
-  async getAll(page = 1, perPage = 20, folderId?: string | null, tags?: string[]): Promise<ApiResponse<Note[]>> {
+  async getAll(page = 1, perPage = 20, folderId?: string | null, tags?: string[]): Promise<ApiResponse<NoteListItem[]>> {
     if (tags && tags.length > 0) {
       return this.filter({ page, perPage, folderId, tags, isFavorite: false })
     }
@@ -64,9 +64,9 @@ export const notesApi = {
     if (folderId !== undefined && folderId !== null) {
       params['folder.id'] = folderId
     }
-    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
     
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote);
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
     const total = response['hydra:totalItems'] || response['totalItems'] || 0;
     
     return {
@@ -84,7 +84,7 @@ export const notesApi = {
     folderId?: string | null,
     perPage = 100,
     tags?: string[],
-  ): Promise<ApiResponse<Note[]>> {
+  ): Promise<ApiResponse<NoteListItem[]>> {
     if (tags && tags.length > 0) {
       return this.filter({ page: 1, perPage, folderId, tags, isFavorite: true })
     }
@@ -96,9 +96,9 @@ export const notesApi = {
     if (folderId !== undefined && folderId !== null) {
       params['folder.id'] = folderId
     }
-    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
 
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote)
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem)
 
     return { data }
   },
@@ -161,15 +161,15 @@ export const notesApi = {
     await apiClient.delete(`/notes/${id}`)
   },
 
-  async search(query: string, page = 1, perPage = 20): Promise<ApiResponse<Note[]>> {
+  async search(query: string, page = 1, perPage = 20): Promise<ApiResponse<NoteListItem[]>> {
     const params = { 
       page, 
       itemsPerPage: perPage,
       'title': query,
     }
-    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
     
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote);
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
     const total = response['hydra:totalItems'] || response['totalItems'] || 0;
     
     return {
