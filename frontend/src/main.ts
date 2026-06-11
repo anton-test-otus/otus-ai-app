@@ -8,11 +8,13 @@ import Ripple from 'primevue/ripple'
 
 import App from './App.vue'
 import router from './router'
+import { initTheme } from '@/composables/useTheme'
 
-import 'primevue/resources/themes/lara-light-blue/theme.css'
 import 'primevue/resources/primevue.min.css'
 import 'primeicons/primeicons.css'
 import './styles/main.css'
+
+initTheme()
 
 const app = createApp(App)
 

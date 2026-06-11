@@ -506,6 +506,16 @@ const noteSchema = z.object({
 - Редактор: полноэкранный на мобильных, split-pane на десктопе
 - Модальные окна: полноэкранные на мобильных, по центру на десктопе
 
+## Тема оформления (светлая / тёмная)
+
+- Переключатель в `/settings` (Card «Внешний вид»); выбор хранится в `localStorage` (`theme`: `light` | `dark`), **не** в БД
+- При первом визите без сохранённого значения — `prefers-color-scheme`
+- Ранний inline-скрипт в `index.html` выставляет класс `dark` на `<html>` до загрузки Vue (без FOUC для Tailwind)
+- Composable `useTheme` (singleton): `initTheme()` в `main.ts`, `setTheme` / `toggleTheme` для UI
+- Tailwind: `darkMode: 'class'`; semantic-классы в `main.css` (`.app-chrome`, `.text-muted` и др.) с вариантами `dark:`
+- PrimeVue: динамическая подмена `#primevue-theme` — `lara-light-blue` / `lara-dark-blue`
+- Markdown-редактор и preview следуют глобальной теме через Tailwind `dark:` (отдельная тема Milkdown не используется)
+
 ## Роли пользователей
 
 | Роль | Права |

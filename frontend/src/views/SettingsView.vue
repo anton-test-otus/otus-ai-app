@@ -66,6 +66,27 @@
         </template>
       </Card>
 
+      <Card class="mb-6">
+        <template #title>Внешний вид</template>
+        <template #content>
+          <div class="stack-sections">
+            <div class="flex flex-col gap-2">
+              <span class="font-medium text-surface-900 dark:text-white">Тема оформления</span>
+              <SelectButton
+                v-model="selectedTheme"
+                :options="themeOptions"
+                option-label="label"
+                option-value="value"
+                aria-labelledby="theme-label"
+              />
+              <small class="text-muted">
+                Сохраняется локально на этом устройстве. При первом визите используется системная тема.
+              </small>
+            </div>
+          </div>
+        </template>
+      </Card>
+
       <Card>
         <template #title>Аккаунт</template>
         <template #content>
@@ -94,17 +115,28 @@ import Card from 'primevue/card'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
+import SelectButton from 'primevue/selectbutton'
 import { useAuthStore } from '@/stores/auth'
+import { useTheme } from '@/composables/useTheme'
 import { appConfig } from '@/config/app'
 import {
   AUTOSAVE_DELAY_SECONDS_OPTIONS,
   VERSION_CONSOLIDATION_MINUTES_OPTIONS,
   MAX_NOTE_VERSIONS_PER_NOTE,
 } from '@/constants/userSettings'
+import { THEME_OPTIONS } from '@/constants/theme'
+import type { Theme } from '@/types'
 
 const authStore = useAuthStore()
+const { theme, setTheme } = useTheme()
 const toast = useToast()
 const saving = ref(false)
+const themeOptions = THEME_OPTIONS
+
+const selectedTheme = computed({
+  get: () => theme.value,
+  set: (value: Theme) => setTheme(value),
+})
 
 const autosaveDelaySeconds = ref<number | null>(null)
 const versionConsolidationWindowMinutes = ref<number | null>(null)
