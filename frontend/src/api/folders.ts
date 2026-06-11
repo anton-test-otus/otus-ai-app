@@ -1,6 +1,20 @@
 import { apiClient } from './client';
 import type { Folder, HydraCollection } from '../types';
 
+function buildFolderPayload(data: { name?: string; parentId?: string | null }): Record<string, unknown> {
+  const payload: Record<string, unknown> = {};
+
+  if (data.name !== undefined) {
+    payload.name = data.name;
+  }
+
+  if ('parentId' in data) {
+    payload.parent = data.parentId ? `/api/folders/${data.parentId}` : null;
+  }
+
+  return payload;
+}
+
 export const foldersApi = {
   async getAll(): Promise<Folder[]> {
     const response = await apiClient.get<Folder[] | HydraCollection<Folder>>('/folders/tree');
@@ -21,11 +35,12 @@ export const foldersApi = {
   },
 
   async create(folderData: { name: string; parentId?: string }): Promise<Folder> {
-    return apiClient.post<Folder>('/folders', folderData);
+    return apiClient.post<Folder>('/folders', buildFolderPayload(folderData));
   },
 
   async update(id: string, folderData: Partial<Folder>): Promise<Folder> {
-    return apiClient.patch<Folder>(`/folders/${id}`, folderData);
+    const payload = buildFolderPayload(folderData);
+    return apiClient.patch<Folder>(`/folders/${id}`, payload);
   },
 
   async delete(id: string): Promise<void> {

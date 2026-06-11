@@ -35,6 +35,6 @@ export const searchApi = {
       params.dateTo = criteria.dateTo;
     }
 
-    return apiClient.get<PaginatedResponse<Note>>('/notes/search', params);
+    return apiClient.get<PaginatedResponse<Note>>('/notes/search', { params });
   },
 };

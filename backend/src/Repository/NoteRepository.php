@@ -40,7 +40,6 @@ class NoteRepository extends ServiceEntityRepository
     public function search($user, array $criteria, int $page = 1, int $perPage = 20): array
     {
         $qb = $this->createQueryBuilder('n')
-            ->leftJoin('n.tags', 't')
             ->where('n.user = :user')
             ->andWhere('n.deletedAt IS NULL')
             ->setParameter('user', $user);
@@ -55,9 +54,17 @@ class NoteRepository extends ServiceEntityRepository
                 ->setParameter('folderId', $criteria['folderId']);
         }
 
-        if (!empty($criteria['tags']) && is_array($criteria['tags'])) {
-            $qb->andWhere('t.id IN (:tags)')
-                ->setParameter('tags', $criteria['tags']);
+        if (array_key_exists('isFavorite', $criteria) && $criteria['isFavorite'] !== null) {
+            $qb->andWhere('n.isFavorite = :isFavorite')
+                ->setParameter('isFavorite', (bool) $criteria['isFavorite']);
+        }
+
+        $tagIds = $this->normalizeTagIds($criteria['tags'] ?? []);
+        foreach ($tagIds as $index => $tagId) {
+            $alias = 'filterTag' . $index;
+            $qb->innerJoin('n.tags', $alias)
+                ->andWhere($alias . '.id = :filterTagId' . $index)
+                ->setParameter('filterTagId' . $index, $tagId);
         }
 
         if ($criteria['dateFrom'] instanceof \DateTimeImmutable) {
@@ -76,7 +83,6 @@ class NoteRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         $notes = $qb
-            ->groupBy('n.id')
             ->orderBy('n.updatedAt', 'DESC')
             ->setFirstResult(($page - 1) * $perPage)
             ->setMaxResults($perPage)
@@ -87,6 +93,18 @@ class NoteRepository extends ServiceEntityRepository
             'notes' => $notes,
             'total' => $total,
         ];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function normalizeTagIds(mixed $tags): array
+    {
+        if (!is_array($tags)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter($tags, static fn ($id) => is_string($id) && $id !== '')));
     }
 
     public function findDeletedNotes($user, int $page = 1, int $perPage = 20): array

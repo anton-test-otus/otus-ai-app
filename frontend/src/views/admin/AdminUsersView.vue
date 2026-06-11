@@ -1,5 +1,4 @@
 <template>
-  <AppLayout>
   <div class="page-container">
     <div class="page-header">
       <h1 class="page-title">
@@ -206,12 +205,10 @@
       </template>
     </ConfirmDialog>
   </div>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { adminApi } from '@/api/admin'

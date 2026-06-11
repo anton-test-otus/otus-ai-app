@@ -1,27 +1,30 @@
 <template>
-  <AppLayout>
-    <div class="h-[calc(100vh-4rem)] flex flex-col">
+  <div class="h-[calc(100vh-4rem)] flex flex-col">
       <div class="border-b app-border app-chrome">
         <div class="max-w-full mx-auto note-toolbar-padding">
-          <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
+          <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <Button
-                icon="pi pi-arrow-left"
+                v-if="notesStore.currentNote && !isTitleFocused"
+                :icon="notesStore.currentNote.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"
+                :severity="notesStore.currentNote.isFavorite ? 'warn' : 'secondary'"
                 text
                 rounded
-                class="note-action-btn md:hidden shrink-0"
-                @click="goBack"
-                v-tooltip.bottom="'Назад'"
+                class="note-action-btn shrink-0"
+                @click="handleToggleFavorite"
+                v-tooltip.bottom="notesStore.currentNote.isFavorite ? 'Убрать из избранного' : 'В избранное'"
               />
               <InputText
                 v-model="noteTitle"
                 placeholder="Название заметки"
                 class="w-full min-w-0 note-title-field"
+                @focus="isTitleFocused = true"
+                @blur="isTitleFocused = false"
                 @input="handleTitleChange"
               />
             </div>
 
-            <div class="flex items-center justify-between md:justify-end gap-2 md:gap-4 shrink-0">
+            <div v-show="!isTitleFocused" class="flex items-center gap-1 md:gap-4 shrink-0">
               <SaveIndicator :status="saveStatus" />
 
               <div class="flex items-center gap-1 md:gap-2">
@@ -47,17 +50,6 @@
                 />
 
                 <Button
-                  v-if="notesStore.currentNote"
-                  :icon="notesStore.currentNote.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"
-                  :severity="notesStore.currentNote.isFavorite ? 'warn' : 'secondary'"
-                  text
-                  rounded
-                  class="note-action-btn"
-                  @click="handleToggleFavorite"
-                  v-tooltip.bottom="notesStore.currentNote.isFavorite ? 'Убрать из избранного' : 'В избранное'"
-                />
-
-                <Button
                   v-if="isBelow3xl"
                   icon="pi pi-info-circle"
                   severity="secondary"
@@ -73,7 +65,7 @@
                   severity="secondary"
                   text
                   rounded
-                  class="note-action-btn hidden md:inline-flex"
+                  class="note-action-btn"
                   @click="showVersionHistory = !showVersionHistory"
                   v-tooltip.bottom="'История версий'"
                 />
@@ -83,22 +75,19 @@
                   severity="danger"
                   text
                   rounded
-                  class="note-action-btn hidden md:inline-flex"
+                  class="note-action-btn"
                   @click="confirmDelete"
                   v-tooltip.bottom="'Удалить заметку'"
                 />
 
                 <Button
-                  icon="pi pi-ellipsis-v"
-                  severity="secondary"
+                  icon="pi pi-arrow-left"
                   text
                   rounded
                   class="note-action-btn md:hidden"
-                  @click="toggleMobileMenu"
-                  v-tooltip.bottom="'Ещё'"
+                  @click="goBack"
+                  v-tooltip.bottom="'Назад'"
                 />
-                <Menu ref="mobileMenu" :model="mobileMenuItems" popup />
-
                 <Button
                   icon="pi pi-arrow-left"
                   label="Назад"
@@ -194,23 +183,20 @@
       v-model:visible="showLinkModal"
       @select="handleLinkSelect"
     />
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import Menu from 'primevue/menu'
 import Divider from 'primevue/divider'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
 import Toast from 'primevue/toast'
 import ConfirmDialog from 'primevue/confirmdialog'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import NoteMetadata from '@/components/layout/NoteMetadata.vue'
 import MarkdownEditor from '@/components/editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
@@ -243,8 +229,8 @@ const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
+const isTitleFocused = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
-const mobileMenu = ref<InstanceType<typeof Menu> | null>(null)
 const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
 
@@ -318,23 +304,6 @@ async function leaveNote(): Promise<void> {
   await flushSave()
 }
 
-const mobileMenuItems = computed(() => [
-  {
-    label: showVersionHistory.value ? 'Скрыть историю' : 'История версий',
-    icon: 'pi pi-history',
-    command: () => { showVersionHistory.value = !showVersionHistory.value },
-  },
-  {
-    label: 'Удалить заметку',
-    icon: 'pi pi-trash',
-    command: () => confirmDelete(),
-  },
-])
-
-function toggleMobileMenu(event: Event) {
-  mobileMenu.value?.toggle(event)
-}
-
 function openMetadata() {
   metadataRef.value?.open()
 }
@@ -346,6 +315,7 @@ async function handleToggleFavorite() {
 
 async function loadNote(noteId: string) {
   isNoteReady.value = false
+  isTitleFocused.value = false
   resetAutosave()
 
   const modeFromQuery = route.query.mode as ViewMode | undefined
@@ -570,5 +540,9 @@ watch(saveError, (error) => {
 <style scoped>
 .note-action-btn {
   @apply !w-11 !h-11 md:!w-auto md:!h-auto;
+}
+
+.note-title-field :deep(.p-inputtext) {
+  @apply min-w-0 truncate;
 }
 </style>

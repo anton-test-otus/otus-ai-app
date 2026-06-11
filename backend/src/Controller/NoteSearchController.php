@@ -6,11 +6,8 @@ use App\Repository\NoteRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/api/notes')]
-#[IsGranted('ROLE_USER')]
 class NoteSearchController extends AbstractController
 {
     public function __construct(
@@ -18,7 +15,7 @@ class NoteSearchController extends AbstractController
     ) {
     }
 
-    #[Route('/search', name: 'api_notes_search', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function search(Request $request): JsonResponse
     {
         $user = $this->getUser();
@@ -27,6 +24,7 @@ class NoteSearchController extends AbstractController
         $tags = $request->query->all('tags');
         $dateFrom = $request->query->get('dateFrom');
         $dateTo = $request->query->get('dateTo');
+        $isFavorite = $request->query->get('isFavorite');
         $page = max(1, (int) $request->query->get('page', 1));
         $perPage = min(100, max(1, (int) $request->query->get('perPage', 20)));
 
@@ -34,6 +32,7 @@ class NoteSearchController extends AbstractController
             'query' => $query,
             'folderId' => $folderId,
             'tags' => $tags,
+            'isFavorite' => $isFavorite !== null ? filter_var($isFavorite, FILTER_VALIDATE_BOOLEAN) : null,
             'dateFrom' => $dateFrom ? new \DateTimeImmutable($dateFrom) : null,
             'dateTo' => $dateTo ? new \DateTimeImmutable($dateTo) : null,
         ];

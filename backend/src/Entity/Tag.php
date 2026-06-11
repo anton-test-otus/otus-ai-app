@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\QueryParameter;
 use App\Repository\TagRepository;
 use App\State\TagProcessor;
 use App\State\TagCollectionProvider;
@@ -24,7 +25,13 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\UniqueConstraint(name: 'user_tag_unique', columns: ['user_id', 'name'])]
 #[ApiResource(
     operations: [
-        new GetCollection(provider: TagCollectionProvider::class),
+        new GetCollection(
+            provider: TagCollectionProvider::class,
+            parameters: [
+                'folderId' => new QueryParameter(description: 'Теги заметок в указанной папке'),
+                'tags' => new QueryParameter(description: 'Уже выбранные теги для сужения списка (логика И)'),
+            ],
+        ),
         new Get(),
         new Post(processor: TagProcessor::class),
         new Put(processor: TagProcessor::class),

@@ -16,26 +16,31 @@ export const useNotesStore = defineStore('notes', () => {
     totalPages: 0,
   })
 
-  async function fetchFavorites(folderId?: string | null) {
+  async function fetchFavorites(folderId?: string | null, tagIds?: string[]) {
     try {
-      const response = await notesApi.getFavorites(folderId)
+      const response = await notesApi.getFavorites(folderId, 100, tagIds)
       favoriteNotes.value = response.data
     } catch {
       favoriteNotes.value = []
     }
   }
 
-  async function fetchNotes(page = 1, perPage = 20, folderId?: string | null) {
+  async function fetchNotes(
+    page = 1,
+    perPage = 20,
+    folderId?: string | null,
+    tagIds?: string[],
+  ) {
     isLoading.value = true
     error.value = null
     try {
-      const response = await notesApi.getAll(page, perPage, folderId)
+      const response = await notesApi.getAll(page, perPage, folderId, tagIds)
       notes.value = response.data
       if (response.meta) {
         pagination.value = response.meta
       }
       if (page === 1) {
-        await fetchFavorites(folderId)
+        await fetchFavorites(folderId, tagIds)
       } else {
         favoriteNotes.value = []
       }

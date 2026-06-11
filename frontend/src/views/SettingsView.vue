@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="page-container-narrow">
+  <div class="page-container-narrow">
       <div class="page-header">
         <h1 class="page-title">Настройки</h1>
         <p class="page-subtitle mt-0 text-surface-600 dark:text-surface-400">
@@ -86,7 +85,6 @@
         </template>
       </Card>
     </div>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -96,7 +94,6 @@ import Card from 'primevue/card'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import { useAuthStore } from '@/stores/auth'
 import { appConfig } from '@/config/app'
 import {

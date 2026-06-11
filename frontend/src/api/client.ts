@@ -37,9 +37,18 @@ class ApiClient {
     if (params) {
       const searchParams = new URLSearchParams()
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          searchParams.append(key, String(value))
+        if (value === undefined || value === null) {
+          return
         }
+        if (Array.isArray(value)) {
+          value.forEach((item) => {
+            if (item !== undefined && item !== null) {
+              searchParams.append(`${key}[]`, String(item))
+            }
+          })
+          return
+        }
+        searchParams.append(key, String(value))
       })
       const queryString = searchParams.toString()
       if (queryString) {

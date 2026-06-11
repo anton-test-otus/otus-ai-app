@@ -30,20 +30,37 @@ export const useFoldersStore = defineStore('folders', () => {
     return flat;
   });
 
-  async function fetchFolders() {
+  let initialized = false;
+  let fetchPromise: Promise<void> | null = null;
+
+  async function fetchFolders(options?: { force?: boolean }) {
+    if (initialized && !options?.force) {
+      return;
+    }
+
+    if (fetchPromise && !options?.force) {
+      return fetchPromise;
+    }
+
     loading.value = true;
     error.value = null;
-    try {
-      const result = await foldersApi.getAll();
-      folders.value = result || [];
-    } catch (e: any) {
-      console.error('Folders fetch error:', e);
-      folders.value = [];
-      error.value = e.message || 'Ошибка загрузки папок';
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+    fetchPromise = (async () => {
+      try {
+        const result = await foldersApi.getAll();
+        folders.value = result || [];
+        initialized = true;
+      } catch (e: any) {
+        console.error('Folders fetch error:', e);
+        folders.value = [];
+        error.value = e.message || 'Ошибка загрузки папок';
+        throw e;
+      } finally {
+        loading.value = false;
+        fetchPromise = null;
+      }
+    })();
+
+    return fetchPromise;
   }
 
   async function createFolder(name: string, parentId?: string) {
@@ -51,7 +68,7 @@ export const useFoldersStore = defineStore('folders', () => {
     error.value = null;
     try {
       const newFolder = await foldersApi.create({ name, parentId });
-      await fetchFolders();
+      await fetchFolders({ force: true });
       return newFolder;
     } catch (e: any) {
       error.value = e.message || 'Ошибка создания папки';
@@ -66,7 +83,7 @@ export const useFoldersStore = defineStore('folders', () => {
     error.value = null;
     try {
       const updated = await foldersApi.update(id, data);
-      await fetchFolders();
+      await fetchFolders({ force: true });
       return updated;
     } catch (e: any) {
       error.value = e.message || 'Ошибка обновления папки';
@@ -84,7 +101,7 @@ export const useFoldersStore = defineStore('folders', () => {
       if (selectedFolderId.value === id) {
         selectedFolderId.value = null;
       }
-      await fetchFolders();
+      await fetchFolders({ force: true });
     } catch (e: any) {
       error.value = e.message || 'Ошибка удаления папки';
       throw e;

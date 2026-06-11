@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { tagsApi } from '../api/tags';
+import { tagsApi, type TagListCriteria } from '../api/tags';
 import type { Tag, Note, PaginatedResponse } from '../types';
 
 export const useTagsStore = defineStore('tags', () => {
@@ -9,20 +9,49 @@ export const useTagsStore = defineStore('tags', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  async function fetchTags() {
+  let loadedCriteriaKey: string | null = null;
+  let fetchPromise: Promise<void> | null = null;
+
+  function buildCriteriaKey(criteria?: TagListCriteria): string {
+    return JSON.stringify({
+      folderId: criteria?.folderId ?? null,
+      tags: [...(criteria?.tags ?? [])].sort(),
+    });
+  }
+
+  async function fetchTags(criteria?: TagListCriteria, options?: { force?: boolean }) {
+    const criteriaKey = buildCriteriaKey(criteria);
+
+    if (!options?.force && loadedCriteriaKey === criteriaKey) {
+      return;
+    }
+
+    if (fetchPromise && !options?.force) {
+      return fetchPromise;
+    }
+
     loading.value = true;
     error.value = null;
-    try {
-      const result = await tagsApi.getAll();
-      tags.value = result || [];
-    } catch (e: any) {
-      console.error('Tags fetch error:', e);
-      tags.value = [];
-      error.value = e.message || 'Ошибка загрузки тегов';
-      throw e;
-    } finally {
-      loading.value = false;
-    }
+    fetchPromise = (async () => {
+      try {
+        const result = await tagsApi.getAll(criteria);
+        tags.value = result || [];
+        selectedTags.value = selectedTags.value.filter((tagId) =>
+          tags.value.some((tag) => tag.id === tagId)
+        );
+        loadedCriteriaKey = criteriaKey;
+      } catch (e: any) {
+        console.error('Tags fetch error:', e);
+        tags.value = [];
+        error.value = e.message || 'Ошибка загрузки тегов';
+        throw e;
+      } finally {
+        loading.value = false;
+        fetchPromise = null;
+      }
+    })();
+
+    return fetchPromise;
   }
 
   async function createTag(name: string) {
@@ -32,6 +61,7 @@ export const useTagsStore = defineStore('tags', () => {
       const newTag = await tagsApi.create(name);
       tags.value.push(newTag);
       tags.value.sort((a, b) => a.name.localeCompare(b.name));
+      loadedCriteriaKey = null;
       return newTag;
     } catch (e: any) {
       error.value = e.message || 'Ошибка создания тега';
@@ -51,6 +81,7 @@ export const useTagsStore = defineStore('tags', () => {
         tags.value[index] = updated;
         tags.value.sort((a, b) => a.name.localeCompare(b.name));
       }
+      loadedCriteriaKey = null;
       return updated;
     } catch (e: any) {
       error.value = e.message || 'Ошибка обновления тега';
@@ -67,6 +98,7 @@ export const useTagsStore = defineStore('tags', () => {
       await tagsApi.delete(id);
       tags.value = tags.value.filter(t => t.id !== id);
       selectedTags.value = selectedTags.value.filter(tagId => tagId !== id);
+      loadedCriteriaKey = null;
     } catch (e: any) {
       error.value = e.message || 'Ошибка удаления тега';
       throw e;

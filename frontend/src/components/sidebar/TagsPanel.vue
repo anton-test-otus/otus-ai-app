@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
+import { computed } from 'vue';
 import Button from 'primevue/button';
 import Badge from 'primevue/badge';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -85,11 +85,6 @@ function clearFilters() {
   emit('filterChange', []);
 }
 
-onMounted(async () => {
-  if (tags.value.length === 0) {
-    await tagsStore.fetchTags();
-  }
-});
 </script>
 
 <style scoped>

@@ -1,9 +1,21 @@
 import { apiClient } from './client';
 import type { Tag, Note, PaginatedResponse, HydraCollection } from '../types';
 
+export interface TagListCriteria {
+  folderId?: string | null;
+  tags?: string[];
+}
+
 export const tagsApi = {
-  async getAll(): Promise<Tag[]> {
-    const response = await apiClient.get<HydraCollection<Tag>>('/tags');
+  async getAll(criteria?: TagListCriteria): Promise<Tag[]> {
+    const params: Record<string, string | string[]> = {};
+    if (criteria?.folderId) {
+      params.folderId = criteria.folderId;
+    }
+    if (criteria?.tags && criteria.tags.length > 0) {
+      params.tags = criteria.tags;
+    }
+    const response = await apiClient.get<HydraCollection<Tag>>('/tags', { params });
     return response['hydra:member'] || response['member'] || [];
   },
 

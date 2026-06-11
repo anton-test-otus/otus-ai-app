@@ -37,6 +37,15 @@ use Symfony\Component\Uid\Uuid;
             provider: TrashNotesProvider::class,
             name: 'trash_list'
         ),
+        new GetCollection(
+            uriTemplate: '/notes/search',
+            controller: 'App\Controller\NoteSearchController::search',
+            name: 'notes_search',
+            read: false,
+            serialize: false,
+            deserialize: false,
+            write: false,
+        ),
         new Get(),
         new Post(
             processor: NoteProcessor::class,

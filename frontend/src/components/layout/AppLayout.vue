@@ -12,7 +12,7 @@
           <FolderTree
             :folders="foldersStore.folderTree"
             @select="handleFolderSelect"
-            @update="foldersStore.fetchFolders()"
+            @update="foldersStore.fetchFolders({ force: true })"
           />
           
           <Divider />
@@ -23,15 +23,15 @@
 
       <!-- Main content -->
       <main class="flex-1 min-w-0 overflow-y-auto app-ground">
-        <slot />
+        <RouterView />
       </main>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, computed, ref, provide } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onMounted, watch, computed, ref, provide } from 'vue'
+import { useRoute, useRouter, RouterView } from 'vue-router'
 import Divider from 'primevue/divider'
 import AppNavbar from './AppNavbar.vue'
 import AppSidebar from './AppSidebar.vue'
@@ -72,15 +72,40 @@ function handleFolderSelect(_folderId: string | null) {
 }
 
 function handleTagFilter(_tagIds: string[]) {
-  // TODO: Filter notes by tags
+  if (route.name !== 'dashboard') {
+    router.push({ name: 'dashboard' })
+  }
 }
 
+async function loadSidebarTags() {
+  await tagsStore.fetchTags({
+    folderId: foldersStore.selectedFolderId,
+    tags: tagsStore.selectedTags,
+  })
+}
+
+watch(
+  [() => foldersStore.selectedFolderId, () => [...tagsStore.selectedTags]],
+  async ([folderId], [previousFolderId]) => {
+    if (previousFolderId !== undefined && folderId !== previousFolderId) {
+      tagsStore.clearTagSelection()
+      await tagsStore.fetchTags({
+        folderId: foldersStore.selectedFolderId,
+        tags: [],
+      })
+      return
+    }
+
+    await loadSidebarTags()
+  },
+)
+
 onMounted(async () => {
-  if (authStore.isAuthenticated) {
-    await Promise.all([
-      foldersStore.fetchFolders(),
-      tagsStore.fetchTags(),
-    ])
+  if (!authStore.isAuthenticated) {
+    return
   }
+
+  await foldersStore.fetchFolders()
+  await loadSidebarTags()
 })
 </script>

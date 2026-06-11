@@ -17,39 +17,41 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    name: 'dashboard',
-    component: () => import('@/views/DashboardView.vue'),
+    component: () => import('@/components/layout/AppLayout.vue'),
     meta: { requiresAuth: true },
-  },
-  {
-    path: '/notes/:id',
-    name: 'note',
-    component: () => import('@/views/NoteView.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/tags',
-    name: 'tags',
-    component: () => import('@/views/TagsView.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/trash',
-    name: 'trash',
-    component: () => import('@/views/TrashView.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/settings',
-    name: 'settings',
-    component: () => import('@/views/SettingsView.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/admin/users',
-    name: 'admin-users',
-    component: () => import('@/views/admin/AdminUsersView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true },
+    children: [
+      {
+        path: '',
+        name: 'dashboard',
+        component: () => import('@/views/DashboardView.vue'),
+      },
+      {
+        path: 'notes/:id',
+        name: 'note',
+        component: () => import('@/views/NoteView.vue'),
+      },
+      {
+        path: 'tags',
+        name: 'tags',
+        component: () => import('@/views/TagsView.vue'),
+      },
+      {
+        path: 'trash',
+        name: 'trash',
+        component: () => import('@/views/TrashView.vue'),
+      },
+      {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/views/SettingsView.vue'),
+      },
+      {
+        path: 'admin/users',
+        name: 'admin-users',
+        component: () => import('@/views/admin/AdminUsersView.vue'),
+        meta: { requiresAdmin: true },
+      },
+    ],
   },
 ]
 
@@ -65,11 +67,11 @@ router.beforeEach(async (to, _from, next) => {
     await authStore.fetchUser()
   }
 
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  if (to.matched.some((record) => record.meta.requiresAuth) && !authStore.isAuthenticated) {
     next({ name: 'login', query: { redirect: to.fullPath } })
   } else if (to.meta.guest && authStore.isAuthenticated) {
     next({ name: 'dashboard' })
-  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
+  } else if (to.matched.some((record) => record.meta.requiresAdmin) && !authStore.isAdmin) {
     next({ name: 'dashboard' })
   } else {
     next()

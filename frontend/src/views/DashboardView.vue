@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="page-container">
+  <div class="page-container">
       <div class="page-header">
         <h1 class="page-title">
           {{ pageTitle }}
@@ -88,7 +87,6 @@
 
     <ConfirmDialog />
     <Toast />
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
@@ -102,17 +100,18 @@ import ProgressSpinner from 'primevue/progressspinner'
 import Paginator from 'primevue/paginator'
 import ConfirmDialog from 'primevue/confirmdialog'
 import Toast from 'primevue/toast'
-import AppLayout from '@/components/layout/AppLayout.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import NoteCard from '@/components/dashboard/NoteCard.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
+import { useTagsStore } from '@/stores/tags'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import type { Note } from '@/types'
 
 const router = useRouter()
 const notesStore = useNotesStore()
 const foldersStore = useFoldersStore()
+const tagsStore = useTagsStore()
 const confirm = useConfirm()
 const toast = useToast()
 const { toggleFavorite } = useFavoriteToggle()
@@ -125,36 +124,66 @@ const isEmpty = computed(
     (!showFavoritesBlock.value || notesStore.favoriteNotes.length === 0)
 )
 
-const pageTitle = computed(() =>
-  foldersStore.selectedFolder
+const selectedTagNames = computed(() =>
+  tagsStore.selectedTags
+    .map((tagId) => tagsStore.getTagById(tagId)?.name)
+    .filter((name): name is string => Boolean(name))
+)
+
+const pageTitle = computed(() => {
+  if (selectedTagNames.value.length > 0) {
+    return 'Фильтр по тегам'
+  }
+  return foldersStore.selectedFolder
     ? foldersStore.selectedFolder.name
     : 'Мои заметки'
-)
+})
 
 const pageSubtitle = computed(() => {
   const total = notesStore.pagination.total
   const countLabel = `${total} ${pluralizeNotes(total)}`
-  return foldersStore.selectedFolder
-    ? `${countLabel} в этой папке`
-    : `Всего заметок: ${total}`
+  const parts: string[] = []
+
+  if (foldersStore.selectedFolder) {
+    parts.push(`${countLabel} в папке «${foldersStore.selectedFolder.name}»`)
+  } else {
+    parts.push(`Всего заметок: ${total}`)
+  }
+
+  if (selectedTagNames.value.length > 0) {
+    parts.push(`теги: ${selectedTagNames.value.join(', ')}`)
+  }
+
+  return parts.join(' · ')
 })
 
-const emptyMessage = computed(() =>
-  foldersStore.selectedFolder
+const emptyMessage = computed(() => {
+  if (selectedTagNames.value.length > 0) {
+    return 'Нет заметок с выбранными тегами'
+  }
+  return foldersStore.selectedFolder
     ? 'В этой папке пока нет заметок'
     : 'У вас пока нет заметок'
-)
-
-async function loadNotes(page = 1, perPage = notesStore.pagination.perPage) {
-  await notesStore.fetchNotes(page, perPage, foldersStore.selectedFolderId)
-}
-
-onMounted(async () => {
-  await loadNotes()
 })
 
-watch(() => foldersStore.selectedFolderId, async () => {
-  await loadNotes()
+async function loadNotes(page = 1, perPage = notesStore.pagination.perPage) {
+  await notesStore.fetchNotes(
+    page,
+    perPage,
+    foldersStore.selectedFolderId,
+    tagsStore.selectedTags,
+  )
+}
+
+watch(
+  [() => foldersStore.selectedFolderId, () => [...tagsStore.selectedTags]],
+  async () => {
+    await loadNotes(1)
+  },
+)
+
+onMounted(async () => {
+  await loadNotes(1)
 })
 
 async function createNewNote() {

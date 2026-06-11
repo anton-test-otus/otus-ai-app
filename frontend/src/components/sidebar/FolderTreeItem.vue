@@ -1,5 +1,5 @@
 <template>
-  <div class="folder-item">
+  <div class="folder-item" :style="rowIndentStyle">
     <div
       class="group folder-content relative flex items-center gap-1 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors min-w-0"
       :class="{
@@ -68,7 +68,7 @@
 
     <div
       v-if="hasChildren && isExpanded"
-      class="folder-children ml-[10px] pl-3 border-l border-surface-200 dark:border-surface-700 mt-0.5 space-y-0.5"
+      class="folder-children mt-0.5 space-y-0.5"
     >
       <FolderTreeItem
         v-for="child in folder.children"
@@ -204,6 +204,9 @@ const deleting = ref(false);
 
 const isSelected = computed(() => foldersStore.selectedFolderId === props.folder.id);
 const hasChildren = computed(() => props.folder.children && props.folder.children.length > 0);
+const rowIndentStyle = computed(() => ({
+  paddingLeft: `${props.depth * 16}px`,
+}));
 
 function handleSelect() {
   foldersStore.selectFolder(props.folder.id);

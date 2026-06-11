@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="page-container-narrow">
+  <div class="page-container-narrow">
     <div class="page-header">
       <div>
         <h1 class="page-title">Управление тегами</h1>
@@ -158,12 +157,10 @@
       </template>
     </Dialog>
     </div>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import AppLayout from '@/components/layout/AppLayout.vue';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';

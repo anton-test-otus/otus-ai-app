@@ -1,6 +1,5 @@
 <template>
-  <AppLayout>
-    <div class="page-container">
+  <div class="page-container">
       <!-- Header -->
       <div class="page-header">
         <div class="flex items-center justify-between">
@@ -145,12 +144,10 @@
         <Button label="Очистить" severity="danger" @click="emptyTrash" />
       </template>
     </Dialog>
-  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import AppLayout from '@/components/layout/AppLayout.vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
