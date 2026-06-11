@@ -7,6 +7,8 @@
         size="small"
         text
         rounded
+        class="sidebar-icon-btn"
+        @mousedown.prevent
         @click="showCreateDialog = true"
         v-tooltip.top="'Создать папку'"
       />
@@ -63,6 +65,7 @@
             option-value="value"
             placeholder="Без родителя"
             show-clear
+            append-to="body"
           />
         </div>
       </div>

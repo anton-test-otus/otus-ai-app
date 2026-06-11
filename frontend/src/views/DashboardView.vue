@@ -54,6 +54,11 @@
                     <span class="truncate">{{ note.folder.name }}</span>
                   </span>
                 </div>
+                <NoteTagsPreview
+                  v-if="note.tags?.length"
+                  :tags="note.tags"
+                  class="mb-2"
+                />
                 <div class="card-preview note-card-preview">
                   {{ getNoteContentPreview(note.content) }}
                 </div>
@@ -111,6 +116,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import Toast from 'primevue/toast'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import NoteTagsPreview from '@/components/common/NoteTagsPreview.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import type { Note } from '@/types'

@@ -6,6 +6,8 @@
         icon="pi pi-cog"
         text
         rounded
+        class="sidebar-icon-btn"
+        @mousedown.prevent
         @click="$router.push('/tags')"
         v-tooltip.top="'Управление тегами'"
       />

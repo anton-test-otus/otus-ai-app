@@ -16,7 +16,7 @@
               <label for="autosave-delay" class="font-medium text-surface-900 dark:text-white">
                 Задержка автосохранения
               </label>
-              <Select
+              <Dropdown
                 id="autosave-delay"
                 v-model="autosaveDelaySeconds"
                 :options="autosaveOptions"
@@ -24,6 +24,7 @@
                 option-value="value"
                 placeholder="По умолчанию"
                 show-clear
+                append-to="body"
                 class="w-full md:w-80"
               />
               <small class="text-muted">
@@ -35,7 +36,7 @@
               <label for="version-window" class="font-medium text-surface-900 dark:text-white">
                 Окно версионирования
               </label>
-              <Select
+              <Dropdown
                 id="version-window"
                 v-model="versionConsolidationWindowMinutes"
                 :options="versionOptions"
@@ -43,11 +44,14 @@
                 option-value="value"
                 placeholder="По умолчанию"
                 show-clear
+                append-to="body"
                 class="w-full md:w-80"
               />
               <small class="text-muted">
                 Новая версия создаётся, если с последнего сохранения прошло больше выбранного интервала.
-                По умолчанию: {{ defaultVersionConsolidationWindowMinutes }} мин
+                По умолчанию: {{ defaultVersionConsolidationWindowMinutes }} мин.
+                На каждую заметку хранится не более {{ MAX_NOTE_VERSIONS_PER_NOTE }} последних версий — при превышении
+                лимита старые удаляются автоматически.
               </small>
             </div>
 
@@ -89,7 +93,7 @@
 import { computed, ref, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
-import Select from 'primevue/select'
+import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -98,6 +102,7 @@ import { appConfig } from '@/config/app'
 import {
   AUTOSAVE_DELAY_SECONDS_OPTIONS,
   VERSION_CONSOLIDATION_MINUTES_OPTIONS,
+  MAX_NOTE_VERSIONS_PER_NOTE,
 } from '@/constants/userSettings'
 
 const authStore = useAuthStore()

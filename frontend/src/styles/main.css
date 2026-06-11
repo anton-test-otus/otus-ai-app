@@ -145,6 +145,14 @@
     @apply flex-1 min-h-0;
   }
 
+  .note-tag-pill {
+    @apply inline-flex max-w-full items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-700 truncate dark:bg-primary-900/30 dark:text-primary-300;
+  }
+
+  .note-tag-pill-overflow {
+    @apply shrink-0 font-medium;
+  }
+
   .note-card-actions {
     @apply flex justify-end gap-1 shrink-0;
   }
@@ -181,10 +189,22 @@
   min-width: 2.75rem;
 }
 
+/* Sidebar icon buttons: без «залипшего» focus после клика мышью */
+.sidebar-icon-btn:focus:not(:focus-visible) {
+  box-shadow: none !important;
+  outline: none;
+  background: transparent !important;
+}
+
 /* PrimeVue overlays z-index fix */
 .p-sidebar,
 .p-sidebar-mask {
   z-index: 1050 !important;
+}
+
+.p-sidebar-mask:not(.p-component-overlay) {
+  display: none !important;
+  pointer-events: none !important;
 }
 
 .p-dialog,
@@ -195,15 +215,13 @@
 .p-dropdown-panel,
 .p-multiselect-panel,
 .p-autocomplete-panel {
-  z-index: 1200 !important;
+  z-index: 1400 !important;
+  pointer-events: auto !important;
 }
 
-/* Force dropdown panels to be on top when teleported to body */
-body > .p-dropdown-panel,
-body > .p-multiselect-panel,
-body > .p-autocomplete-panel {
-  z-index: 1200 !important;
-  position: fixed !important;
+.p-dropdown:not(.p-disabled) {
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 /* Shared adaptive markdown typography for editor and preview */

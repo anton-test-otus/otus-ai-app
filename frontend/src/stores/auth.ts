@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
+import { getApiErrorMessage } from '@/utils/apiError'
 import type { User, LoginRequest, RegisterRequest, UpdateUserSettingsRequest } from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
@@ -28,8 +29,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return true
-    } catch (err: any) {
-      error.value = err.message || 'Ошибка входа'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Неверный email или пароль')
       return false
     } finally {
       isLoading.value = false
@@ -51,8 +52,8 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return true
-    } catch (err: any) {
-      error.value = err.message || 'Ошибка регистрации'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка регистрации')
       return false
     } finally {
       isLoading.value = false

@@ -37,6 +37,8 @@
           text
           rounded
           size="small"
+          class="sidebar-icon-btn"
+          @mousedown.prevent
           @click.stop="showCreateDialog = true"
           v-tooltip.top="'Создать подпапку'"
         />
@@ -45,6 +47,8 @@
           text
           rounded
           size="small"
+          class="sidebar-icon-btn"
+          @mousedown.prevent
           @click.stop="showEditDialog = true"
           v-tooltip.top="'Редактировать'"
         />
@@ -54,6 +58,8 @@
           rounded
           size="small"
           severity="danger"
+          class="sidebar-icon-btn"
+          @mousedown.prevent
           @click.stop="confirmDelete"
           v-tooltip.top="'Удалить'"
         />

@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import { normalizeNote } from '@/utils/note'
+import { resolveTagNamesToIris } from '@/utils/tags'
 import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
 export const notesApi = {
@@ -57,6 +58,13 @@ export const notesApi = {
       } else {
         payload.folder = null
       }
+    }
+
+    if ('tags' in data) {
+      delete payload.tags
+      payload.tags = data.tags?.length
+        ? await resolveTagNamesToIris(data.tags)
+        : []
     }
     
     const note = await apiClient.put<Note>(`/notes/${id}`, payload)

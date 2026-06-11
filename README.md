@@ -254,6 +254,7 @@ make restart          # Перезапуск контейнеров
 make logs             # Просмотр логов (Ctrl+C для выхода)
 make install          # Установка зависимостей Composer (backend)
 make migrate          # Применение миграций
+make schema-reset     # Очистка схемы БД и повторное применение миграций
 make admin            # Создание администратора из .env
 make cache-clear      # Очистка кэша Symfony
 make frontend-install # Установка зависимостей npm (frontend)
@@ -275,6 +276,12 @@ docker exec otus_php bin/console doctrine:migrations:diff
 
 # Применение миграций
 docker exec otus_php bin/console doctrine:migrations:migrate
+
+# Очистка схемы и повторное применение миграций (после изменения начальной миграции)
+docker exec otus_php bin/console app:reset-schema
+
+# Только удалить схему, без миграций
+docker exec otus_php bin/console app:reset-schema --no-migrate
 
 # Создание администратора
 docker exec otus_php bin/console app:create-admin

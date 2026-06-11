@@ -1,7 +1,14 @@
 <template>
   <div class="folder-selector">
     <label :for="inputId" class="block text-sm font-semibold mb-2">
-      Папка
+      <span class="inline-flex items-center gap-2">
+        Папка
+        <ProgressSpinner
+          v-if="loading"
+          style="width: 1rem; height: 1rem"
+          stroke-width="4"
+        />
+      </span>
     </label>
     <Dropdown
       :id="inputId"
@@ -13,8 +20,7 @@
       placeholder="Выберите папку (опционально)"
       show-clear
       class="w-full"
-      :loading="loading"
-      appendTo="body"
+      append-to="body"
     >
       <template #value="slotProps">
         <div v-if="slotProps.value" class="flex items-center gap-2">
@@ -36,6 +42,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue';
 import Dropdown from 'primevue/dropdown';
+import ProgressSpinner from 'primevue/progressspinner';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 

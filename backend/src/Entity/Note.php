@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\BooleanFilter;
 use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
 use ApiPlatform\Doctrine\Orm\Filter\OrderFilter;
 use ApiPlatform\Metadata\ApiResource;
@@ -60,10 +61,12 @@ use Symfony\Component\Uid\Uuid;
     normalizationContext: ['groups' => ['note:read']],
     denormalizationContext: ['groups' => ['note:write']],
     paginationEnabled: true,
-    paginationItemsPerPage: 20
+    paginationItemsPerPage: 20,
+    order: ['updatedAt' => 'DESC'],
 )]
 #[ApiFilter(SearchFilter::class, properties: ['title' => 'partial', 'content' => 'partial', 'folder.id' => 'exact'])]
-#[ApiFilter(OrderFilter::class, properties: ['updatedAt', 'createdAt', 'title'])]
+#[ApiFilter(BooleanFilter::class, properties: ['isFavorite'])]
+#[ApiFilter(OrderFilter::class, properties: ['updatedAt' => 'DESC', 'createdAt' => 'DESC', 'title' => 'ASC'])]
 class Note
 {
     #[ORM\Id]
@@ -92,6 +95,9 @@ class Note
     #[Assert\NotBlank(message: 'Содержимое не может быть пустым', groups: ['note:update'])]
     #[Groups(['note:read', 'note:write'])]
     private ?string $content = null;
+
+    #[ORM\Column(options: ['default' => false])]
+    private bool $isFavorite = false;
 
     #[ORM\Column]
     #[Groups(['note:read'])]
@@ -181,6 +187,18 @@ class Note
     public function setContent(string $content): static
     {
         $this->content = $content;
+        return $this;
+    }
+
+    #[Groups(['note:read', 'note:write'])]
+    public function getIsFavorite(): bool
+    {
+        return $this->isFavorite;
+    }
+
+    public function setIsFavorite(bool $isFavorite): static
+    {
+        $this->isFavorite = $isFavorite;
         return $this;
     }
 

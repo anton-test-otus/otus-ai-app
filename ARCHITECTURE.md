@@ -97,6 +97,7 @@ erDiagram
         uuid folder_id FK
         string title
         text content
+        boolean is_favorite
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at
@@ -271,7 +272,7 @@ otus-ai-app/
 
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
-| GET | `/api/notes` | Список заметок пользователя (с пагинацией, фильтрацией) |
+| GET | `/api/notes` | Список заметок пользователя (пагинация; фильтры: `folder.id`, `isFavorite`, `title`, `content`; сортировка: `order[updatedAt]`, по умолчанию `updatedAt` desc) |
 | GET | `/api/notes/search` | Поиск заметок по заголовку/содержимому (с пагинацией) |
 | POST | `/api/notes` | Создание заметки |
 | GET | `/api/notes/{id}` | Получение заметки с содержимым |

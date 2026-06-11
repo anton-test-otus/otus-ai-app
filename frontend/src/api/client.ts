@@ -68,12 +68,24 @@ class ApiClient {
       headers: mergedHeaders,
     })
 
+    const isAuthAttempt = endpoint === '/auth/login' || endpoint === '/auth/register'
+
     // Handle 401 Unauthorized
     if (response.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('refreshToken')
-      window.location.href = '/login'
-      throw new HttpError(401, 'Unauthorized')
+      let errorData
+      try {
+        errorData = await response.json()
+      } catch {
+        errorData = { message: response.statusText }
+      }
+
+      if (!isAuthAttempt) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        window.location.href = '/login'
+      }
+
+      throw new HttpError(401, 'Unauthorized', errorData)
     }
 
     // Check if response is ok

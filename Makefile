@@ -1,4 +1,4 @@
-.PHONY: help init build up down restart status logs install migrate admin cache-clear test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres
+.PHONY: help init build up down restart status logs install migrate schema-reset admin cache-clear test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres
 
 help:
 	@echo "Доступные команды:"
@@ -16,6 +16,7 @@ help:
 	@echo "  make console-postgres - Интерактивная оболочка в контейнере PostgreSQL"
 	@echo "  make install          - Установка зависимостей Composer (backend)"
 	@echo "  make migrate          - Применение миграций базы данных"
+	@echo "  make schema-reset     - Очистка схемы БД и повторное применение миграций"
 	@echo "  make admin            - Создание администратора из .env"
 	@echo "  make cache-clear      - Очистка кэша Symfony"
 	@echo "  make test             - Запуск тестов"
@@ -95,6 +96,11 @@ install:
 
 migrate:
 	docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
+
+schema-reset:
+	@echo "⚠️  Очистка схемы БД и повторное применение миграций..."
+	docker exec otus_php bin/console app:reset-schema
+	@echo "✅ Схема пересоздана"
 
 admin:
 	@echo "Создание администратора..."

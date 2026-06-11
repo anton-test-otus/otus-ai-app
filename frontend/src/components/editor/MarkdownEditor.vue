@@ -29,24 +29,46 @@
     <Dialog
       v-model:visible="showLinkDialog"
       modal
-      header="Вставить ссылку"
+      :header="linkIsEditing ? 'Редактировать ссылку' : 'Вставить ссылку'"
       :style="MODAL_WIDTH.md"
       @hide="resetLinkDialog"
     >
-      <div class="space-y-3">
-        <label for="link-url-input" class="text-sm font-medium">URL:</label>
-        <InputText
-          id="link-url-input"
-          v-model="linkUrl"
-          placeholder="https://example.com"
-          class="w-full"
-          autofocus
-          @keyup.enter="confirmLink"
-        />
+      <div class="space-y-4">
+        <div class="flex flex-col gap-2">
+          <label for="link-anchor-input" class="text-sm font-medium">Текст ссылки</label>
+          <InputText
+            id="link-anchor-input"
+            v-model="linkAnchor"
+            placeholder="Отображаемый текст"
+            class="w-full"
+            autofocus
+            @keyup.enter="confirmLink"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label for="link-url-input" class="text-sm font-medium">URL</label>
+          <InputText
+            id="link-url-input"
+            v-model="linkUrl"
+            placeholder="https://example.com"
+            class="w-full"
+            :invalid="!!linkUrlError"
+            @input="linkUrlError = ''"
+            @keyup.enter="confirmLink"
+          />
+          <small v-if="linkUrlError" class="text-red-500 dark:text-red-400">
+            {{ linkUrlError }}
+          </small>
+        </div>
       </div>
       <template #footer>
         <Button label="Отмена" severity="secondary" text @click="showLinkDialog = false" />
-        <Button label="Вставить" :disabled="!linkUrl.trim()" @click="confirmLink" />
+        <Button
+          :label="linkIsEditing ? 'Сохранить' : 'Вставить'"
+          :disabled="!linkUrl.trim()"
+          @click="confirmLink"
+        />
       </template>
     </Dialog>
   </div>
@@ -65,7 +87,6 @@ import {
   toggleStrongCommand,
   toggleEmphasisCommand,
   toggleInlineCodeCommand,
-  toggleLinkCommand,
   wrapInBulletListCommand,
   wrapInOrderedListCommand,
   wrapInBlockquoteCommand,
@@ -80,7 +101,9 @@ import { TextSelection } from '@milkdown/prose/state'
 import { formatWikiLink } from '@/lib/wikiLinks'
 import { wikiLinkDecorationPlugin } from './wikiLinkDecorationPlugin'
 import { toolbarStatePlugin, registerToolbarStateCallback } from './toolbarStatePlugin'
+import { getLinkSelectionContext } from './linkSelection'
 import type { ToolbarCommand } from './toolbarActiveState'
+import { isValidLinkUrl, LINK_URL_ERROR } from '@/utils/url'
 
 interface Props {
   modelValue: string
@@ -101,6 +124,9 @@ const emit = defineEmits<Emits>()
 const editorRef = ref<HTMLElement>()
 const showLinkDialog = ref(false)
 const linkUrl = ref('')
+const linkAnchor = ref('')
+const linkUrlError = ref('')
+const linkIsEditing = ref(false)
 const activeCommands = ref(new Set<ToolbarCommand>())
 let editor: Editor | null = null
 let unregisterToolbarState: (() => void) | null = null
@@ -266,12 +292,15 @@ const insertLink = () => {
 
   editor.action((ctx) => {
     const view = ctx.get(editorViewCtx)
-    const { from, to } = view.state.selection
-    savedSelection = { from, to }
-  })
+    const context = getLinkSelectionContext(view.state)
 
-  linkUrl.value = ''
-  showLinkDialog.value = true
+    savedSelection = { from: context.from, to: context.to }
+    linkUrl.value = context.href
+    linkAnchor.value = context.text
+    linkIsEditing.value = context.isExisting
+    linkUrlError.value = ''
+    showLinkDialog.value = true
+  })
 }
 
 function openWikiLinkModal() {
@@ -316,24 +345,40 @@ function insertWikiLinkAtCursor(noteTitle: string): boolean {
 
 function resetLinkDialog() {
   linkUrl.value = ''
+  linkAnchor.value = ''
+  linkUrlError.value = ''
+  linkIsEditing.value = false
   savedSelection = null
 }
 
 function confirmLink() {
   const url = linkUrl.value.trim()
-  if (!url || !editor) return
+  const anchor = linkAnchor.value.trim() || url
+  if (!url || !editor || !savedSelection) return
+
+  if (!isValidLinkUrl(url)) {
+    linkUrlError.value = LINK_URL_ERROR
+    return
+  }
+
+  const selection = savedSelection
 
   editor.action((ctx) => {
     const view = ctx.get(editorViewCtx)
-    const commands = ctx.get(commandsCtx)
+    const { state, dispatch } = view
+    const linkType = state.schema.marks.link
 
-    if (savedSelection) {
-      const { from, to } = savedSelection
-      const selection = TextSelection.create(view.state.doc, from, to)
-      view.dispatch(view.state.tr.setSelection(selection))
-    }
+    if (!linkType || !selection) return
 
-    commands.call(toggleLinkCommand.key, { href: url })
+    const { from, to } = selection
+    let tr = state.tr.insertText(anchor, from, to)
+
+    const newTo = from + anchor.length
+    tr = tr.removeMark(from, newTo, linkType)
+    tr = tr.addMark(from, newTo, linkType.create({ href: url }))
+    tr = tr.setSelection(TextSelection.create(tr.doc, newTo))
+
+    dispatch(tr.scrollIntoView())
   })
 
   showLinkDialog.value = false

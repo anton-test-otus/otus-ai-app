@@ -11,13 +11,7 @@
       separator=","
       class="w-full"
       @add="handleAddTag"
-    >
-      <template #chip="slotProps">
-        <div class="flex items-center gap-2 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-3 py-1 rounded-full">
-          <span class="text-sm">{{ slotProps.value }}</span>
-        </div>
-      </template>
-    </Chips>
+    />
 
     <!-- Autocomplete suggestions -->
     <div v-if="showSuggestions && filteredSuggestions.length > 0" class="suggestions mt-2">
@@ -62,10 +56,10 @@ const filteredSuggestions = computed(() => {
   return availableTags.value.filter(tag => !props.modelValue.includes(tag));
 });
 
-function handleAddTag(event: { value: string[] }) {
+async function handleAddTag(event: { value: string[] }) {
   const newTag = event.value[event.value.length - 1];
   if (newTag && newTag.trim()) {
-    createTagIfNotExists(newTag.trim());
+    await createTagIfNotExists(newTag.trim());
   }
 }
 
@@ -98,6 +92,18 @@ watch(() => props.modelValue, () => {
 </script>
 
 <style scoped>
+.note-tags-editor :deep(.p-chips-multiple-container) {
+  @apply gap-2;
+}
+
+.note-tags-editor :deep(.p-chips-token) {
+  @apply bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full px-3 py-1 text-sm;
+}
+
+.note-tags-editor :deep(.p-chips-token-icon) {
+  @apply text-primary-600 dark:text-primary-400;
+}
+
 .note-tags-editor :deep(.p-chips-input-token input) {
   @apply text-sm;
 }

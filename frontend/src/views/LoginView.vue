@@ -114,6 +114,8 @@ const onSubmit = handleSubmit(async (values) => {
   if (success) {
     const redirect = router.currentRoute.value.query.redirect as string
     router.push(redirect || { name: 'dashboard' })
+  } else {
+    password.value = ''
   }
 })
 </script>
