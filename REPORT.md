@@ -468,3 +468,21 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Переработка футера левого сайдбара
+
+**Задача:** Перенести системную навигацию (корзина, админка, аккаунт) из navbar в footer левого сайдбара.
+
+**Решение:**
+- Компонент `SidebarFooter.vue` в секции footer `AppSidePanel` (слот `#footer`)
+- Layout sidebar: flex-колонка — скроллируемые папки/теги сверху, footer закреплён внизу (fixed panel и mobile drawer)
+- `stores/trash.ts` — счётчик удалённых заметок для badge; обновление при удалении заметки и на странице корзины
+- Navbar упрощён до: лого, toggle навигации, поиск, «Новая заметка»
+- `useLayoutPanels.closeNavigation()` — закрытие drawer при клике по пунктам footer на мобильных
+
+**Затронутые файлы:**
+- `frontend/src/components/sidebar/SidebarFooter.vue`, `frontend/src/stores/trash.ts`
+- `frontend/src/components/layout/AppSidePanel.vue`, `AppSidebar.vue`, `AppNavbar.vue`, `AppLayout.vue`
+- `frontend/src/composables/useLayoutPanels.ts`, `frontend/src/styles/main.css`
+
+---
+

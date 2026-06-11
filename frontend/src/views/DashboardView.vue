@@ -26,7 +26,7 @@
           <Button
             :label="foldersStore.selectedFolderId ? 'Создать заметку' : 'Создать первую заметку'"
             icon="pi pi-plus"
-            @click="createNewNote"
+            @click="openNewNote"
           />
         </template>
       </EmptyState>
@@ -106,6 +106,7 @@ import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
+import { useCreateNote } from '@/composables/useCreateNote'
 import type { Note } from '@/types'
 
 const router = useRouter()
@@ -115,6 +116,7 @@ const tagsStore = useTagsStore()
 const confirm = useConfirm()
 const toast = useToast()
 const { toggleFavorite } = useFavoriteToggle()
+const { openNewNote } = useCreateNote()
 
 const showFavoritesBlock = computed(() => notesStore.pagination.currentPage === 1)
 
@@ -185,24 +187,6 @@ watch(
 onMounted(async () => {
   await loadNotes(1)
 })
-
-async function createNewNote() {
-  try {
-    const note = await notesStore.createNote({
-      title: 'Новая заметка',
-      content: '',
-      folderId: foldersStore.selectedFolderId,
-    })
-    router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
-  } catch {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось создать заметку',
-      life: 3000,
-    })
-  }
-}
 
 function openNote(id: string) {
   router.push({ name: 'note', params: { id }, query: { mode: 'preview' } })

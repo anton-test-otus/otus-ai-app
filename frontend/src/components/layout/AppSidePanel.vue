@@ -8,14 +8,17 @@
     >
       <div
         :class="[
-          'fixed top-16 z-30 h-[calc(100vh-4rem)] bg-surface-0 dark:bg-surface-900 overflow-y-auto',
+          'fixed top-16 z-30 h-[calc(100vh-4rem)] bg-surface-0 dark:bg-surface-900 flex flex-col',
           fixedEdgeClass,
           SIDEBAR_WIDTH_CLASS,
         ]"
       >
-        <div class="panel-padding min-w-0">
+        <div class="panel-padding flex-1 overflow-y-auto min-h-0 min-w-0">
           <slot name="header" />
           <slot />
+        </div>
+        <div v-if="$slots.footer" class="shrink-0 min-w-0">
+          <slot name="footer" />
         </div>
       </div>
     </aside>
@@ -33,8 +36,13 @@
         </slot>
       </template>
 
-      <div class="panel-padding min-w-0">
-        <slot />
+      <div class="sidebar-drawer-body">
+        <div class="panel-padding flex-1 overflow-y-auto min-h-0 min-w-0">
+          <slot />
+        </div>
+        <div v-if="$slots.footer" class="shrink-0 min-w-0">
+          <slot name="footer" />
+        </div>
       </div>
     </Sidebar>
   </div>

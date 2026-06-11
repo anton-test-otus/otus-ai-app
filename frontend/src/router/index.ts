@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/DashboardView.vue'),
       },
       {
+        path: 'notes/new',
+        name: 'note-new',
+        component: () => import('@/views/NoteView.vue'),
+      },
+      {
         path: 'notes/:id',
         name: 'note',
         component: () => import('@/views/NoteView.vue'),

@@ -40,6 +40,7 @@ import TagsPanel from '@/components/sidebar/TagsPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
+import { useTrashStore } from '@/stores/trash'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { LAYOUT_PANELS_KEY } from '@/composables/useLayoutPanels'
 
@@ -48,6 +49,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const foldersStore = useFoldersStore()
 const tagsStore = useTagsStore()
+const trashStore = useTrashStore()
 const { isBelowLg } = useBreakpoints()
 
 const sidebarRef = ref<InstanceType<typeof AppSidebar> | null>(null)
@@ -63,6 +65,7 @@ const showNavToggle = computed(
 provide(LAYOUT_PANELS_KEY, {
   showNavToggle,
   openNavigation: () => sidebarRef.value?.open(),
+  closeNavigation: () => sidebarRef.value?.close(),
 })
 
 function handleFolderSelect(_folderId: string | null) {
@@ -107,5 +110,6 @@ onMounted(async () => {
 
   await foldersStore.fetchFolders()
   await loadSidebarTags()
+  await trashStore.fetchCount()
 })
 </script>

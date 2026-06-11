@@ -5,7 +5,7 @@
           <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-2 min-w-0 flex-1">
               <Button
-                v-if="notesStore.currentNote && !isTitleFocused"
+                v-if="notesStore.currentNote"
                 :icon="notesStore.currentNote.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"
                 :severity="notesStore.currentNote.isFavorite ? 'warn' : 'secondary'"
                 text
@@ -61,6 +61,7 @@
                 />
 
                 <Button
+                  v-if="!isDraft"
                   icon="pi pi-history"
                   severity="secondary"
                   text
@@ -71,6 +72,7 @@
                 />
 
                 <Button
+                  v-if="!isDraft && notesStore.currentNote"
                   icon="pi pi-trash"
                   severity="danger"
                   text
@@ -149,7 +151,7 @@
             <Divider v-if="showVersionHistory" />
             
             <VersionHistoryPanel
-              v-if="showVersionHistory && notesStore.currentNote"
+              v-if="!isDraft && showVersionHistory && notesStore.currentNote"
               :note-id="notesStore.currentNote.id"
               :current-note="notesStore.currentNote"
               @close="showVersionHistory = false"
@@ -159,7 +161,7 @@
             <Divider />
             
             <BacklinksPanel
-              v-if="notesStore.currentNote"
+              v-if="!isDraft && notesStore.currentNote"
               :note-id="notesStore.currentNote.id"
             />
             
@@ -168,8 +170,11 @@
             <div>
               <h4 class="text-sm font-semibold mb-2">Информация</h4>
               <div class="text-xs text-surface-500 dark:text-surface-400 space-y-1">
-                <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
-                <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
+                <div v-if="isDraft">Черновик — сохранится после ввода текста</div>
+                <template v-else>
+                  <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
+                  <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
+                </template>
               </div>
             </div>
           </div>
@@ -186,7 +191,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -207,7 +212,10 @@ import BacklinksPanel from '@/components/BacklinksPanel.vue'
 import LinkNoteModal from '@/components/LinkNoteModal.vue'
 import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
+import { useFoldersStore } from '@/stores/folders'
 import { useAutosave } from '@/composables/useAutosave'
+import { useCreateNote } from '@/composables/useCreateNote'
+import { DEFAULT_NOTE_TITLE, hasNoteBody } from '@/utils/note'
 import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
@@ -218,6 +226,8 @@ const router = useRouter()
 const toast = useToast()
 const confirm = useConfirm()
 const notesStore = useNotesStore()
+const foldersStore = useFoldersStore()
+const { createNoteWithContent } = useCreateNote()
 const { isBelow3xl } = useBreakpoints()
 const { effectiveAutosaveDelayMs } = useUserSettings()
 const { toggleFavorite } = useFavoriteToggle()
@@ -234,6 +244,8 @@ const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
 
+const isDraft = computed(() => route.name === 'note-new')
+
 interface NoteDraftSnapshot {
   title: string
   content: string
@@ -248,10 +260,20 @@ let savedSnapshot: NoteDraftSnapshot = {
   tags: [],
 }
 
+function getCurrentContent(): string {
+  if (viewMode.value === 'edit') {
+    const latestContent = editorRef.value?.getMarkdown()
+    if (latestContent !== undefined) {
+      return latestContent
+    }
+  }
+  return noteContent.value
+}
+
 function createSnapshot(): NoteDraftSnapshot {
   return {
     title: noteTitle.value,
-    content: noteContent.value,
+    content: getCurrentContent(),
     folderId: noteFolderId.value,
     tags: [...noteTags.value].sort(),
   }
@@ -272,35 +294,103 @@ function hasUnsavedChanges(): boolean {
 }
 
 function syncEditorContent() {
-  if (viewMode.value === 'edit') {
-    const latestContent = editorRef.value?.getMarkdown()
-    if (latestContent !== undefined) {
-      noteContent.value = latestContent
-    }
+  if (viewMode.value !== 'edit') {
+    return
+  }
+
+  const latestContent = editorRef.value?.getMarkdown()
+  if (latestContent !== undefined && latestContent !== noteContent.value) {
+    noteContent.value = latestContent
   }
 }
 
+let isPersistingDraft = false
+
 async function saveNoteIfChanged() {
+  const content = getCurrentContent()
+
+  if (isDraft.value) {
+    if (!hasNoteBody(content) || isPersistingDraft) {
+      return
+    }
+    await persistDraftNote(content)
+    return
+  }
+
   if (!notesStore.currentNote || !hasUnsavedChanges()) {
+    return
+  }
+
+  if (!hasNoteBody(content)) {
     return
   }
 
   await notesStore.updateNote(notesStore.currentNote.id, {
     title: noteTitle.value,
-    content: noteContent.value,
+    content,
     folderId: noteFolderId.value,
     tags: noteTags.value,
   })
+  noteContent.value = content
   syncSavedSnapshot()
+}
+
+async function persistDraftNote(content: string) {
+  if (isPersistingDraft) {
+    return
+  }
+
+  isPersistingDraft = true
+  try {
+    const note = await createNoteWithContent({
+      title: noteTitle.value,
+      content,
+      folderId: noteFolderId.value,
+    })
+
+    if (noteTags.value.length > 0) {
+      await notesStore.updateNote(note.id, { tags: noteTags.value })
+    }
+
+    noteContent.value = content
+    syncSavedSnapshot()
+
+    await router.replace({
+      name: 'note',
+      params: { id: note.id },
+      query: { mode: viewMode.value },
+    })
+  } finally {
+    isPersistingDraft = false
+  }
+}
+
+function shouldAutosave(): boolean {
+  if (!hasUnsavedChanges()) {
+    return false
+  }
+  if (isDraft.value) {
+    return hasNoteBody(getCurrentContent()) && !isPersistingDraft
+  }
+  return true
 }
 
 const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = useAutosave(
   saveNoteIfChanged,
-  { hasChanges: hasUnsavedChanges, delay: effectiveAutosaveDelayMs },
+  { hasChanges: shouldAutosave, delay: effectiveAutosaveDelayMs },
 )
 
 async function leaveNote(): Promise<void> {
   syncEditorContent()
+
+  if (isDraft.value) {
+    const content = getCurrentContent()
+    if (hasNoteBody(content) && !isPersistingDraft) {
+      await persistDraftNote(content)
+    }
+    return
+  }
+
   await flushSave()
 }
 
@@ -342,22 +432,60 @@ async function loadNote(noteId: string) {
   }
 }
 
+function initDraft() {
+  isNoteReady.value = false
+  isTitleFocused.value = false
+  resetAutosave()
+  notesStore.clearCurrentNote()
+
+  const modeFromQuery = route.query.mode as ViewMode | undefined
+  viewMode.value = modeFromQuery === 'preview' ? 'preview' : 'edit'
+
+  const folderIdFromQuery = typeof route.query.folderId === 'string'
+    ? route.query.folderId
+    : null
+
+  noteTitle.value = DEFAULT_NOTE_TITLE
+  noteContent.value = ''
+  noteFolderId.value = folderIdFromQuery ?? foldersStore.selectedFolderId ?? null
+  noteTags.value = []
+  syncSavedSnapshot()
+  isNoteReady.value = true
+}
+
 onMounted(() => {
-  loadNote(route.params.id as string)
+  if (isDraft.value) {
+    initDraft()
+  } else {
+    loadNote(route.params.id as string)
+  }
 })
 
 watch(
-  () => route.params.id,
-  async (newId, oldId) => {
-    if (!oldId || newId === oldId) return
-
-    try {
-      await leaveNote()
-    } catch {
+  () => [route.name, route.params.id] as const,
+  async ([newName, newId], [oldName, oldId]) => {
+    if (newName === oldName && newId === oldId) {
+      return
+    }
+    if (!oldName) {
       return
     }
 
-    await loadNote(newId as string)
+    const transitioningFromDraft = oldName === 'note-new' && newName === 'note'
+
+    if (!transitioningFromDraft) {
+      try {
+        await leaveNote()
+      } catch {
+        return
+      }
+    }
+
+    if (newName === 'note-new') {
+      initDraft()
+    } else if (newName === 'note' && typeof newId === 'string' && !transitioningFromDraft) {
+      await loadNote(newId)
+    }
   },
 )
 

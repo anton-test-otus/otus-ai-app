@@ -136,8 +136,7 @@
       :style="MODAL_WIDTH.md"
     >
       <p class="mb-4">
-        Вы уверены, что хотите очистить корзину? Будут удалены все
-        {{ notes.length }} заметок. Это действие нельзя отменить.
+        Вы уверены, что хотите очистить корзину? Это действие нельзя отменить.
       </p>
       <template #footer>
         <Button label="Отмена" severity="secondary" @click="showEmptyDialog = false" />
@@ -151,6 +150,7 @@ import { ref, onMounted } from 'vue';
 import EmptyState from '@/components/common/EmptyState.vue';
 import { useToast } from 'primevue/usetoast';
 import { trashApi } from '../api/trash';
+import { useTrashStore } from '@/stores/trash';
 import { getNoteContentPreview } from '@/utils/note';
 import { MODAL_WIDTH } from '@/constants/modal';
 import Button from 'primevue/button';
@@ -172,6 +172,7 @@ interface TrashNote {
 }
 
 const toast = useToast();
+const trashStore = useTrashStore();
 
 const notes = ref<TrashNote[]>([]);
 const selectedIds = ref<string[]>([]);
@@ -205,6 +206,7 @@ async function loadTrash(page = 1) {
       total: 0,
       totalPages: 0,
     };
+    trashStore.count = meta.value.total;
   } catch (error) {
     console.error('Trash load error:', error);
     notes.value = [];

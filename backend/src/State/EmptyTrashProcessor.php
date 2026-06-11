@@ -20,15 +20,9 @@ class EmptyTrashProcessor implements ProcessorInterface
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): null
     {
         $user = $this->security->getUser();
-        
-        $deletedNotes = $this->noteRepository->findBy([
-            'user' => $user,
-        ]);
 
-        foreach ($deletedNotes as $note) {
-            if ($note->getDeletedAt()) {
-                $this->em->remove($note);
-            }
+        foreach ($this->noteRepository->findAllDeletedByUser($user) as $note) {
+            $this->em->remove($note);
         }
 
         $this->em->flush();

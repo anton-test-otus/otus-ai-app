@@ -8,12 +8,16 @@
     drawer-title="Навигация"
   >
     <slot />
+    <template #footer>
+      <SidebarFooter />
+    </template>
   </AppSidePanel>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppSidePanel from './AppSidePanel.vue'
+import SidebarFooter from '@/components/sidebar/SidebarFooter.vue'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 
 const { isBelowLg } = useBreakpoints()

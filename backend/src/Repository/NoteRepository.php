@@ -132,6 +132,19 @@ class NoteRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return Note[]
+     */
+    public function findAllDeletedByUser($user): array
+    {
+        return $this->createQueryBuilder('n')
+            ->where('n.user = :user')
+            ->andWhere('n.deletedAt IS NOT NULL')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Find notes by title (case-insensitive) for a specific user
      * Returns active notes only (not deleted)
      * 

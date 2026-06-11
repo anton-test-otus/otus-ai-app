@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { notesApi } from '@/api/notes'
+import { useTrashStore } from '@/stores/trash'
 import type { Note, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from '@/types'
 
 export const useNotesStore = defineStore('notes', () => {
@@ -72,6 +73,7 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       const note = await notesApi.create(data)
       notes.value.unshift(note)
+      currentNote.value = note
       return note
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Ошибка создания заметки'
@@ -162,6 +164,7 @@ export const useNotesStore = defineStore('notes', () => {
       if (currentNote.value?.id === id) {
         currentNote.value = null
       }
+      await useTrashStore().fetchCount()
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Ошибка удаления заметки'
       throw err

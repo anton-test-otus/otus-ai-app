@@ -101,6 +101,34 @@
     @apply px-2 py-1.5;
   }
 
+  .panel-padding-x {
+    @apply px-4 lg:px-5 3xl:px-6;
+  }
+
+  .sidebar-nav-item {
+    @apply flex items-center gap-2 list-row-padding rounded text-sm text-surface-700 dark:text-surface-300 transition-colors;
+  }
+
+  .sidebar-nav-item:hover {
+    @apply bg-surface-100 dark:bg-surface-800 text-surface-900 dark:text-surface-100;
+  }
+
+  .sidebar-nav-item--active {
+    @apply bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-300;
+  }
+
+  .sidebar-nav-icon {
+    @apply text-base shrink-0;
+  }
+
+  .sidebar-nav-label {
+    @apply min-w-0 truncate;
+  }
+
+  .sidebar-logout-btn {
+    @apply text-left text-surface-700 dark:text-surface-300;
+  }
+
   .card-title {
     @apply text-sm md:text-base lg:text-lg font-semibold text-surface-900 dark:text-white truncate;
   }
@@ -205,6 +233,20 @@
 .p-sidebar-mask:not(.p-component-overlay) {
   display: none !important;
   pointer-events: none !important;
+}
+
+.sidebar-drawer-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.p-sidebar .p-sidebar-content:has(.sidebar-drawer-body) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0;
 }
 
 .p-dialog,

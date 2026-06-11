@@ -23,12 +23,18 @@ export function getNoteFolderId(note: NoteWithFolder): string | null {
   return folder.id ?? null
 }
 
+export const DEFAULT_NOTE_TITLE = 'Новая заметка'
+
 export function normalizeNote(raw: Note): Note {
   return {
     ...raw,
     folderId: getNoteFolderId(raw),
     isFavorite: raw.isFavorite ?? false,
   }
+}
+
+export function hasNoteBody(content: string): boolean {
+  return content.trim().length > 0
 }
 
 /** Plain-text preview for note lists: strips HTML/markdown and normalizes whitespace */

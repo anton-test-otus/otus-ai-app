@@ -69,6 +69,8 @@ use Symfony\Component\Uid\Uuid;
             uriTemplate: '/notes/trash/empty',
             processor: EmptyTrashProcessor::class,
             read: false,
+            deserialize: false,
+            validate: false,
             name: 'empty_trash'
         ),
     ],

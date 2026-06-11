@@ -38,74 +38,21 @@
             v-tooltip.bottom="'Поиск'"
           />
           <Button
-            v-if="authStore.isAdmin"
-            icon="pi pi-users"
-            severity="secondary"
-            text
-            @click="router.push({ name: 'admin-users' })"
-            v-tooltip.bottom="'Управление пользователями'"
-            rounded
-          />
-          <Button
-            v-if="authStore.isAuthenticated"
-            icon="pi pi-trash"
-            severity="secondary"
-            text
-            @click="router.push({ name: 'trash' })"
-            v-tooltip.bottom="'Корзина'"
-            rounded
-          />
-          <Button
             v-if="authStore.isAuthenticated"
             icon="pi pi-plus"
             label="Новая заметка"
-            @click="createNewNote"
+            @click="openNewNote"
             class="hidden lg:flex"
           />
           <Button
             v-if="authStore.isAuthenticated"
             icon="pi pi-plus"
-            @click="createNewNote"
+            @click="openNewNote"
             class="lg:hidden"
             rounded
             v-tooltip.bottom="'Новая заметка'"
           />
 
-          <div v-if="authStore.isAuthenticated" class="flex items-center space-x-2">
-            <Button
-              icon="pi pi-cog"
-              severity="secondary"
-              text
-              rounded
-              class="md:hidden"
-              @click="router.push({ name: 'settings' })"
-              v-tooltip.bottom="'Настройки'"
-            />
-            <button
-              type="button"
-              class="text-sm text-surface-700 dark:text-surface-300 hidden md:inline hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-              @click="router.push({ name: 'settings' })"
-            >
-              {{ authStore.user?.email }}
-            </button>
-            <Button
-              icon="pi pi-sign-out"
-              label="Выход"
-              severity="secondary"
-              text
-              @click="logout"
-              class="hidden md:flex"
-            />
-            <Button
-              icon="pi pi-sign-out"
-              severity="secondary"
-              text
-              @click="logout"
-              class="md:hidden"
-              rounded
-              v-tooltip.bottom="'Выход'"
-            />
-          </div>
         </div>
       </div>
     </div>
@@ -129,20 +76,16 @@
 
 <script setup lang="ts">
 import { ref, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { MODAL_WIDTH } from '@/constants/modal'
 import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
-import { useNotesStore } from '@/stores/notes'
-import { useFoldersStore } from '@/stores/folders'
+import { useCreateNote } from '@/composables/useCreateNote'
 import { useLayoutPanels } from '@/composables/useLayoutPanels'
 
-const router = useRouter()
 const authStore = useAuthStore()
-const notesStore = useNotesStore()
-const foldersStore = useFoldersStore()
+const { openNewNote } = useCreateNote()
 const layoutPanels = useLayoutPanels()
 
 const showMobileSearch = ref(false)
@@ -157,21 +100,4 @@ async function onMobileSearchShow() {
   mobileSearchRef.value?.focusInput()
 }
 
-async function createNewNote() {
-  try {
-    const note = await notesStore.createNote({
-      title: 'Новая заметка',
-      content: '',
-      folderId: foldersStore.selectedFolderId,
-    })
-    router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
-  } catch (error) {
-    console.error('Ошибка создания заметки:', error)
-  }
-}
-
-function logout() {
-  authStore.logout()
-  router.push({ name: 'login' })
-}
 </script>
