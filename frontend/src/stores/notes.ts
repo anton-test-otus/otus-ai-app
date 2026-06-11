@@ -5,6 +5,7 @@ import type { Note, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from 
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<Note[]>([])
+  const favoriteNotes = ref<Note[]>([])
   const currentNote = ref<Note | null>(null)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
@@ -15,6 +16,15 @@ export const useNotesStore = defineStore('notes', () => {
     totalPages: 0,
   })
 
+  async function fetchFavorites(folderId?: string | null) {
+    try {
+      const response = await notesApi.getFavorites(folderId)
+      favoriteNotes.value = response.data
+    } catch {
+      favoriteNotes.value = []
+    }
+  }
+
   async function fetchNotes(page = 1, perPage = 20, folderId?: string | null) {
     isLoading.value = true
     error.value = null
@@ -23,6 +33,11 @@ export const useNotesStore = defineStore('notes', () => {
       notes.value = response.data
       if (response.meta) {
         pagination.value = response.meta
+      }
+      if (page === 1) {
+        await fetchFavorites(folderId)
+      } else {
+        favoriteNotes.value = []
       }
     } catch (err: any) {
       error.value = err.response?.data?.message || 'Ошибка загрузки заметок'
@@ -61,16 +76,69 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
+  function syncNoteInLists(note: Note) {
+    const index = notes.value.findIndex((n) => n.id === note.id)
+    if (index !== -1) {
+      notes.value[index] = note
+    }
+    if (currentNote.value?.id === note.id) {
+      currentNote.value = note
+    }
+  }
+
+  function syncFavoriteNotes(note: Note) {
+    if (note.isFavorite) {
+      const index = favoriteNotes.value.findIndex((n) => n.id === note.id)
+      if (index !== -1) {
+        favoriteNotes.value[index] = note
+      } else {
+        favoriteNotes.value.unshift(note)
+      }
+      favoriteNotes.value.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
+      notes.value = notes.value.filter((n) => n.id !== note.id)
+      if (pagination.value.total > 0) {
+        pagination.value.total -= 1
+        pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
+      }
+      return
+    }
+
+    favoriteNotes.value = favoriteNotes.value.filter((n) => n.id !== note.id)
+    if (pagination.value.currentPage === 1) {
+      const index = notes.value.findIndex((n) => n.id === note.id)
+      if (index === -1) {
+        notes.value.push(note)
+        notes.value.sort(
+          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
+      }
+    }
+    pagination.value.total += 1
+    pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
+  }
+
+  async function toggleFavorite(note: Note) {
+    error.value = null
+    try {
+      const updated = await notesApi.toggleFavorite(note.id, !note.isFavorite)
+      syncNoteInLists(updated)
+      syncFavoriteNotes(updated)
+      return updated
+    } catch (err: any) {
+      error.value = err.response?.data?.message || 'Ошибка обновления избранного'
+      throw err
+    }
+  }
+
   async function updateNote(id: string, data: UpdateNoteRequest) {
     error.value = null
     try {
       const note = await notesApi.update(id, data)
-      const index = notes.value.findIndex((n) => n.id === id)
-      if (index !== -1) {
-        notes.value[index] = note
-      }
-      if (currentNote.value?.id === id) {
-        currentNote.value = note
+      syncNoteInLists(note)
+      if ('isFavorite' in data) {
+        syncFavoriteNotes(note)
       }
       return note
     } catch (err: any) {
@@ -85,6 +153,7 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       await notesApi.delete(id)
       notes.value = notes.value.filter((n) => n.id !== id)
+      favoriteNotes.value = favoriteNotes.value.filter((n) => n.id !== id)
       if (currentNote.value?.id === id) {
         currentNote.value = null
       }
@@ -119,14 +188,17 @@ export const useNotesStore = defineStore('notes', () => {
 
   return {
     notes,
+    favoriteNotes,
     currentNote,
     isLoading,
     error,
     pagination,
     fetchNotes,
+    fetchFavorites,
     fetchNoteById,
     createNote,
     updateNote,
+    toggleFavorite,
     deleteNote,
     searchNotes,
     clearCurrentNote,

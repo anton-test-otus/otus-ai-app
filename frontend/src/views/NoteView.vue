@@ -47,6 +47,17 @@
                 />
 
                 <Button
+                  v-if="notesStore.currentNote"
+                  :icon="notesStore.currentNote.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"
+                  :severity="notesStore.currentNote.isFavorite ? 'warn' : 'secondary'"
+                  text
+                  rounded
+                  class="note-action-btn"
+                  @click="handleToggleFavorite"
+                  v-tooltip.bottom="notesStore.currentNote.isFavorite ? 'Убрать из избранного' : 'В избранное'"
+                />
+
+                <Button
                   v-if="isBelow3xl"
                   icon="pi pi-info-circle"
                   severity="secondary"
@@ -213,6 +224,7 @@ import { useNotesStore } from '@/stores/notes'
 import { useAutosave } from '@/composables/useAutosave'
 import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
+import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
 
 const route = useRoute()
@@ -222,6 +234,7 @@ const confirm = useConfirm()
 const notesStore = useNotesStore()
 const { isBelow3xl } = useBreakpoints()
 const { effectiveAutosaveDelayMs } = useUserSettings()
+const { toggleFavorite } = useFavoriteToggle()
 
 const noteTitle = ref('')
 const noteContent = ref('')
@@ -324,6 +337,11 @@ function toggleMobileMenu(event: Event) {
 
 function openMetadata() {
   metadataRef.value?.open()
+}
+
+async function handleToggleFavorite() {
+  if (!notesStore.currentNote) return
+  await toggleFavorite(notesStore.currentNote)
 }
 
 async function loadNote(noteId: string) {

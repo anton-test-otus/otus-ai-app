@@ -27,6 +27,7 @@ export function normalizeNote(raw: Note): Note {
   return {
     ...raw,
     folderId: getNoteFolderId(raw),
+    isFavorite: raw.isFavorite ?? false,
   }
 }
 

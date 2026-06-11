@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\NoteRepository;
 use App\State\TrashNotesProvider;
@@ -47,6 +48,10 @@ use Symfony\Component\Uid\Uuid;
             name: 'restore'
         ),
         new Put(
+            processor: NoteProcessor::class,
+            validationContext: ['groups' => ['Default', 'note:update']]
+        ),
+        new Patch(
             processor: NoteProcessor::class,
             validationContext: ['groups' => ['Default', 'note:update']]
         ),

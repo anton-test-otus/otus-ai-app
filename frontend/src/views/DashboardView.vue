@@ -19,7 +19,7 @@
       </div>
 
       <EmptyState
-        v-else-if="notesStore.notes && notesStore.notes.length === 0"
+        v-else-if="isEmpty"
         :icon="foldersStore.selectedFolderId ? 'pi-folder-open' : 'pi-book'"
         :title="emptyMessage"
       >
@@ -32,61 +32,50 @@
         </template>
       </EmptyState>
 
-      <div v-else>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-          <Card
-            v-for="note in notesStore.notes"
-            :key="note.id"
-            class="note-card cursor-pointer hover:shadow-lg transition-shadow"
-            @click="openNote(note.id)"
-          >
-            <template #content>
-              <div class="note-card-body">
-                <h3 class="card-title">{{ note.title }}</h3>
-                <div class="card-meta flex items-center justify-between gap-2 mt-1 mb-2">
-                  <span class="shrink-0">{{ formatDate(note.updatedAt) }}</span>
-                  <span
-                    v-if="!foldersStore.selectedFolderId && note.folder"
-                    class="flex items-center gap-1 min-w-0 max-w-[55%]"
-                    v-tooltip.top="note.folder.name"
-                  >
-                    <i class="pi pi-folder shrink-0 text-xs" />
-                    <span class="truncate">{{ note.folder.name }}</span>
-                  </span>
-                </div>
-                <NoteTagsPreview
-                  v-if="note.tags?.length"
-                  :tags="note.tags"
-                  class="mb-2"
-                />
-                <div class="card-preview note-card-preview">
-                  {{ getNoteContentPreview(note.content) }}
-                </div>
-              </div>
-            </template>
-            <template #footer>
-              <div class="note-card-actions">
-                <Button
-                  icon="pi pi-pencil"
-                  text
-                  rounded
-                  @click.stop="openNoteInEditMode(note.id)"
-                  v-tooltip.bottom="'Редактировать'"
-                />
-                <Button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  text
-                  rounded
-                  @click.stop="confirmDelete(note)"
-                  v-tooltip.bottom="'Удалить'"
-                />
-              </div>
-            </template>
-          </Card>
-        </div>
+      <div v-else class="stack-sections">
+        <section v-if="showFavoritesBlock && notesStore.favoriteNotes.length > 0">
+          <h2 class="section-title flex items-center gap-2">
+            <i class="pi pi-star-fill text-amber-500" />
+            Избранные
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+            <NoteCard
+              v-for="note in notesStore.favoriteNotes"
+              :key="`favorite-${note.id}`"
+              :note="note"
+              :show-folder="!foldersStore.selectedFolderId"
+              :format-date="formatDate"
+              @open="openNote"
+              @edit="openNoteInEditMode"
+              @delete="confirmDelete"
+              @toggle-favorite="handleToggleFavorite"
+            />
+          </div>
+        </section>
 
-        <div v-if="notesStore.pagination.totalPages > 1" class="mt-8 flex justify-center">
+        <section v-if="notesStore.notes.length > 0 || !showFavoritesBlock">
+          <h2
+            v-if="showFavoritesBlock && notesStore.favoriteNotes.length > 0"
+            class="section-title"
+          >
+            Все заметки
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+            <NoteCard
+              v-for="note in notesStore.notes"
+              :key="note.id"
+              :note="note"
+              :show-folder="!foldersStore.selectedFolderId"
+              :format-date="formatDate"
+              @open="openNote"
+              @edit="openNoteInEditMode"
+              @delete="confirmDelete"
+              @toggle-favorite="handleToggleFavorite"
+            />
+          </div>
+        </section>
+
+        <div v-if="notesStore.pagination.totalPages > 1" class="flex justify-center">
           <Paginator
             :rows="notesStore.pagination.perPage"
             :totalRecords="notesStore.pagination.total"
@@ -107,7 +96,6 @@ import { onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import { useToast } from 'primevue/usetoast'
-import Card from 'primevue/card'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import ProgressSpinner from 'primevue/progressspinner'
@@ -116,17 +104,26 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import Toast from 'primevue/toast'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import NoteTagsPreview from '@/components/common/NoteTagsPreview.vue'
+import NoteCard from '@/components/dashboard/NoteCard.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
+import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import type { Note } from '@/types'
-import { getNoteContentPreview } from '@/utils/note'
 
 const router = useRouter()
 const notesStore = useNotesStore()
 const foldersStore = useFoldersStore()
 const confirm = useConfirm()
 const toast = useToast()
+const { toggleFavorite } = useFavoriteToggle()
+
+const showFavoritesBlock = computed(() => notesStore.pagination.currentPage === 1)
+
+const isEmpty = computed(
+  () =>
+    notesStore.notes.length === 0 &&
+    (!showFavoritesBlock.value || notesStore.favoriteNotes.length === 0)
+)
 
 const pageTitle = computed(() =>
   foldersStore.selectedFolder
@@ -168,7 +165,7 @@ async function createNewNote() {
       folderId: foldersStore.selectedFolderId,
     })
     router.push({ name: 'note', params: { id: note.id }, query: { mode: 'edit' } })
-  } catch (error) {
+  } catch {
     toast.add({
       severity: 'error',
       summary: 'Ошибка',
@@ -184,6 +181,10 @@ function openNote(id: string) {
 
 function openNoteInEditMode(id: string) {
   router.push({ name: 'note', params: { id }, query: { mode: 'edit' } })
+}
+
+async function handleToggleFavorite(note: Note) {
+  await toggleFavorite(note)
 }
 
 function confirmDelete(note: Note) {
@@ -203,7 +204,7 @@ function confirmDelete(note: Note) {
           detail: 'Заметка удалена',
           life: 3000,
         })
-      } catch (error) {
+      } catch {
         toast.add({
           severity: 'error',
           summary: 'Ошибка',

@@ -39,6 +39,7 @@ export interface Note {
   folder?: Folder
   title: string
   content: string
+  isFavorite: boolean
   tags?: Tag[]
   createdAt: string
   updatedAt: string
@@ -141,6 +142,7 @@ export interface UpdateNoteRequest {
   content?: string
   folderId?: string | null
   tags?: string[]
+  isFavorite?: boolean
 }
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'

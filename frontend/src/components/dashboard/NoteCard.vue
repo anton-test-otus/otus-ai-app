@@ -1,0 +1,83 @@
+<template>
+  <Card
+    class="note-card cursor-pointer hover:shadow-lg transition-shadow"
+    @click="emit('open', note.id)"
+  >
+    <template #content>
+      <div class="note-card-body">
+        <h3 class="card-title">{{ note.title }}</h3>
+        <div class="card-meta flex items-center justify-between gap-2 mt-1 mb-2">
+          <span class="shrink-0">{{ formattedDate }}</span>
+          <span
+            v-if="showFolder && note.folder"
+            class="flex items-center gap-1 min-w-0 max-w-[55%]"
+            v-tooltip.top="note.folder.name"
+          >
+            <i class="pi pi-folder shrink-0 text-xs" />
+            <span class="truncate">{{ note.folder.name }}</span>
+          </span>
+        </div>
+        <NoteTagsPreview
+          v-if="note.tags?.length"
+          :tags="note.tags"
+          class="mb-2"
+        />
+        <div class="card-preview note-card-preview">
+          {{ preview }}
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="note-card-actions">
+        <Button
+          :icon="note.isFavorite ? 'pi pi-star-fill' : 'pi pi-star'"
+          :severity="note.isFavorite ? 'warn' : 'secondary'"
+          text
+          rounded
+          @click.stop="emit('toggle-favorite', note)"
+          v-tooltip.bottom="note.isFavorite ? 'Убрать из избранного' : 'В избранное'"
+        />
+        <Button
+          icon="pi pi-pencil"
+          text
+          rounded
+          @click.stop="emit('edit', note.id)"
+          v-tooltip.bottom="'Редактировать'"
+        />
+        <Button
+          icon="pi pi-trash"
+          severity="danger"
+          text
+          rounded
+          @click.stop="emit('delete', note)"
+          v-tooltip.bottom="'Удалить'"
+        />
+      </div>
+    </template>
+  </Card>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import Card from 'primevue/card'
+import Button from 'primevue/button'
+import NoteTagsPreview from '@/components/common/NoteTagsPreview.vue'
+import type { Note } from '@/types'
+import { getNoteContentPreview } from '@/utils/note'
+
+const props = defineProps<{
+  note: Note
+  showFolder?: boolean
+  formatDate: (dateString: string) => string
+}>()
+
+const emit = defineEmits<{
+  open: [id: string]
+  edit: [id: string]
+  delete: [note: Note]
+  'toggle-favorite': [note: Note]
+}>()
+
+const preview = computed(() => getNoteContentPreview(props.note.content))
+const formattedDate = computed(() => props.formatDate(props.note.updatedAt))
+</script>

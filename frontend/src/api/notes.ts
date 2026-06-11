@@ -5,7 +5,11 @@ import type { Note, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraColl
 
 export const notesApi = {
   async getAll(page = 1, perPage = 20, folderId?: string | null): Promise<ApiResponse<Note[]>> {
-    const params: any = { page, itemsPerPage: perPage }
+    const params: Record<string, string | number | boolean> = {
+      page,
+      itemsPerPage: perPage,
+      isFavorite: false,
+    }
     if (folderId !== undefined && folderId !== null) {
       params['folder.id'] = folderId
     }
@@ -23,6 +27,26 @@ export const notesApi = {
         totalPages: Math.ceil(total / perPage),
       },
     }
+  },
+
+  async getFavorites(folderId?: string | null, perPage = 100): Promise<ApiResponse<Note[]>> {
+    const params: Record<string, string | number | boolean> = {
+      isFavorite: true,
+      itemsPerPage: perPage,
+    }
+    if (folderId !== undefined && folderId !== null) {
+      params['folder.id'] = folderId
+    }
+    const response = await apiClient.get<HydraCollection<Note>>('/notes', { params })
+
+    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNote)
+
+    return { data }
+  },
+
+  async toggleFavorite(id: string, isFavorite: boolean): Promise<Note> {
+    const note = await apiClient.patch<Note>(`/notes/${id}`, { isFavorite })
+    return normalizeNote(note)
   },
 
   async getById(id: string): Promise<Note> {
