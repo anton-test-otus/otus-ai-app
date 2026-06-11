@@ -114,16 +114,19 @@ export const notesApi = {
   },
 
   async create(data: CreateNoteRequest): Promise<Note> {
-    // Преобразуем folderId в IRI для API Platform
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       title: data.title,
       content: data.content,
     }
-    
+
     if (data.folderId) {
       payload.folder = `/api/folders/${data.folderId}`
     }
-    
+
+    if (data.tags && data.tags.length > 0) {
+      payload.tags = await resolveTagNamesToIris(data.tags)
+    }
+
     const note = await apiClient.post<Note>('/notes', payload)
     return normalizeNote(note)
   },

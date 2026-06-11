@@ -135,6 +135,7 @@ export interface CreateNoteRequest {
   title: string
   content: string
   folderId?: string | null
+  tags?: string[]
 }
 
 export interface UpdateNoteRequest {

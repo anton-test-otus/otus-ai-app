@@ -256,6 +256,97 @@ otus-ai-app/
 - Запланированная Symfony команда удаляет заметки старше 30 дней
 - Каскад: удаление папки перемещает содержимое в корзину
 
+## Управление состоянием на фронтенде
+
+Состояние разделено на **глобальное (Pinia)** — данные с сервера и фильтры, общие для layout/views — и **локальное (composables + refs в views)** — черновик редактора, автосохранение, UI-режимы.
+
+```mermaid
+flowchart LR
+    subgraph pinia [Pinia stores]
+        auth[auth]
+        notes[notes]
+        folders[folders]
+        tags[tags]
+        trash[trash]
+    end
+
+    subgraph local [Локальное состояние]
+        NoteView[NoteView refs + snapshot]
+        useAutosave[useAutosave]
+        useCreateNote[useCreateNote context]
+    end
+
+    API[REST API] --> pinia
+    pinia --> Dashboard[DashboardView / AppLayout]
+    pinia --> NoteView
+    local --> NoteView
+    Router[Vue Router] --> NoteView
+```
+
+### Pinia stores
+
+| Store | Файл | Назначение | Ключевые поля |
+|-------|------|------------|---------------|
+| `auth` | `stores/auth.ts` | Сессия пользователя | `user`, `token`, `isAuthenticated`, `isAdmin`; `user.settings` / `user.defaults` — задержка автосохранения и окно версионирования |
+| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` (общий список без избранных), `favoriteNotes`, `currentNote`, `pagination`, `isLoading`, `error` |
+| `folders` | `stores/folders.ts` | Дерево папок и выбор в сайдбаре | `folders`, `selectedFolderId`, `selectedFolder` |
+| `tags` | `stores/tags.ts` | Теги и фильтр в сайдбаре | `tags` (список с учётом контекста папки/фильтра), `selectedTags` |
+| `trash` | `stores/trash.ts` | Счётчик корзины в sidebar | `count` |
+
+**Паттерны stores:**
+- загрузка с API → запись в `ref`, ошибки в `error`, флаг `loading` / `isLoading`;
+- `folders` и `tags` — дедупликация параллельных `fetch*` через in-flight promise;
+- `notes.syncNoteInLists` / `syncFavoriteNotes` — локальная синхронизация после `PUT` / переключения избранного без полной перезагрузки списка.
+
+### Фильтрация dashboard
+
+`AppLayout` следит за `foldersStore.selectedFolderId` и `tagsStore.selectedTags` и перезагружает теги и заметки с согласованными параметрами:
+
+- **папка** → `notesApi.getAll(..., folderId)` и `tagsApi.getAll({ folderId })`;
+- **теги** (логика **И**) → `notesApi.filter({ tags })` или комбинация с `folderId`;
+- **избранные** загружаются отдельно (`favoriteNotes`), в общем списке `isFavorite=false`.
+
+Выбор папки/тегов живёт в Pinia; списки заметок и тегов — производное состояние от API-ответов.
+
+### Редактор заметки (`NoteView`)
+
+Комбинация store + локального состояния:
+
+| Слой | Что хранит |
+|------|------------|
+| Pinia `notes.currentNote` | Загруженная или только что созданная заметка (id для `PUT`) |
+| Локальные `ref` | `noteTitle`, `noteContent`, `noteFolderId`, `noteTags`, `viewMode` |
+| `savedSnapshot` (let) | Снимок последнего сохранённого состояния для `hasUnsavedChanges()` |
+| `persistDraftPromise` | Mutex: один `POST` при создании черновика |
+| `useAutosave` | Debounce, статус «сохранение / сохранено / ошибка» |
+
+**Режим черновика** определяется маршрутом: `isDraft = route.name === 'note-new'`. Пока черновик — `currentNote = null`, данные только в локальных `ref`.
+
+**Жизненный цикл сохранения:**
+
+1. **Черновик** — пользователь вводит текст → debounced autosave → один `POST /notes` → `syncSavedSnapshot()` → `router.replace` на `/note/:id`.
+2. **Существующая заметка** — `isDraft = false`, `currentNote.id` есть → autosave → `PUT /notes/{id}`.
+3. Параметр `autosaveDelaySeconds` из `auth.user.settings` (fallback — env/defaults) задаёт debounce в `useUserSettings` → `useAutosave`.
+4. Окно версионирования (`versionConsolidationWindowMinutes`) на фронте **не участвует** в сохранении — только на бэкенде при `PUT` (создание записи в `note_versions`).
+
+**Уход со страницы:** `leaveNote()` → `flushSave()` (тот же путь, что autosave; для черновика — тоже один `POST` через mutex).
+
+**Контекст «Новая заметка»:** composable `useCreateNote` держит module-level `activeNoteContext` (папка и теги открытой заметки), синхронизируемый из `NoteView`. На dashboard контекст берётся из `selectedFolderId` и `selectedTags`.
+
+### Прочие composables
+
+| Composable | Состояние | Назначение |
+|------------|-----------|------------|
+| `useAutosave` | `saveStatus`, `saveError`, in-flight promise | Debounced сохранение; один активный save на экземпляр |
+| `useNoteVersions` | `versions`, `isLoading` | История версий в панели метаданных (не в общем списке) |
+| `useUserSettings` | computed из `authStore.user` | Эффективные задержки автосохранения и defaults |
+| `useFavoriteToggle` | — | Обёртка над `notesStore.toggleFavorite` |
+
+### Что не хранится во frontend state
+
+- **Версии заметок** — отдельная таблица/API; в Pinia не кэшируются глобально, только в `useNoteVersions` на время открытой панели.
+- **Полный список заметок пользователя** — только текущая страница + блок избранных; пагинация в `notes.pagination`.
+
 ## API Endpoints
 
 ### Аутентификация

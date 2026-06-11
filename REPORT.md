@@ -486,3 +486,66 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Кнопка «Новая заметка» (фаза 9)
+
+**Задача:** Зафиксировать видимость кнопки в navbar и контекст при создании заметки (папка/теги).
+
+**Решение:**
+- `AppNavbar` — кнопка скрыта на странице корзины (`route.name === 'trash'`); guest-страницы не используют navbar
+- `useCreateNote.resolveNewNoteContext` — на странице открытой заметки (`route.name === 'note'`) наследуются папка и теги `currentNote`; на остальных страницах — `selectedFolderId`, теги не копируются
+- Контекст передаётся в query (`folderId`, `tags`); `NoteView.initDraft` читает теги из query
+- `CreateNoteRequest` и `notesApi.create` — поддержка `tags` при POST (IRI через `resolveTagNamesToIris`); убран отдельный `updateNote` для тегов после создания черновика
+
+**Затронутые файлы:**
+- `frontend/src/components/layout/AppNavbar.vue`
+- `frontend/src/composables/useCreateNote.ts`
+- `frontend/src/views/NoteView.vue`
+- `frontend/src/types/index.ts`, `frontend/src/api/notes.ts`
+
+---
+
+## Теги в редакторе заметки
+
+**Проблема:** `NoteTagsEditor` использовал `tagsStore.tags`, который в сайдбаре фильтруется по выбранной папке — при редактировании заметки были доступны не все теги пользователя.
+
+**Решение:** редактор загружает полный список тегов через `tagsApi.getAll()` без `folderId` в локальное состояние; создание новых тегов идёт через API напрямую, без перезаписи отфильтрованного списка сайдбара.
+
+**Затронутые файлы:** `frontend/src/components/common/NoteTagsEditor.vue`
+
+---
+
+## Тулбар NoteView на широких экранах (≥ 3xl)
+
+**Проблема:** на экранах ≥ 1400px фиксированная панель метаданных справа перекрывала кнопки тулбара (редактирование, просмотр, удаление) — тулбар занимал всю ширину main, а spacer метаданных был только у области редактора.
+
+**Решение:** layout `NoteView` перестроен: тулбар и редактор в одной колонке слева, `NoteMetadata` — соседний flex-элемент справа (как у левого сайдбара). Spacer панели метаданных резервирует место и для тулбара.
+
+**Затронутые файлы:** `frontend/src/views/NoteView.vue`
+
+---
+
+## Контекст тегов при создании заметки
+
+**Проблема:** новая заметка не получала теги из фильтра dashboard и актуальные теги открытой заметки (брались устаревшие данные из `currentNote`).
+
+**Решение:**
+- `useCreateNote` — на страницах заметки контекст из `syncActiveNoteContext` (живые `noteTags` / `noteFolderId`); на остальных страницах — теги из `tagsStore.selectedTags` (имена по id)
+- `NoteView` синхронизирует контекст при загрузке, инициализации черновика и изменении папки/тегов
+
+**Затронутые файлы:** `frontend/src/composables/useCreateNote.ts`, `frontend/src/views/NoteView.vue`
+
+---
+
+## Массовое создание черновиков (POST /notes)
+
+**Проблема:** при автосохранении и уходе со страницы `/note-new` параллельно вызывался `persistDraftNote` из нескольких путей (`useAutosave`, `leaveNote`, `onBeforeRouteLeave`, `goBack`) без общего mutex и без проверки «уже сохранено». У пользователя `test@test.local` за одну секунду создалось 1132 дубликата «Внутренняя заметка» (версии заметок тут не при чём — в `note_versions` одна запись).
+
+**Решение:**
+- общий `persistDraftPromise` — все параллельные вызовы ждут один `POST /notes`;
+- проверка `hasUnsavedChanges()` перед созданием черновика;
+- `leaveNote` унифицирован через `flushSave()` (тот же mutex `activeSave` в `useAutosave`).
+
+**Затронутые файлы:** `frontend/src/views/NoteView.vue`
+
+---
+

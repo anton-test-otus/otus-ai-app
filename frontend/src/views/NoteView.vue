@@ -1,6 +1,7 @@
 <template>
-  <div class="h-[calc(100vh-4rem)] flex flex-col">
-      <div class="border-b app-border app-chrome">
+  <div class="h-[calc(100vh-4rem)] flex min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <div class="border-b app-border app-chrome shrink-0">
         <div class="max-w-full mx-auto note-toolbar-padding">
           <div class="flex items-center justify-between gap-2 min-w-0">
             <div class="flex items-center gap-2 min-w-0 flex-1">
@@ -111,78 +112,76 @@
         <Message severity="error">{{ notesStore.error }}</Message>
       </div>
 
-      <div v-else class="flex-1 overflow-hidden flex min-w-0">
-        <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div
-            v-if="viewMode === 'edit'"
-            class="flex-1 min-w-0 overflow-hidden flex flex-col"
-          >
-            <MarkdownEditor
-              ref="editorRef"
-              v-model="noteContent"
-              @update:modelValue="handleContentChange"
-              @insertWikiLink="showLinkModal = true"
-            />
-          </div>
-
-          <div
-            v-else
-            class="flex-1 min-w-0 overflow-auto"
-          >
-            <MarkdownPreview :content="noteContent" />
-          </div>
+      <div v-else class="flex-1 overflow-hidden flex flex-col min-w-0">
+        <div
+          v-if="viewMode === 'edit'"
+          class="flex-1 min-w-0 overflow-hidden flex flex-col"
+        >
+          <MarkdownEditor
+            ref="editorRef"
+            v-model="noteContent"
+            @update:modelValue="handleContentChange"
+            @insertWikiLink="showLinkModal = true"
+          />
         </div>
 
-        <!-- Note Metadata Panel -->
-        <NoteMetadata ref="metadataRef">
-          <div class="space-y-6">
-            <FolderSelector
-              v-model="noteFolderId"
-              @update:model-value="handleFolderChange"
-            />
-            
-            <Divider />
-            
-            <NoteTagsEditor
-              v-model="noteTags"
-              @update:model-value="handleTagsChange"
-            />
-            
-            <Divider v-if="showVersionHistory" />
-            
-            <VersionHistoryPanel
-              v-if="!isDraft && showVersionHistory && notesStore.currentNote"
-              :note-id="notesStore.currentNote.id"
-              :current-note="notesStore.currentNote"
-              @close="showVersionHistory = false"
-              @restore="handleVersionRestore"
-            />
-            
-            <Divider />
-            
-            <BacklinksPanel
-              v-if="!isDraft && notesStore.currentNote"
-              :note-id="notesStore.currentNote.id"
-            />
-            
-            <Divider />
-            
-            <div>
-              <h4 class="text-sm font-semibold mb-2">Информация</h4>
-              <div class="text-xs text-surface-500 dark:text-surface-400 space-y-1">
-                <div v-if="isDraft">Черновик — сохранится после ввода текста</div>
-                <template v-else>
-                  <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
-                  <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
-                </template>
-              </div>
-            </div>
-          </div>
-        </NoteMetadata>
+        <div
+          v-else
+          class="flex-1 min-w-0 overflow-auto"
+        >
+          <MarkdownPreview :content="noteContent" />
+        </div>
       </div>
     </div>
 
-    <Toast />
+    <NoteMetadata v-if="isNoteReady && !notesStore.error" ref="metadataRef">
+      <div class="space-y-6">
+        <FolderSelector
+          v-model="noteFolderId"
+          @update:model-value="handleFolderChange"
+        />
+
+        <Divider />
+
+        <NoteTagsEditor
+          v-model="noteTags"
+          @update:model-value="handleTagsChange"
+        />
+
+        <Divider v-if="showVersionHistory" />
+
+        <VersionHistoryPanel
+          v-if="!isDraft && showVersionHistory && notesStore.currentNote"
+          :note-id="notesStore.currentNote.id"
+          :current-note="notesStore.currentNote"
+          @close="showVersionHistory = false"
+          @restore="handleVersionRestore"
+        />
+
+        <Divider />
+
+        <BacklinksPanel
+          v-if="!isDraft && notesStore.currentNote"
+          :note-id="notesStore.currentNote.id"
+        />
+
+        <Divider />
+
+        <div>
+          <h4 class="text-sm font-semibold mb-2">Информация</h4>
+          <div class="text-xs text-surface-500 dark:text-surface-400 space-y-1">
+            <div v-if="isDraft">Черновик — сохранится после ввода текста</div>
+            <template v-else>
+              <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
+              <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
+            </template>
+          </div>
+        </div>
+      </div>
+    </NoteMetadata>
+  </div>
+
+  <Toast />
     <ConfirmDialog />
     <LinkNoteModal
       v-model:visible="showLinkModal"
@@ -191,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
@@ -214,7 +213,7 @@ import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import { useAutosave } from '@/composables/useAutosave'
-import { useCreateNote } from '@/composables/useCreateNote'
+import { useCreateNote, syncActiveNoteContext } from '@/composables/useCreateNote'
 import { DEFAULT_NOTE_TITLE, hasNoteBody } from '@/utils/note'
 import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
@@ -245,6 +244,13 @@ const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
 
 const isDraft = computed(() => route.name === 'note-new')
+
+function syncNoteContextForCreate() {
+  syncActiveNoteContext({
+    folderId: noteFolderId.value,
+    tags: [...noteTags.value],
+  })
+}
 
 interface NoteDraftSnapshot {
   title: string
@@ -304,13 +310,17 @@ function syncEditorContent() {
   }
 }
 
-let isPersistingDraft = false
+let persistDraftPromise: Promise<void> | null = null
+
+function isDraftPersistInFlight(): boolean {
+  return persistDraftPromise !== null
+}
 
 async function saveNoteIfChanged() {
   const content = getCurrentContent()
 
   if (isDraft.value) {
-    if (!hasNoteBody(content) || isPersistingDraft) {
+    if (!hasUnsavedChanges() || !hasNoteBody(content) || isDraftPersistInFlight()) {
       return
     }
     await persistDraftNote(content)
@@ -335,22 +345,22 @@ async function saveNoteIfChanged() {
   syncSavedSnapshot()
 }
 
-async function persistDraftNote(content: string) {
-  if (isPersistingDraft) {
+async function persistDraftNote(content: string): Promise<void> {
+  if (persistDraftPromise) {
+    return persistDraftPromise
+  }
+
+  if (!hasUnsavedChanges() || !hasNoteBody(content)) {
     return
   }
 
-  isPersistingDraft = true
-  try {
+  persistDraftPromise = (async () => {
     const note = await createNoteWithContent({
       title: noteTitle.value,
       content,
       folderId: noteFolderId.value,
+      tags: noteTags.value,
     })
-
-    if (noteTags.value.length > 0) {
-      await notesStore.updateNote(note.id, { tags: noteTags.value })
-    }
 
     noteContent.value = content
     syncSavedSnapshot()
@@ -360,9 +370,11 @@ async function persistDraftNote(content: string) {
       params: { id: note.id },
       query: { mode: viewMode.value },
     })
-  } finally {
-    isPersistingDraft = false
-  }
+  })().finally(() => {
+    persistDraftPromise = null
+  })
+
+  return persistDraftPromise
 }
 
 function shouldAutosave(): boolean {
@@ -370,7 +382,7 @@ function shouldAutosave(): boolean {
     return false
   }
   if (isDraft.value) {
-    return hasNoteBody(getCurrentContent()) && !isPersistingDraft
+    return hasNoteBody(getCurrentContent()) && !isDraftPersistInFlight()
   }
   return true
 }
@@ -382,15 +394,6 @@ const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = 
 
 async function leaveNote(): Promise<void> {
   syncEditorContent()
-
-  if (isDraft.value) {
-    const content = getCurrentContent()
-    if (hasNoteBody(content) && !isPersistingDraft) {
-      await persistDraftNote(content)
-    }
-    return
-  }
-
   await flushSave()
 }
 
@@ -420,6 +423,7 @@ async function loadNote(noteId: string) {
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
     syncSavedSnapshot()
+    syncNoteContextForCreate()
     isNoteReady.value = true
   } catch {
     toast.add({
@@ -436,6 +440,7 @@ function initDraft() {
   isNoteReady.value = false
   isTitleFocused.value = false
   resetAutosave()
+  persistDraftPromise = null
   notesStore.clearCurrentNote()
 
   const modeFromQuery = route.query.mode as ViewMode | undefined
@@ -445,13 +450,23 @@ function initDraft() {
     ? route.query.folderId
     : null
 
+  const tagsFromQuery = route.query.tags
+  const tags: string[] = Array.isArray(tagsFromQuery)
+    ? tagsFromQuery.filter((tag): tag is string => typeof tag === 'string')
+    : typeof tagsFromQuery === 'string'
+      ? [tagsFromQuery]
+      : []
+
   noteTitle.value = DEFAULT_NOTE_TITLE
   noteContent.value = ''
   noteFolderId.value = folderIdFromQuery ?? foldersStore.selectedFolderId ?? null
-  noteTags.value = []
+  noteTags.value = tags
   syncSavedSnapshot()
+  syncNoteContextForCreate()
   isNoteReady.value = true
 }
+
+watch([noteFolderId, noteTags], syncNoteContextForCreate, { deep: true })
 
 onMounted(() => {
   if (isDraft.value) {
@@ -459,6 +474,10 @@ onMounted(() => {
   } else {
     loadNote(route.params.id as string)
   }
+})
+
+onUnmounted(() => {
+  syncActiveNoteContext(null)
 })
 
 watch(

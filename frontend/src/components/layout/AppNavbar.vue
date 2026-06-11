@@ -38,14 +38,14 @@
             v-tooltip.bottom="'Поиск'"
           />
           <Button
-            v-if="authStore.isAuthenticated"
+            v-if="showNewNoteButton"
             icon="pi pi-plus"
             label="Новая заметка"
             @click="openNewNote"
             class="hidden lg:flex"
           />
           <Button
-            v-if="authStore.isAuthenticated"
+            v-if="showNewNoteButton"
             icon="pi pi-plus"
             @click="openNewNote"
             class="lg:hidden"
@@ -75,7 +75,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { MODAL_WIDTH } from '@/constants/modal'
@@ -84,9 +85,14 @@ import { useAuthStore } from '@/stores/auth'
 import { useCreateNote } from '@/composables/useCreateNote'
 import { useLayoutPanels } from '@/composables/useLayoutPanels'
 
+const route = useRoute()
 const authStore = useAuthStore()
 const { openNewNote } = useCreateNote()
 const layoutPanels = useLayoutPanels()
+
+const showNewNoteButton = computed(
+  () => authStore.isAuthenticated && route.name !== 'trash',
+)
 
 const showMobileSearch = ref(false)
 const mobileSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)

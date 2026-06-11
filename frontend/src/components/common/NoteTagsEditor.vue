@@ -36,7 +36,8 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import Chips from 'primevue/chips';
 import Button from 'primevue/button';
-import { useTagsStore } from '../../stores/tags';
+import { tagsApi } from '@/api/tags';
+import type { Tag } from '@/types';
 
 interface Props {
   modelValue: string[];
@@ -47,10 +48,10 @@ const emit = defineEmits<{
   'update:modelValue': [value: string[]];
 }>();
 
-const tagsStore = useTagsStore();
+const userTags = ref<Tag[]>([]);
 const showSuggestions = ref(true);
 
-const availableTags = computed(() => tagsStore.tags.map(t => t.name));
+const availableTags = computed(() => userTags.value.map((tag) => tag.name));
 
 const filteredSuggestions = computed(() => {
   return availableTags.value.filter(tag => !props.modelValue.includes(tag));
@@ -69,22 +70,31 @@ function addSuggestion(tagName: string) {
   }
 }
 
+function getTagByName(tagName: string): Tag | undefined {
+  const normalized = tagName.toLowerCase();
+  return userTags.value.find((tag) => tag.name.toLowerCase() === normalized);
+}
+
+async function loadUserTags() {
+  userTags.value = await tagsApi.getAll();
+}
+
 async function createTagIfNotExists(tagName: string) {
-  const existing = tagsStore.getTagByName(tagName);
-  if (!existing) {
-    try {
-      await tagsStore.createTag(tagName);
-    } catch (error) {
-      console.error('Failed to create tag:', error);
-    }
+  if (getTagByName(tagName)) {
+    return;
+  }
+
+  try {
+    const newTag = await tagsApi.create(tagName);
+    userTags.value = [...userTags.value, newTag].sort((a, b) =>
+      a.name.localeCompare(b.name),
+    );
+  } catch (error) {
+    console.error('Failed to create tag:', error);
   }
 }
 
-onMounted(async () => {
-  if (tagsStore.tags.length === 0) {
-    await tagsStore.fetchTags();
-  }
-});
+onMounted(loadUserTags);
 
 watch(() => props.modelValue, () => {
   showSuggestions.value = filteredSuggestions.value.length > 0;
