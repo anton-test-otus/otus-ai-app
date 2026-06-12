@@ -358,6 +358,7 @@ flowchart LR
 | POST | `/api/auth/refresh` | Обновление JWT токена |
 | GET | `/api/auth/me` | Получение текущего пользователя (включая `settings` и `defaults`) |
 | PATCH | `/api/auth/settings` | Обновление настроек текущего пользователя |
+| POST | `/api/auth/change-password` | Смена пароля (текущий + новый; мин. 6 символов; новый ≠ текущий) |
 
 ### Заметки
 

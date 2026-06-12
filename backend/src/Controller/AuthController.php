@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Dto\ChangePasswordDto;
 use App\Dto\UpdateUserSettingsDto;
 use App\Entity\User;
 use App\Service\UserSettingsResolver;
@@ -142,6 +143,52 @@ class AuthController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json($this->serializeUser($user));
+    }
+
+    #[Route('/change-password', name: 'api_auth_change_password', methods: ['POST'])]
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $this->getUser();
+
+        if (!$user instanceof User) {
+            return $this->json(['error' => 'Не авторизован'], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!is_array($data)) {
+            return $this->json(['error' => 'Invalid JSON'], Response::HTTP_BAD_REQUEST);
+        }
+
+        /** @var ChangePasswordDto $dto */
+        $dto = $this->serializer->deserialize(
+            json_encode($data),
+            ChangePasswordDto::class,
+            'json',
+        );
+
+        if (!$this->passwordHasher->isPasswordValid($user, $dto->currentPassword ?? '')) {
+            return $this->json(
+                ['errors' => ['currentPassword' => 'Неверный текущий пароль']],
+                Response::HTTP_BAD_REQUEST,
+            );
+        }
+
+        $errors = $this->validator->validate($dto);
+        if (count($errors) > 0) {
+            $errorMessages = [];
+            foreach ($errors as $error) {
+                $errorMessages[$error->getPropertyPath()] = $error->getMessage();
+            }
+
+            return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
+        }
+
+        $hashedPassword = $this->passwordHasher->hashPassword($user, $dto->newPassword);
+        $user->setPassword($hashedPassword);
+        $this->entityManager->flush();
+
+        return $this->json(['message' => 'Пароль успешно изменён']);
     }
 
     private function serializeUser(User $user): array

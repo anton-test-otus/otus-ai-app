@@ -2,7 +2,13 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
 import { getApiErrorMessage } from '@/utils/apiError'
-import type { User, LoginRequest, RegisterRequest, UpdateUserSettingsRequest } from '@/types'
+import type {
+  User,
+  LoginRequest,
+  RegisterRequest,
+  UpdateUserSettingsRequest,
+  ChangePasswordRequest,
+} from '@/types'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
@@ -91,6 +97,17 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function changePassword(payload: ChangePasswordRequest) {
+    error.value = null
+    try {
+      await authApi.changePassword(payload)
+      return true
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Не удалось сменить пароль')
+      throw err
+    }
+  }
+
   function logout() {
     user.value = null
     token.value = null
@@ -110,6 +127,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     fetchUser,
     updateSettings,
+    changePassword,
     logout,
   }
 })

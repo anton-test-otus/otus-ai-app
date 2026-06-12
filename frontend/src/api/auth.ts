@@ -5,6 +5,7 @@ import type {
   AuthResponse,
   User,
   UpdateUserSettingsRequest,
+  ChangePasswordRequest,
 } from '@/types'
 
 export const authApi = {
@@ -26,5 +27,9 @@ export const authApi = {
 
   async updateSettings(settings: UpdateUserSettingsRequest): Promise<User> {
     return apiClient.patch<User>('/auth/settings', settings)
+  },
+
+  async changePassword(payload: ChangePasswordRequest): Promise<{ message: string }> {
+    return apiClient.post<{ message: string }>('/auth/change-password', payload)
   },
 }

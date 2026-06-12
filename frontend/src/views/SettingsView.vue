@@ -3,12 +3,12 @@
       <div class="page-header">
         <h1 class="page-title">Настройки</h1>
         <p class="page-subtitle mt-0 text-surface-600 dark:text-surface-400">
-          Параметры редактирования и учётная запись
+          Автосохранение, оформление и безопасность аккаунта
         </p>
       </div>
 
       <Card class="mb-6">
-        <template #title>Редактирование</template>
+        <template #title>Автосохранение и версии</template>
         <template #content>
           <div class="stack-sections">
             <div class="flex flex-col gap-2">
@@ -97,10 +97,90 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <label class="font-medium text-surface-900 dark:text-white">Пароль</label>
-              <p class="text-muted m-0">
-                Смена пароля будет доступна в следующих обновлениях.
-              </p>
+              <div>
+                <Button
+                  :label="showPasswordForm ? 'Скрыть' : 'Сменить пароль'"
+                  :icon="showPasswordForm ? 'pi pi-times' : 'pi pi-lock'"
+                  severity="secondary"
+                  text
+                  size="small"
+                  @click="togglePasswordForm"
+                />
+              </div>
+
+              <form
+                v-if="showPasswordForm"
+                class="stack-sections mt-2"
+                @submit.prevent="onChangePassword"
+              >
+                <div class="flex flex-col gap-2">
+                  <label for="current-password" class="font-medium text-surface-900 dark:text-white">
+                    Текущий пароль
+                  </label>
+                  <Password
+                    id="current-password"
+                    v-model="currentPassword"
+                    placeholder="••••••••"
+                    :class="{ 'p-invalid': errors.currentPassword }"
+                    :feedback="false"
+                    toggle-mask
+                    class="w-full md:w-80"
+                    input-class="w-full"
+                    autocomplete="current-password"
+                  />
+                  <small v-if="errors.currentPassword" class="text-red-600">
+                    {{ errors.currentPassword }}
+                  </small>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <label for="new-password" class="font-medium text-surface-900 dark:text-white">
+                    Новый пароль
+                  </label>
+                  <Password
+                    id="new-password"
+                    v-model="newPassword"
+                    placeholder="••••••••"
+                    :class="{ 'p-invalid': errors.newPassword }"
+                    toggle-mask
+                    class="w-full md:w-80"
+                    input-class="w-full"
+                    autocomplete="new-password"
+                  />
+                  <small v-if="errors.newPassword" class="text-red-600">
+                    {{ errors.newPassword }}
+                  </small>
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <label for="confirm-new-password" class="font-medium text-surface-900 dark:text-white">
+                    Подтверждение нового пароля
+                  </label>
+                  <Password
+                    id="confirm-new-password"
+                    v-model="confirmNewPassword"
+                    placeholder="••••••••"
+                    :class="{ 'p-invalid': errors.confirmNewPassword }"
+                    :feedback="false"
+                    toggle-mask
+                    class="w-full md:w-80"
+                    input-class="w-full"
+                    autocomplete="new-password"
+                  />
+                  <small v-if="errors.confirmNewPassword" class="text-red-600">
+                    {{ errors.confirmNewPassword }}
+                  </small>
+                </div>
+
+                <div class="flex gap-3">
+                  <Button
+                    type="submit"
+                    label="Сохранить пароль"
+                    icon="pi pi-check"
+                    :loading="changingPassword"
+                  />
+                </div>
+              </form>
             </div>
           </div>
         </template>
@@ -110,12 +190,17 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useToast } from 'primevue/usetoast'
 import Card from 'primevue/card'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
+import Password from 'primevue/password'
 import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
+import { z } from '@/lib/zod'
+import { HttpError } from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
 import { appConfig } from '@/config/app'
@@ -131,6 +216,8 @@ const authStore = useAuthStore()
 const { theme, setTheme } = useTheme()
 const toast = useToast()
 const saving = ref(false)
+const changingPassword = ref(false)
+const showPasswordForm = ref(false)
 const themeOptions = THEME_OPTIONS
 
 const selectedTheme = computed({
@@ -163,6 +250,40 @@ const versionOptions = computed(() =>
     value,
   })),
 )
+
+const passwordSchema = toTypedSchema(
+  z.object({
+    currentPassword: z.string({ required_error: 'Текущий пароль обязателен' })
+      .min(1, 'Текущий пароль обязателен'),
+    newPassword: z.string({ required_error: 'Новый пароль обязателен' })
+      .min(6, 'Пароль должен содержать минимум 6 символов'),
+    confirmNewPassword: z.string({ required_error: 'Подтверждение пароля обязательно' })
+      .min(6, 'Подтверждение пароля должно содержать минимум 6 символов'),
+  }).superRefine((data, ctx) => {
+    if (data.newPassword !== data.confirmNewPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Пароли не совпадают',
+        path: ['confirmNewPassword'],
+      })
+    }
+    if (data.currentPassword && data.newPassword && data.currentPassword === data.newPassword) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Новый пароль должен отличаться от текущего',
+        path: ['newPassword'],
+      })
+    }
+  }),
+)
+
+const { defineField, errors, handleSubmit, resetForm, setFieldError } = useForm({
+  validationSchema: passwordSchema,
+})
+
+const [currentPassword] = defineField('currentPassword')
+const [newPassword] = defineField('newPassword')
+const [confirmNewPassword] = defineField('confirmNewPassword')
 
 watch(
   () => authStore.user,
@@ -199,4 +320,55 @@ async function saveSettings() {
     saving.value = false
   }
 }
+
+function togglePasswordForm() {
+  showPasswordForm.value = !showPasswordForm.value
+  if (!showPasswordForm.value) {
+    resetForm()
+  }
+}
+
+function applyServerFieldErrors(err: unknown) {
+  if (!(err instanceof HttpError) || !err.response?.errors || typeof err.response.errors !== 'object') {
+    return
+  }
+
+  const serverErrors = err.response.errors as Record<string, string>
+  if (serverErrors.currentPassword) {
+    setFieldError('currentPassword', serverErrors.currentPassword)
+  }
+  if (serverErrors.newPassword) {
+    setFieldError('newPassword', serverErrors.newPassword)
+  }
+}
+
+const onChangePassword = handleSubmit(async (values) => {
+  changingPassword.value = true
+  try {
+    await authStore.changePassword({
+      currentPassword: values.currentPassword,
+      newPassword: values.newPassword,
+    })
+
+    toast.add({
+      severity: 'success',
+      summary: 'Пароль изменён',
+      life: 3000,
+    })
+
+    resetForm()
+    showPasswordForm.value = false
+  } catch (err: unknown) {
+    applyServerFieldErrors(err)
+
+    toast.add({
+      severity: 'error',
+      summary: 'Ошибка',
+      detail: authStore.error ?? 'Не удалось сменить пароль',
+      life: 5000,
+    })
+  } finally {
+    changingPassword.value = false
+  }
+})
 </script>

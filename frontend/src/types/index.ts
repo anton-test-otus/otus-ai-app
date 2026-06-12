@@ -24,6 +24,11 @@ export interface UpdateUserSettingsRequest {
   versionConsolidationWindowMinutes?: number | null
 }
 
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}
+
 export interface UserStatistics {
   notesCount: number
   foldersCount: number
