@@ -21,32 +21,22 @@
       Нет тегов
     </div>
 
-    <div v-else class="tags-list stack-items">
-      <div
+    <div v-else class="tag-cloud">
+      <TagPill
         v-for="tag in tags"
         :key="tag.id"
-        class="tag-item flex items-center justify-between list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-        :class="{ 'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500': isTagSelected(tag.id) }"
+        :label="tag.name"
+        :selected="isTagSelected(tag.id)"
         @click="toggleTag(tag.id)"
-      >
-        <div class="flex items-center gap-2 flex-1">
-          <i class="pi pi-tag text-sm text-primary-500" />
-          <span class="text-sm">{{ tag.name }}</span>
-        </div>
-        <Badge
-          v-if="isTagSelected(tag.id)"
-          value="✓"
-          severity="success"
-        />
-      </div>
+      />
     </div>
 
-    <!-- Clear filters button -->
     <div v-if="selectedTags.length > 0" class="mt-4">
       <Button
         label="Очистить фильтры"
         icon="pi pi-times"
         outlined
+        size="small"
         class="w-full"
         @click="clearFilters"
       />
@@ -55,48 +45,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
-import Button from 'primevue/button';
-import Badge from 'primevue/badge';
-import ProgressSpinner from 'primevue/progressspinner';
-import { useTagsStore } from '../../stores/tags';
+import { computed } from 'vue'
+import Button from 'primevue/button'
+import ProgressSpinner from 'primevue/progressspinner'
+import TagPill from '@/components/common/TagPill.vue'
+import { useTagsStore } from '@/stores/tags'
 
-const tagsStore = useTagsStore();
+const tagsStore = useTagsStore()
 
 const emit = defineEmits<{
-  filterChange: [tagIds: string[]];
-}>();
+  filterChange: [tagIds: string[]]
+}>()
 
-const tags = computed(() => tagsStore.tags);
-const selectedTags = computed(() => tagsStore.selectedTags);
-const loading = computed(() => tagsStore.loading);
+const tags = computed(() => tagsStore.tags)
+const selectedTags = computed(() => tagsStore.selectedTags)
+const loading = computed(() => tagsStore.loading)
 
 function isTagSelected(tagId: string): boolean {
-  return selectedTags.value.includes(tagId);
+  return selectedTags.value.includes(tagId)
 }
 
 function toggleTag(tagId: string) {
-  tagsStore.toggleTagSelection(tagId);
-  emit('filterChange', selectedTags.value);
+  tagsStore.toggleTagSelection(tagId)
+  emit('filterChange', selectedTags.value)
 }
 
 function clearFilters() {
-  tagsStore.clearTagSelection();
-  emit('filterChange', []);
+  tagsStore.clearTagSelection()
+  emit('filterChange', [])
 }
-
 </script>
 
 <style scoped>
 .tags-panel {
   @apply select-none;
-}
-
-.tag-item {
-  @apply transition-all;
-}
-
-.tag-item:hover {
-  @apply transform scale-[1.02];
 }
 </style>

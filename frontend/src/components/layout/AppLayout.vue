@@ -26,6 +26,8 @@
         <RouterView />
       </main>
     </div>
+
+    <KeyboardShortcutsDialog />
   </div>
 </template>
 
@@ -42,7 +44,9 @@ import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
 import { useTrashStore } from '@/stores/trash'
 import { useBreakpoints } from '@/composables/useBreakpoints'
+import { useAppKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
 import { LAYOUT_PANELS_KEY } from '@/composables/useLayoutPanels'
+import KeyboardShortcutsDialog from '@/components/common/KeyboardShortcutsDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -51,6 +55,8 @@ const foldersStore = useFoldersStore()
 const tagsStore = useTagsStore()
 const trashStore = useTrashStore()
 const { isBelowLg } = useBreakpoints()
+
+useAppKeyboardShortcuts()
 
 const sidebarRef = ref<InstanceType<typeof AppSidebar> | null>(null)
 

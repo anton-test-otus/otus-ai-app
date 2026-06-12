@@ -193,6 +193,7 @@ otus-ai-app/
 │   └── php/
 │       └── Dockerfile
 ├── docker-compose.yml          # PostgreSQL, PHP-FPM, Nginx
+├── docker-compose.prod.yml     # (фаза 16) demo/prod без node-сервиса
 ├── ARCHITECTURE.md
 ├── REPORT.md                   # Заметки о рефакторинге и решениях
 └── README.md
@@ -333,6 +334,39 @@ flowchart LR
 
 **Контекст «Новая заметка»:** composable `useCreateNote` держит module-level `activeNoteContext` (папка и теги открытой заметки), синхронизируемый из `NoteView`. На dashboard контекст берётся из `selectedFolderId` и `selectedTags`.
 
+**Автозаголовок:** пока пользователь не редактировал поле заголовка вручную (`titleWasManuallyEdited`), при изменении тела заметки вызывается `deriveAutoTitleFromMarkdown` (`utils/autoTitle.ts`): первое предложение первого абзаца, обрезка по границе слова до 128 символов. Обновляется только `noteTitle` — редактор не перерисовывается, курсор не сбрасывается.
+
+### Горячие клавиши
+
+Глобальный слушатель в `useAppKeyboardShortcuts` (монтируется в `AppLayout`):
+
+| Сочетание | Действие |
+|-----------|----------|
+| `Ctrl+Alt+N` | Новая заметка (вместо `Ctrl+N` — новое окно браузера) |
+| `Ctrl+K` | Фокус на поиск (desktop) / modal поиска (mobile) |
+| `?` / `F1` | Справка по горячим клавишам (`KeyboardShortcutsDialog`) |
+
+На странице заметки (`useNoteKeyboardShortcuts`):
+
+| Сочетание | Действие |
+|-----------|----------|
+| `Ctrl+S` | Немедленное сохранение (`flushSave`) |
+| `Ctrl+Alt+M` | Переключение редактирование / просмотр |
+| `Ctrl+Alt+B` | Назад к списку заметок |
+
+В редакторе (`useEditorFormattingShortcuts` в `MarkdownEditor`; `Ctrl+B` / `Ctrl+I` — встроенные Milkdown):
+
+| Сочетание | Действие |
+|-----------|----------|
+| `Ctrl+Shift+H` | Заголовок H2 |
+| `Ctrl+Shift+8` / `7` | Маркированный / нумерованный список |
+| `Ctrl+Shift+.` | Цитата |
+| `Ctrl+Alt+C` | Inline-код |
+| `Ctrl+Alt+K` | Ссылка (только в редакторе) |
+| `Ctrl+Alt+W` | Wiki-ссылка на заметку |
+
+Подсказки: tooltips на кнопках тулбара редактора и заметки; кнопка «?» в navbar; модальное окно `KeyboardShortcutsDialog` с группами из `constants/keyboardShortcuts.ts` (на macOS подписи `Ctrl` → `⌘`).
+
 ### Прочие composables
 
 | Composable | Состояние | Назначение |
@@ -341,6 +375,8 @@ flowchart LR
 | `useNoteVersions` | `versions`, `isLoading` | История версий в панели метаданных (не в общем списке) |
 | `useUserSettings` | computed из `authStore.user` | Эффективные задержки автосохранения и defaults |
 | `useFavoriteToggle` | — | Обёртка над `notesStore.toggleFavorite` |
+| `useAppKeyboardShortcuts` | глобальный `keydown` | Новая заметка, поиск, справка |
+| `useKeyboardShortcutsHelp` | `shortcutsHelpVisible` | Открытие/закрытие `KeyboardShortcutsDialog` |
 
 ### Что не хранится во frontend state
 
@@ -516,6 +552,20 @@ const noteSchema = z.object({
 - Tailwind: `darkMode: 'class'`; semantic-классы в `main.css` (`.app-chrome`, `.text-muted` и др.) с вариантами `dark:`
 - PrimeVue: динамическая подмена `#primevue-theme` — `lara-light-blue` / `lara-dark-blue`
 - Markdown-редактор и preview следуют глобальной теме через Tailwind `dark:` (отдельная тема Milkdown не используется)
+
+## Варианты развёртывания (Docker)
+
+> Реализация — **фаза 16**. Ниже целевая схема.
+
+| | Разработка | Демо / продакшен |
+|---|------------|------------------|
+| Compose | `docker-compose.yml` | `docker-compose.prod.yml` (или profile `demo`) |
+| Frontend | сервис `node`: `npm install` + Vite dev (`5173`) | **без** `node`; статика из `frontend/dist` |
+| API + SPA | API `:8080`, UI `:5173` | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` |
+| Сборка фронта | не обязательна (HMR) | **один раз** до запуска (`npm run build` в CI или multi-stage образ) |
+| Назначение | ежедневная разработка | сдача проекта, демо, staging |
+
+Текущий nginx (`docker/nginx/default.conf`) отдаёт только Symfony `public/`; для demo-режима потребуется конфиг с `try_files` для SPA и проксированием `/api`.
 
 ## Роли пользователей
 

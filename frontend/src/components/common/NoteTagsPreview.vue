@@ -1,5 +1,5 @@
 <template>
-  <div v-if="tags.length > 0" class="note-tags-preview flex flex-wrap gap-1">
+  <div v-if="tags.length > 0" class="tag-cloud">
     <span
       v-for="tag in visibleTags"
       :key="tag.id"

@@ -22,7 +22,7 @@
 
         <!-- Search bar - hidden on small screens -->
         <div v-if="authStore.isAuthenticated" class="hidden md:flex flex-1 max-w-xl">
-          <SearchBar />
+          <SearchBar ref="desktopSearchRef" />
         </div>
 
         <!-- Actions -->
@@ -38,11 +38,21 @@
             v-tooltip.bottom="'Поиск'"
           />
           <Button
+            v-if="authStore.isAuthenticated"
+            icon="pi pi-question-circle"
+            severity="secondary"
+            text
+            rounded
+            @click="openShortcutsHelp"
+            v-tooltip.bottom="'Горячие клавиши (?)'"
+          />
+          <Button
             v-if="showNewNoteButton"
             icon="pi pi-plus"
             label="Новая заметка"
             @click="openNewNote"
             class="hidden lg:flex"
+            v-tooltip.bottom="`Новая заметка (${formatShortcutKeys(SHORTCUT_KEYS.newNote)})`"
           />
           <Button
             v-if="showNewNoteButton"
@@ -50,7 +60,7 @@
             @click="openNewNote"
             class="lg:hidden"
             rounded
-            v-tooltip.bottom="'Новая заметка'"
+            v-tooltip.bottom="`Новая заметка (${formatShortcutKeys(SHORTCUT_KEYS.newNote)})`"
           />
 
         </div>
@@ -75,7 +85,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -84,11 +94,17 @@ import SearchBar from '@/components/common/SearchBar.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCreateNote } from '@/composables/useCreateNote'
 import { useLayoutPanels } from '@/composables/useLayoutPanels'
+import {
+  registerSearchFocusHandler,
+  useKeyboardShortcutsHelp,
+} from '@/composables/useKeyboardShortcuts'
+import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
 
 const route = useRoute()
 const authStore = useAuthStore()
 const { openNewNote } = useCreateNote()
 const layoutPanels = useLayoutPanels()
+const { openShortcutsHelp } = useKeyboardShortcutsHelp()
 
 const showNewNoteButton = computed(
   () => authStore.isAuthenticated && route.name !== 'trash',
@@ -96,6 +112,24 @@ const showNewNoteButton = computed(
 
 const showMobileSearch = ref(false)
 const mobileSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)
+const desktopSearchRef = ref<InstanceType<typeof SearchBar> | null>(null)
+
+let unregisterSearchFocus: (() => void) | null = null
+
+onMounted(() => {
+  unregisterSearchFocus = registerSearchFocusHandler(() => {
+    if (window.matchMedia('(min-width: 768px)').matches) {
+      desktopSearchRef.value?.focusInput()
+      return
+    }
+    openMobileSearch()
+  })
+})
+
+onUnmounted(() => {
+  unregisterSearchFocus?.()
+  unregisterSearchFocus = null
+})
 
 function openMobileSearch() {
   showMobileSearch.value = true

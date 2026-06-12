@@ -76,7 +76,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { useEventListener } from '@vueuse/core'
 import { MODAL_WIDTH } from '@/constants/modal'
+import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
+import { useEditorFormattingShortcuts } from '@/composables/useAppKeyboardShortcuts'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
@@ -167,16 +170,26 @@ const tools: Array<{
   labelClass?: string
   icon?: string
 }> = [
-  { name: 'heading', label: 'H', labelClass: 'font-semibold', title: 'Заголовок', command: 'heading' },
-  { name: 'bold', label: 'B', labelClass: 'font-bold', title: 'Жирный (Ctrl+B)', command: 'bold' },
-  { name: 'italic', label: 'I', labelClass: 'italic', title: 'Курсив (Ctrl+I)', command: 'italic' },
-  { name: 'list', icon: 'pi pi-list', title: 'Маркированный список', command: 'bullet_list' },
-  { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: 'Нумерованный список', command: 'ordered_list' },
-  { name: 'quote', icon: 'pi pi-comment', title: 'Цитата', command: 'blockquote' },
-  { name: 'code', icon: 'pi pi-code', title: 'Код', command: 'code' },
-  { name: 'link', icon: 'pi pi-link', title: 'Ссылка', command: 'link' },
-  { name: 'wiki-link', icon: 'pi pi-sitemap', title: 'Ссылка на заметку', command: 'wiki_link' },
+  { name: 'heading', label: 'H', labelClass: 'font-semibold', title: `Заголовок (${formatShortcutKeys(SHORTCUT_KEYS.heading)})`, command: 'heading' },
+  { name: 'bold', label: 'B', labelClass: 'font-bold', title: `Жирный (${formatShortcutKeys(SHORTCUT_KEYS.bold)})`, command: 'bold' },
+  { name: 'italic', label: 'I', labelClass: 'italic', title: `Курсив (${formatShortcutKeys(SHORTCUT_KEYS.italic)})`, command: 'italic' },
+  { name: 'list', icon: 'pi pi-list', title: `Маркированный список (${formatShortcutKeys(SHORTCUT_KEYS.bulletList)})`, command: 'bullet_list' },
+  { name: 'ordered-list', icon: 'pi pi-sort-numeric-down', title: `Нумерованный список (${formatShortcutKeys(SHORTCUT_KEYS.orderedList)})`, command: 'ordered_list' },
+  { name: 'quote', icon: 'pi pi-comment', title: `Цитата (${formatShortcutKeys(SHORTCUT_KEYS.blockquote)})`, command: 'blockquote' },
+  { name: 'code', icon: 'pi pi-code', title: `Код (${formatShortcutKeys(SHORTCUT_KEYS.code)})`, command: 'code' },
+  { name: 'link', icon: 'pi pi-link', title: `Ссылка (${formatShortcutKeys(SHORTCUT_KEYS.link)})`, command: 'link' },
+  { name: 'wiki-link', icon: 'pi pi-sitemap', title: `Ссылка на заметку (${formatShortcutKeys(SHORTCUT_KEYS.wikiLink)})`, command: 'wiki_link' },
 ]
+
+const { onEditorKeyDown } = useEditorFormattingShortcuts({
+  heading: () => applyFormat('heading'),
+  bullet_list: () => applyFormat('bullet_list'),
+  ordered_list: () => applyFormat('ordered_list'),
+  blockquote: () => applyFormat('blockquote'),
+  code: () => applyFormat('code'),
+  link: () => applyFormat('link'),
+  wiki_link: () => applyFormat('wiki_link'),
+})
 
 onMounted(async () => {
   if (!editorRef.value) return
@@ -223,6 +236,13 @@ onMounted(async () => {
     console.error('Failed to create Milkdown editor:', error)
   }
 })
+
+useEventListener(
+  () => editorRef.value,
+  'keydown',
+  onEditorKeyDown,
+  { capture: true },
+)
 
 watch(
   () => props.modelValue,

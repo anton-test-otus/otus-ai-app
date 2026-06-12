@@ -101,11 +101,17 @@
                 class="text-sm text-surface-600 dark:text-surface-400 line-clamp-3"
                 v-html="highlightMatch(note.contentPreview)"
               />
-              <div class="flex items-center gap-4 mt-3 text-xs text-surface-500 dark:text-surface-400">
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-xs text-surface-500 dark:text-surface-400">
                 <span><i class="pi pi-calendar mr-1" />{{ formatDate(note.updatedAt) }}</span>
                 <span v-if="note.folder"><i class="pi pi-folder mr-1" />{{ note.folder.name }}</span>
-                <div v-if="note.tags && note.tags.length > 0" class="flex gap-1">
-                  <Tag v-for="tag in note.tags" :key="tag.id" :value="tag.name" severity="info" />
+                <div v-if="note.tags && note.tags.length > 0" class="tag-cloud">
+                  <span
+                    v-for="tag in note.tags"
+                    :key="tag.id"
+                    class="note-tag-pill"
+                  >
+                    {{ tag.name }}
+                  </span>
                 </div>
               </div>
             </template>
@@ -143,7 +149,6 @@ import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Card from 'primevue/card';
-import Tag from 'primevue/tag';
 import Paginator from 'primevue/paginator';
 import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';

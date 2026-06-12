@@ -18,13 +18,11 @@
       <div class="text-xs text-surface-500 dark:text-surface-400 mb-1">
         Предложения:
       </div>
-      <div class="flex flex-wrap gap-2">
-        <Button
+      <div class="tag-cloud">
+        <TagPill
           v-for="suggestion in filteredSuggestions"
           :key="suggestion"
           :label="suggestion"
-          size="small"
-          outlined
           @click="addSuggestion(suggestion)"
         />
       </div>
@@ -35,7 +33,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import Chips from 'primevue/chips';
-import Button from 'primevue/button';
+import TagPill from '@/components/common/TagPill.vue';
 import { tagsApi } from '@/api/tags';
 import type { Tag } from '@/types';
 
@@ -107,7 +105,8 @@ watch(() => props.modelValue, () => {
 }
 
 .note-tags-editor :deep(.p-chips-token) {
-  @apply bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded-full px-3 py-1 text-sm;
+  @apply inline-flex max-w-none items-center rounded-full px-2.5 py-1 text-xs leading-tight
+    bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
 }
 
 .note-tags-editor :deep(.p-chips-token-icon) {

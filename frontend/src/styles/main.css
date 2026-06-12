@@ -97,6 +97,28 @@
     @apply space-y-2 md:space-y-3;
   }
 
+  .tag-cloud {
+    @apply flex flex-wrap gap-1.5;
+  }
+
+  .tag-cloud-pill {
+    @apply inline-flex max-w-[10rem] items-center rounded-full px-2.5 py-1 text-xs leading-tight;
+  }
+
+  .tag-cloud-pill--interactive {
+    @apply cursor-pointer border border-transparent bg-surface-100 text-surface-700 transition-colors
+      hover:bg-surface-200 dark:bg-surface-800 dark:text-surface-300 dark:hover:bg-surface-700;
+  }
+
+  .tag-cloud-pill--selected {
+    @apply border-primary-300 bg-primary-100 text-primary-800
+      dark:border-primary-600 dark:bg-primary-900/40 dark:text-primary-200;
+  }
+
+  .tag-cloud-pill--static {
+    @apply bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
+  }
+
   .list-row-padding {
     @apply px-2 py-1.5;
   }
@@ -174,7 +196,8 @@
   }
 
   .note-tag-pill {
-    @apply inline-flex max-w-full items-center rounded-full bg-primary-100 px-2 py-0.5 text-xs text-primary-700 truncate dark:bg-primary-900/30 dark:text-primary-300;
+    @apply inline-flex max-w-[10rem] items-center truncate rounded-full px-2.5 py-1 text-xs leading-tight
+      bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300;
   }
 
   .note-tag-pill-overflow {

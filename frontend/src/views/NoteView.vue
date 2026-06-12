@@ -26,7 +26,10 @@
             </div>
 
             <div v-show="!isTitleFocused" class="flex items-center gap-1 md:gap-4 shrink-0">
-              <SaveIndicator :status="saveStatus" />
+              <SaveIndicator
+                :status="saveStatus"
+                v-tooltip.bottom="`Сохранить (${formatShortcutKeys(SHORTCUT_KEYS.save)})`"
+              />
 
               <div class="flex items-center gap-1 md:gap-2">
                 <Button
@@ -37,7 +40,7 @@
                   rounded
                   class="note-action-btn"
                   @click="switchToEditMode"
-                  v-tooltip.bottom="'Редактировать'"
+                  v-tooltip.bottom="`Редактировать (${formatShortcutKeys(SHORTCUT_KEYS.toggleMode)})`"
                 />
                 <Button
                   v-else
@@ -47,7 +50,7 @@
                   rounded
                   class="note-action-btn"
                   @click="switchToPreviewMode"
-                  v-tooltip.bottom="'Просмотр'"
+                  v-tooltip.bottom="`Просмотр (${formatShortcutKeys(SHORTCUT_KEYS.toggleMode)})`"
                 />
 
                 <Button
@@ -89,7 +92,7 @@
                   rounded
                   class="note-action-btn md:hidden"
                   @click="goBack"
-                  v-tooltip.bottom="'Назад'"
+                  v-tooltip.bottom="`Назад (${formatShortcutKeys(SHORTCUT_KEYS.goBack)})`"
                 />
                 <Button
                   icon="pi pi-arrow-left"
@@ -97,6 +100,7 @@
                   text
                   class="hidden md:flex"
                   @click="goBack"
+                  v-tooltip.bottom="`Назад (${formatShortcutKeys(SHORTCUT_KEYS.goBack)})`"
                 />
               </div>
             </div>
@@ -218,6 +222,9 @@ import { DEFAULT_NOTE_TITLE, hasNoteBody } from '@/utils/note'
 import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
+import { useNoteKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
+import { deriveAutoTitleFromMarkdown } from '@/utils/autoTitle'
+import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
 
 const route = useRoute()
@@ -239,6 +246,7 @@ const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
 const showVersionHistory = ref(false)
 const isTitleFocused = ref(false)
+const titleWasManuallyEdited = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
 const isNoteReady = ref(false)
@@ -392,6 +400,35 @@ const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = 
   { hasChanges: shouldAutosave, delay: effectiveAutosaveDelayMs },
 )
 
+useNoteKeyboardShortcuts({
+  onSave: async () => {
+    syncEditorContent()
+    await flushSave()
+  },
+  onToggleMode: () => {
+    if (viewMode.value === 'preview') {
+      switchToEditMode()
+    } else {
+      switchToPreviewMode()
+    }
+  },
+  onGoBack: goBack,
+})
+
+function maybeApplyAutoTitle() {
+  if (titleWasManuallyEdited.value) {
+    return
+  }
+
+  const content = getCurrentContent()
+  const autoTitle = deriveAutoTitleFromMarkdown(content)
+  if (!autoTitle || autoTitle === noteTitle.value) {
+    return
+  }
+
+  noteTitle.value = autoTitle
+}
+
 async function leaveNote(): Promise<void> {
   syncEditorContent()
   await flushSave()
@@ -422,6 +459,7 @@ async function loadNote(noteId: string) {
     noteContent.value = note.content
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
+    titleWasManuallyEdited.value = note.title !== DEFAULT_NOTE_TITLE
     syncSavedSnapshot()
     syncNoteContextForCreate()
     isNoteReady.value = true
@@ -461,6 +499,7 @@ function initDraft() {
   noteContent.value = ''
   noteFolderId.value = folderIdFromQuery ?? foldersStore.selectedFolderId ?? null
   noteTags.value = tags
+  titleWasManuallyEdited.value = false
   syncSavedSnapshot()
   syncNoteContextForCreate()
   isNoteReady.value = true
@@ -531,10 +570,12 @@ watch(
 )
 
 function handleTitleChange() {
+  titleWasManuallyEdited.value = true
   triggerSave()
 }
 
 function handleContentChange() {
+  maybeApplyAutoTitle()
   triggerSave()
 }
 
@@ -548,10 +589,17 @@ function handleTagsChange() {
 
 function switchToEditMode() {
   viewMode.value = 'edit'
-  router.replace({ 
-    name: 'note', 
-    params: { id: route.params.id },
-    query: { mode: 'edit' }
+  if (isDraft.value) {
+    router.replace({
+      name: 'note-new',
+      query: { ...route.query, mode: 'edit' },
+    })
+    return
+  }
+  router.replace({
+    name: 'note',
+    params: { id: route.params.id as string },
+    query: { mode: 'edit' },
   })
 }
 
@@ -560,9 +608,16 @@ function switchToPreviewMode() {
   triggerSave()
 
   viewMode.value = 'preview'
+  if (isDraft.value) {
+    router.replace({
+      name: 'note-new',
+      query: { ...route.query, mode: 'preview' },
+    })
+    return
+  }
   router.replace({
     name: 'note',
-    params: { id: route.params.id },
+    params: { id: route.params.id as string },
     query: { mode: 'preview' },
   })
 }
@@ -642,6 +697,7 @@ async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequ
     noteContent.value = note.content
     noteFolderId.value = note.folderId || null
     noteTags.value = note.tags?.map(t => t.name) || []
+    titleWasManuallyEdited.value = note.title !== DEFAULT_NOTE_TITLE
     syncSavedSnapshot()
     
     let message = 'Версия восстановлена'
