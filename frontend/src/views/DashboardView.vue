@@ -9,12 +9,12 @@
         </p>
       </div>
 
-      <LoadingState v-if="notesStore.isLoading" />
+      <LoadingState v-if="isInitialLoading" />
 
       <ErrorState
         v-else-if="notesStore.error"
         :message="notesStore.error"
-        @retry="loadNotes(1)"
+        @retry="loadNotes"
       />
 
       <EmptyState
@@ -74,13 +74,13 @@
           </div>
         </section>
 
-        <div v-if="notesStore.pagination.totalPages > 1" class="flex justify-center">
-          <Paginator
-            :rows="notesStore.pagination.perPage"
-            :totalRecords="notesStore.pagination.total"
-            :first="(notesStore.pagination.currentPage - 1) * notesStore.pagination.perPage"
-            @page="onPageChange"
-          />
+        <div
+          v-if="notesStore.hasMore || notesStore.isLoadingMore"
+          ref="loadMoreSentinel"
+          class="flex justify-center py-6"
+          aria-hidden="true"
+        >
+          <LoadingState v-if="notesStore.isLoadingMore" compact />
         </div>
       </div>
     </div>
@@ -92,11 +92,11 @@ import { onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
 import Button from 'primevue/button'
-import Paginator from 'primevue/paginator'
 import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import { useAppToast } from '@/composables/useAppToast'
+import { useInfiniteList } from '@/composables/useInfiniteList'
 import NoteCard from '@/components/dashboard/NoteCard.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
@@ -114,7 +114,14 @@ const { showSuccess, showError } = useAppToast()
 const { toggleFavorite } = useFavoriteToggle()
 const { openNewNote } = useCreateNote()
 
-const showFavoritesBlock = computed(() => notesStore.pagination.currentPage === 1)
+const showFavoritesBlock = computed(() => notesStore.favoriteNotes.length > 0)
+
+const isInitialLoading = computed(
+  () =>
+    notesStore.isLoading &&
+    notesStore.notes.length === 0 &&
+    notesStore.favoriteNotes.length === 0,
+)
 
 const isEmpty = computed(
   () =>
@@ -164,24 +171,44 @@ const emptyMessage = computed(() => {
     : 'У вас пока нет заметок'
 })
 
-async function loadNotes(page = 1, perPage = notesStore.pagination.perPage) {
+async function loadNotes() {
   await notesStore.fetchNotes(
-    page,
-    perPage,
+    1,
+    notesStore.pagination.perPage,
     foldersStore.selectedFolderId,
     tagsStore.selectedTags,
   )
 }
 
+async function loadMoreNotes() {
+  try {
+    await notesStore.loadMoreNotes(
+      foldersStore.selectedFolderId,
+      tagsStore.selectedTags,
+    )
+  } catch (error) {
+    showError(error, 'Не удалось загрузить заметки')
+  }
+}
+
+const { sentinelRef: loadMoreSentinel } = useInfiniteList({
+  onLoadMore: loadMoreNotes,
+  canLoadMore: () =>
+    notesStore.hasMore &&
+    !notesStore.isLoadingMore &&
+    !notesStore.isLoading &&
+    !notesStore.error,
+})
+
 watch(
   [() => foldersStore.selectedFolderId, () => [...tagsStore.selectedTags]],
   async () => {
-    await loadNotes(1)
+    await loadNotes()
   },
 )
 
 onMounted(async () => {
-  await loadNotes(1)
+  await loadNotes()
 })
 
 function openNote(id: string) {
@@ -213,10 +240,6 @@ function confirmDelete(note: NoteListItem) {
       }
     },
   })
-}
-
-async function onPageChange(event: any) {
-  await loadNotes(event.page + 1, event.rows)
 }
 
 function pluralizeNotes(count: number): string {

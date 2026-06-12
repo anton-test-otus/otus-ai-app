@@ -2703,3 +2703,19 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** единый порядок `loading` → `error` → `empty` → контент; ошибки загрузки inline с retry, мутации — через toast.
 
 ---
+
+## Промпт 120
+
+> подгрузку вместо пагинации, да.
+
+### Выполненные действия:
+
+- `notesStore`: `loadMoreNotes`, `isLoadingMore`, `hasMore`; `fetchNotes` с `append` и блокировкой дублирующих запросов; сброс списка при смене папки/тегов
+- Composable `useInfiniteList` — sentinel + IntersectionObserver
+- `DashboardView`: убран `Paginator`, подгрузка при прокрутке, compact-индикатор внизу
+- `SearchBar`: полный поиск в модалке — тот же паттерн append вместо пагинации
+- Обновлены `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md`
+
+**Результат:** заметки на dashboard и результаты полного поиска подгружаются при прокрутке; постраничная навигация убрана.
+
+---

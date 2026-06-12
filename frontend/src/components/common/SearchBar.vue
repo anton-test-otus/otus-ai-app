@@ -73,12 +73,10 @@
       :style="MODAL_WIDTH.lg"
       :maximizable="true"
     >
-      <div v-if="searching" class="flex justify-center py-8">
-        <ProgressSpinner style="width: 50px; height: 50px" stroke-width="4" />
-      </div>
+      <LoadingState v-if="searching && fullResults.length === 0" />
 
       <EmptyState
-        v-else-if="fullResults.length === 0"
+        v-else-if="!searching && fullResults.length === 0"
         icon="pi-search"
         title="Ничего не найдено"
         description="Попробуйте изменить запрос или проверить орфографию"
@@ -118,14 +116,13 @@
           </Card>
         </div>
 
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="mt-4">
-          <Paginator
-            v-model:first="firstResult"
-            :rows="perPage"
-            :total-records="totalResults"
-            @page="onPageChange"
-          />
+        <div
+          v-if="hasMoreResults || loadingMore"
+          ref="loadMoreSentinel"
+          class="flex justify-center py-4"
+          aria-hidden="true"
+        >
+          <LoadingState v-if="loadingMore" compact />
         </div>
       </div>
     </Dialog>
@@ -133,7 +130,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 
 const props = withDefaults(defineProps<{
@@ -149,14 +146,16 @@ import InputText from 'primevue/inputtext';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import Card from 'primevue/card';
-import Paginator from 'primevue/paginator';
-import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';
 import EmptyState from '@/components/common/EmptyState.vue';
+import LoadingState from '@/components/common/LoadingState.vue';
+import { useInfiniteList } from '@/composables/useInfiniteList';
+import { useAppToast } from '@/composables/useAppToast';
 import { searchApi } from '../../api/search';
 import type { NoteListItem } from '../../types';
 
 const router = useRouter();
+const { showError } = useAppToast();
 const searchBarRef = ref<HTMLElement | null>(null);
 const inputRef = ref<InstanceType<typeof InputText> | null>(null);
 const searchQuery = ref('');
@@ -165,11 +164,15 @@ const fullResults = ref<NoteListItem[]>([]);
 const showQuickResults = ref(false);
 const showFullResults = ref(false);
 const searching = ref(false);
+const loadingMore = ref(false);
 const totalResults = ref(0);
 const totalPages = ref(0);
 const currentPage = ref(1);
 const perPage = ref(10);
-const firstResult = ref(0);
+
+const hasMoreResults = computed(() => currentPage.value < totalPages.value);
+
+let fullSearchPromise: Promise<void> | null = null;
 
 let debounceTimer: number | null = null;
 
@@ -220,29 +223,86 @@ async function performQuickSearch() {
   }
 }
 
-async function performFullSearch(page = 1) {
+async function performFullSearch(page = 1, append = false) {
   if (searchQuery.value.length < 2) return;
 
-  searching.value = true;
-  showQuickResults.value = false;
-  showFullResults.value = true;
-  currentPage.value = page;
+  if (append) {
+    if (loadingMore.value || searching.value || !hasMoreResults.value) {
+      return;
+    }
+    if (fullSearchPromise) {
+      return fullSearchPromise;
+    }
+    loadingMore.value = true;
+  } else {
+    if (fullSearchPromise && searching.value) {
+      return fullSearchPromise;
+    }
+    searching.value = true;
+    showQuickResults.value = false;
+    showFullResults.value = true;
+    fullResults.value = [];
+    currentPage.value = 1;
+    totalResults.value = 0;
+    totalPages.value = 0;
+  }
 
+  const promise = (async () => {
+    try {
+      const response = await searchApi.search({
+        q: searchQuery.value,
+        page,
+        perPage: perPage.value,
+      });
+
+      if (append) {
+        const existingIds = new Set(fullResults.value.map((note) => note.id));
+        const newItems = response.data.filter((note) => !existingIds.has(note.id));
+        fullResults.value = [...fullResults.value, ...newItems];
+      } else {
+        fullResults.value = response.data;
+      }
+
+      currentPage.value = response.meta.currentPage;
+      totalResults.value = response.meta.total;
+      totalPages.value = response.meta.totalPages;
+    } catch (error) {
+      if (!append) {
+        fullResults.value = [];
+      }
+      showError(error, 'Не удалось выполнить поиск');
+      throw error;
+    } finally {
+      if (append) {
+        loadingMore.value = false;
+        fullSearchPromise = null;
+      } else {
+        searching.value = false;
+        fullSearchPromise = null;
+      }
+    }
+  })();
+
+  fullSearchPromise = promise;
+  return promise;
+}
+
+async function loadMoreSearchResults() {
   try {
-    const response = await searchApi.search({
-      q: searchQuery.value,
-      page: currentPage.value,
-      perPage: perPage.value,
-    });
-    fullResults.value = response.data;
-    totalResults.value = response.meta.total;
-    totalPages.value = response.meta.totalPages;
-  } catch (error) {
-    console.error('Full search failed:', error);
-  } finally {
-    searching.value = false;
+    await performFullSearch(currentPage.value + 1, true);
+  } catch {
+    // toast уже показан в performFullSearch
   }
 }
+
+const { sentinelRef: loadMoreSentinel } = useInfiniteList({
+  onLoadMore: loadMoreSearchResults,
+  canLoadMore: () =>
+    showFullResults.value &&
+    hasMoreResults.value &&
+    !loadingMore.value &&
+    !searching.value,
+});
 
 function clearSearch() {
   searchQuery.value = '';
@@ -250,6 +310,11 @@ function clearSearch() {
   fullResults.value = [];
   showQuickResults.value = false;
   showFullResults.value = false;
+  loadingMore.value = false;
+  currentPage.value = 1;
+  totalResults.value = 0;
+  totalPages.value = 0;
+  fullSearchPromise = null;
 }
 
 function closeResults() {
@@ -292,10 +357,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-function onPageChange(event: any) {
-  firstResult.value = event.first;
-  performFullSearch(event.page + 1);
-}
 </script>
 
 <style scoped>

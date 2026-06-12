@@ -291,7 +291,7 @@ flowchart LR
 | Store | Файл | Назначение | Ключевые поля |
 |-------|------|------------|---------------|
 | `auth` | `stores/auth.ts` | Сессия пользователя | `user`, `token`, `isAuthenticated`, `isAdmin`; `user.settings` / `user.defaults` — задержка автосохранения и окно версионирования |
-| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` / `favoriteNotes` — `NoteListItem[]` (без `content`, с `contentPreview`); `currentNote` — полный `Note`; `pagination`, `isLoading`, `error` |
+| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` / `favoriteNotes` — `NoteListItem[]` (без `content`, с `contentPreview`); `currentNote` — полный `Note`; `pagination`, `isLoading`, `isLoadingMore`, `hasMore`, `error` |
 | `folders` | `stores/folders.ts` | Дерево папок и выбор в сайдбаре | `folders`, `selectedFolderId`, `selectedFolder` |
 | `tags` | `stores/tags.ts` | Теги и фильтр в сайдбаре | `tags` (список с учётом контекста папки/фильтра), `selectedTags` |
 | `trash` | `stores/trash.ts` | Счётчик корзины в sidebar | `count` |
@@ -393,11 +393,12 @@ flowchart LR
 | `useAppKeyboardShortcuts` | глобальный `keydown` | Новая заметка, поиск, справка |
 | `useKeyboardShortcutsHelp` | `shortcutsHelpVisible` | Открытие/закрытие `KeyboardShortcutsDialog` |
 | `useAppToast` | обёртка PrimeVue Toast | `showSuccess` / `showError` / `showInfo` с `getApiErrorMessage` |
+| `useInfiniteList` | `sentinelRef` + IntersectionObserver | Подгрузка при прокрутке к sentinel (scroll parent определяется автоматически) |
 
 ### Что не хранится во frontend state
 
 - **Версии заметок** — отдельная таблица/API; в Pinia не кэшируются глобально, только в `useNoteVersions` на время открытой панели.
-- **Полный список заметок пользователя** — только текущая страница + блок избранных; пагинация в `notes.pagination`.
+- **Полный список заметок пользователя** — подгружается порциями (infinite scroll на dashboard); метаданные пагинации в `notes.pagination`; избранные — отдельный блок над списком (до выноса в `/favorites`).
 
 ## API Endpoints
 

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { notesApi } from '@/api/notes'
 import { useTrashStore } from '@/stores/trash'
 import { toNoteListItem } from '@/utils/note'
@@ -11,6 +11,7 @@ export const useNotesStore = defineStore('notes', () => {
   const favoriteNotes = ref<NoteListItem[]>([])
   const currentNote = ref<Note | null>(null)
   const isLoading = ref(false)
+  const isLoadingMore = ref(false)
   const error = ref<string | null>(null)
   const pagination = ref<PaginationMeta>({
     currentPage: 1,
@@ -18,6 +19,21 @@ export const useNotesStore = defineStore('notes', () => {
     total: 0,
     totalPages: 0,
   })
+
+  const hasMore = computed(
+    () => pagination.value.currentPage < pagination.value.totalPages,
+  )
+
+  let listCriteriaKey: string | null = null
+  let fetchNotesPromise: Promise<void> | null = null
+  let loadMorePromise: Promise<void> | null = null
+
+  function buildListCriteriaKey(folderId?: string | null, tagIds?: string[]) {
+    return JSON.stringify({
+      folderId: folderId ?? null,
+      tags: [...(tagIds ?? [])].sort(),
+    })
+  }
 
   async function fetchFavorites(folderId?: string | null, tagIds?: string[]) {
     try {
@@ -30,29 +46,86 @@ export const useNotesStore = defineStore('notes', () => {
 
   async function fetchNotes(
     page = 1,
-    perPage = 20,
+    perPage = pagination.value.perPage,
     folderId?: string | null,
     tagIds?: string[],
+    options?: { append?: boolean },
   ) {
-    isLoading.value = true
-    error.value = null
-    try {
-      const response = await notesApi.getAll(page, perPage, folderId, tagIds)
-      notes.value = response.data
-      if (response.meta) {
-        pagination.value = response.meta
+    const append = options?.append ?? false
+    const criteriaKey = buildListCriteriaKey(folderId, tagIds)
+
+    if (append) {
+      if (isLoadingMore.value || isLoading.value || !hasMore.value) {
+        return
       }
-      if (page === 1) {
-        await fetchFavorites(folderId, tagIds)
-      } else {
-        favoriteNotes.value = []
+      if (listCriteriaKey !== criteriaKey) {
+        return
       }
-    } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка загрузки заметок')
-      throw err
-    } finally {
-      isLoading.value = false
+      if (loadMorePromise) {
+        return loadMorePromise
+      }
+      isLoadingMore.value = true
+    } else {
+      if (fetchNotesPromise) {
+        return fetchNotesPromise
+      }
+      isLoading.value = true
+      error.value = null
+      notes.value = []
+      favoriteNotes.value = []
+      listCriteriaKey = criteriaKey
     }
+
+    const promise = (async () => {
+      try {
+        const response = await notesApi.getAll(page, perPage, folderId, tagIds)
+
+        if (append) {
+          const existingIds = new Set(notes.value.map((n) => n.id))
+          const newItems = response.data.filter((n) => !existingIds.has(n.id))
+          notes.value = [...notes.value, ...newItems]
+        } else {
+          notes.value = response.data
+          await fetchFavorites(folderId, tagIds)
+        }
+
+        if (response.meta) {
+          pagination.value = response.meta
+        }
+      } catch (err: unknown) {
+        if (!append) {
+          error.value = getApiErrorMessage(err, 'Ошибка загрузки заметок')
+        }
+        throw err
+      } finally {
+        if (append) {
+          isLoadingMore.value = false
+          loadMorePromise = null
+        } else {
+          isLoading.value = false
+          fetchNotesPromise = null
+        }
+      }
+    })()
+
+    if (append) {
+      loadMorePromise = promise
+    } else {
+      fetchNotesPromise = promise
+    }
+
+    return promise
+  }
+
+  async function loadMoreNotes(folderId?: string | null, tagIds?: string[]) {
+    const nextPage = pagination.value.currentPage + 1
+    await fetchNotes(
+      nextPage,
+      pagination.value.perPage,
+      folderId,
+      tagIds,
+      { append: true },
+    )
   }
 
   async function fetchNoteById(id: string) {
@@ -117,14 +190,12 @@ export const useNotesStore = defineStore('notes', () => {
     }
 
     favoriteNotes.value = favoriteNotes.value.filter((n) => n.id !== note.id)
-    if (pagination.value.currentPage === 1) {
-      const index = notes.value.findIndex((n) => n.id === note.id)
-      if (index === -1) {
-        notes.value.push(item)
-        notes.value.sort(
-          (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        )
-      }
+    const index = notes.value.findIndex((n) => n.id === note.id)
+    if (index === -1) {
+      notes.value.push(item)
+      notes.value.sort(
+        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      )
     }
     pagination.value.total += 1
     pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
@@ -203,9 +274,12 @@ export const useNotesStore = defineStore('notes', () => {
     favoriteNotes,
     currentNote,
     isLoading,
+    isLoadingMore,
+    hasMore,
     error,
     pagination,
     fetchNotes,
+    loadMoreNotes,
     fetchFavorites,
     fetchNoteById,
     createNote,

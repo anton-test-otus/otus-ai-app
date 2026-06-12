@@ -574,3 +574,21 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Подгрузка заметок вместо пагинации (фаза 12)
+
+**Задача:** Infinite scroll на dashboard (и поиск) вместо кнопок пагинации.
+
+**Решение:**
+- `notesStore.fetchNotes` — режим `append` для следующих страниц; `loadMoreNotes`, `isLoadingMore`, `hasMore`; дедупликация in-flight запросов; сброс списка и избранных при смене фильтров
+- Composable `useInfiniteList` — sentinel + `IntersectionObserver` с автоопределением scroll-контейнера (`main` в `AppLayout`)
+- `DashboardView` — убран `Paginator`, индикатор `LoadingState compact` внизу при подгрузке
+- `SearchBar` — полный поиск в модалке по тому же паттерну (append + sentinel)
+
+**Затронутые файлы:**
+- `frontend/src/composables/useInfiniteList.ts`
+- `frontend/src/stores/notes.ts`
+- `frontend/src/views/DashboardView.vue`
+- `frontend/src/components/common/SearchBar.vue`
+
+---
+
