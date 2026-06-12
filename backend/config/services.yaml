@@ -30,3 +30,7 @@ services:
         arguments:
             $defaultAutosaveDelaySeconds: '%user_settings.default_autosave_delay_seconds%'
             $defaultVersionConsolidationWindowMinutes: '%user_settings.default_version_consolidation_window_minutes%'
+
+    App\Serializer\NoteListNormalizer:
+        tags:
+            - { name: serializer.normalizer, priority: 64 }

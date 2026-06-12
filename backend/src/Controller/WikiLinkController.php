@@ -50,36 +50,42 @@ class WikiLinkController extends AbstractController
             return $this->json(['error' => 'Invalid JSON'], 400);
         }
         
-        $titles = $data['titles'] ?? [];
+        $ids = $data['ids'] ?? [];
         
-        if (!is_array($titles) || empty($titles)) {
+        if (!is_array($ids) || empty($ids)) {
             return $this->json(['error' => 'Invalid request'], 400);
         }
 
         $user = $this->getUser();
-        $resolved = [];
+        $normalizedIds = array_values(array_unique(array_filter(array_map(
+            static fn ($id) => is_string($id) ? strtolower(trim($id)) : '',
+            $ids
+        ))));
 
-        foreach ($titles as $title) {
-            $notes = $this->noteRepository->findByTitleCaseInsensitive($title, $user);
-            
-            if (empty($notes)) {
-                $resolved[$title] = null;
-            } elseif (count($notes) === 1) {
-                $resolved[$title] = [
-                    'id' => $notes[0]->getId(),
-                    'title' => $notes[0]->getTitle(),
-                    'updatedAt' => $notes[0]->getUpdatedAt()->format('c'),
-                ];
-            } else {
-                // Multiple notes with same title - return all for disambiguation
-                $resolved[$title] = array_map(function (Note $note) {
-                    return [
-                        'id' => $note->getId(),
-                        'title' => $note->getTitle(),
-                        'updatedAt' => $note->getUpdatedAt()->format('c'),
-                    ];
-                }, $notes);
+        if ($normalizedIds === []) {
+            return $this->json(['error' => 'Invalid request'], 400);
+        }
+
+        $notes = $this->noteRepository->findActiveByIdsForUser($normalizedIds, $user);
+        $notesById = [];
+        foreach ($notes as $note) {
+            $notesById[strtolower((string) $note->getId())] = $note;
+        }
+
+        $resolved = [];
+        foreach ($normalizedIds as $id) {
+            $note = $notesById[$id] ?? null;
+
+            if ($note === null) {
+                $resolved[$id] = null;
+                continue;
             }
+
+            $resolved[$id] = [
+                'id' => (string) $note->getId(),
+                'title' => $note->getTitle(),
+                'updatedAt' => $note->getUpdatedAt()->format('c'),
+            ];
         }
 
         return $this->json($resolved);

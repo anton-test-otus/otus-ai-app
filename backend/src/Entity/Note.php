@@ -14,7 +14,6 @@ use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
 use App\Repository\NoteRepository;
-use App\Service\NotePreviewService;
 use App\State\TrashNotesProvider;
 use App\State\RestoreNoteProcessor;
 use App\State\EmptyTrashProcessor;
@@ -214,12 +213,6 @@ class Note
     public function getIsFavorite(): bool
     {
         return $this->isFavorite;
-    }
-
-    #[Groups(['note:list'])]
-    public function getContentPreview(): string
-    {
-        return NotePreviewService::buildPreview($this->content);
     }
 
     public function setIsFavorite(bool $isFavorite): static

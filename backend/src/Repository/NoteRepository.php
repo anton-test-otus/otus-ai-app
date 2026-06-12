@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Note;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Uid\Uuid;
 
 class NoteRepository extends ServiceEntityRepository
 {
@@ -142,6 +143,54 @@ class NoteRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @param string[] $ids
+     * @return Note[]
+     */
+    public function findActiveByIdsForUser(array $ids, $user): array
+    {
+        if ($ids === []) {
+            return [];
+        }
+
+        $uuidIds = [];
+        foreach ($ids as $id) {
+            if (!Uuid::isValid($id)) {
+                continue;
+            }
+            $uuidIds[] = Uuid::fromString($id);
+        }
+
+        if ($uuidIds === []) {
+            return [];
+        }
+
+        return $this->createQueryBuilder('n')
+            ->where('n.id IN (:ids)')
+            ->andWhere('n.user = :user')
+            ->andWhere('n.deletedAt IS NULL')
+            ->setParameter('ids', $uuidIds)
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOneActiveByIdForUser(string $id, $user): ?Note
+    {
+        if (!Uuid::isValid($id)) {
+            return null;
+        }
+
+        return $this->createQueryBuilder('n')
+            ->where('n.id = :id')
+            ->andWhere('n.user = :user')
+            ->andWhere('n.deletedAt IS NULL')
+            ->setParameter('id', Uuid::fromString($id))
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     /**

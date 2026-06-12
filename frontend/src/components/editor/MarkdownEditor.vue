@@ -71,6 +71,45 @@
         />
       </template>
     </Dialog>
+
+    <Dialog
+      v-model:visible="showWikiLinkDialog"
+      modal
+      header="Редактировать ссылку на заметку"
+      :style="MODAL_WIDTH.md"
+      @hide="resetWikiLinkDialog"
+    >
+      <div class="space-y-4">
+        <p v-if="wikiLinkTargetTitle" class="text-sm text-gray-600 dark:text-gray-400">
+          Заметка: <span class="font-medium text-gray-800 dark:text-gray-200">{{ wikiLinkTargetTitle }}</span>
+        </p>
+
+        <div class="flex flex-col gap-2">
+          <label for="wiki-link-alias-input" class="text-sm font-medium">Отображаемый текст</label>
+          <InputText
+            id="wiki-link-alias-input"
+            v-model="wikiLinkAlias"
+            placeholder="Текст ссылки"
+            class="w-full"
+            autofocus
+            @keyup.enter="confirmWikiLinkAlias"
+          />
+          <small class="text-gray-500 dark:text-gray-400">
+            Пустое значение — показывать актуальный заголовок заметки
+          </small>
+        </div>
+      </div>
+      <template #footer>
+        <Button
+          label="Как заголовок"
+          severity="secondary"
+          text
+          @click="useNoteTitleAsWikiLinkAlias"
+        />
+        <Button label="Отмена" severity="secondary" text @click="showWikiLinkDialog = false" />
+        <Button label="Сохранить" @click="confirmWikiLinkAlias" />
+      </template>
+    </Dialog>
   </div>
 </template>
 
@@ -101,8 +140,20 @@ import { listener, listenerCtx } from '@milkdown/plugin-listener'
 import { clipboard } from '@milkdown/plugin-clipboard'
 import { replaceAll, getMarkdown } from '@milkdown/utils'
 import { TextSelection } from '@milkdown/prose/state'
-import { formatWikiLink } from '@/lib/wikiLinks'
-import { wikiLinkDecorationPlugin } from './wikiLinkDecorationPlugin'
+import { wikiLinkInputPlugin, registerWikiLinkBracketCallback } from './wikiLinkInputPlugin'
+import {
+  insertWikiLinkIntoEditor,
+  updateWikiLinkInEditor,
+  remarkWikiLinkPlugin,
+  remarkWikiLinkStringifyPlugin,
+  wikiLinkNodeView,
+  wikiLinkSchema,
+  insertWikiLinkCommand,
+  updateWikiLinkCommand,
+  registerWikiLinkEditCallback,
+  resolveWikiLinkTitle,
+} from './wikiLinkNode'
+import { getWikiLinkSelectionContext } from './wikiLinkSelection'
 import { toolbarStatePlugin, registerToolbarStateCallback } from './toolbarStatePlugin'
 import { getLinkSelectionContext } from './linkSelection'
 import type { ToolbarCommand } from './toolbarActiveState'
@@ -130,13 +181,19 @@ const linkUrl = ref('')
 const linkAnchor = ref('')
 const linkUrlError = ref('')
 const linkIsEditing = ref(false)
+const showWikiLinkDialog = ref(false)
+const wikiLinkAlias = ref('')
+const wikiLinkTargetTitle = ref('')
 const activeCommands = ref(new Set<ToolbarCommand>())
 let editor: Editor | null = null
 let unregisterToolbarState: (() => void) | null = null
+let unregisterWikiLinkBracket: (() => void) | null = null
+let unregisterWikiLinkEdit: (() => void) | null = null
 let isUpdating = false
 let lastEmittedMarkdown: string | null = null
 let savedSelection: { from: number; to: number } | null = null
 let savedWikiSelection: { from: number; to: number } | null = null
+let savedWikiLinkEdit: { pos: number; noteId: string } | null = null
 
 function getCurrentMarkdown(): string {
   if (!editor) return ''
@@ -199,6 +256,15 @@ onMounted(async () => {
       activeCommands.value = new Set(active)
     })
 
+    unregisterWikiLinkBracket = registerWikiLinkBracketCallback((trigger) => {
+      savedWikiSelection = trigger
+      emit('insertWikiLink')
+    })
+
+    unregisterWikiLinkEdit = registerWikiLinkEditCallback((request) => {
+      void openWikiLinkAliasDialog(request)
+    })
+
     editor = await Editor.make()
       .config((ctx) => {
         ctx.set(rootCtx, editorRef.value!)
@@ -219,7 +285,13 @@ onMounted(async () => {
       .use(history)
       .use(listener)
       .use(clipboard)
-      .use(wikiLinkDecorationPlugin)
+      .use(wikiLinkSchema)
+      .use(remarkWikiLinkPlugin)
+      .use(remarkWikiLinkStringifyPlugin)
+      .use(insertWikiLinkCommand)
+      .use(updateWikiLinkCommand)
+      .use(wikiLinkNodeView)
+      .use(wikiLinkInputPlugin)
       .use(toolbarStatePlugin)
       .create()
 
@@ -326,37 +398,83 @@ const insertLink = () => {
 function openWikiLinkModal() {
   if (!editor) return
 
+  let existingContext: ReturnType<typeof getWikiLinkSelectionContext> = null
   editor.action((ctx) => {
     const view = ctx.get(editorViewCtx)
-    const { from, to } = view.state.selection
-    savedWikiSelection = { from, to }
+    existingContext = getWikiLinkSelectionContext(view.state)
+    if (!existingContext) {
+      const { from, to } = view.state.selection
+      savedWikiSelection = { from, to }
+    }
   })
+
+  if (existingContext) {
+    void openWikiLinkAliasDialog(existingContext)
+    return
+  }
 
   emit('insertWikiLink')
 }
 
-function insertWikiLinkAtCursor(noteTitle: string): boolean {
+async function openWikiLinkAliasDialog(request: { pos: number; noteId: string; label: string }) {
+  savedWikiLinkEdit = { pos: request.pos, noteId: request.noteId }
+  wikiLinkTargetTitle.value = await resolveWikiLinkTitle(request.noteId)
+
+  if (request.label.trim()) {
+    wikiLinkAlias.value = request.label.trim()
+  } else {
+    wikiLinkAlias.value = wikiLinkTargetTitle.value
+  }
+
+  showWikiLinkDialog.value = true
+}
+
+function resetWikiLinkDialog() {
+  wikiLinkAlias.value = ''
+  wikiLinkTargetTitle.value = ''
+  savedWikiLinkEdit = null
+}
+
+function useNoteTitleAsWikiLinkAlias() {
+  wikiLinkAlias.value = ''
+  confirmWikiLinkAlias()
+}
+
+function confirmWikiLinkAlias() {
+  if (!editor || !savedWikiLinkEdit) return
+
+  const alias = wikiLinkAlias.value.trim()
+  const label = alias && alias !== wikiLinkTargetTitle.value.trim() ? alias : ''
+
+  editor.action((ctx) => {
+    updateWikiLinkInEditor(ctx, {
+      pos: savedWikiLinkEdit!.pos,
+      label,
+    })
+  })
+
+  showWikiLinkDialog.value = false
+  resetWikiLinkDialog()
+}
+
+function insertWikiLinkAtCursor(noteId: string, noteTitle: string): boolean {
+  const id = noteId.trim()
   const title = noteTitle.trim()
-  if (!title || !editor) return false
+  if (!id || !title || !editor) return false
 
   let inserted = false
 
   editor.action((ctx) => {
     const view = ctx.get(editorViewCtx)
-    const { state, dispatch } = view
-
     const selection = savedWikiSelection ?? {
-      from: state.selection.from,
-      to: state.selection.to,
+      from: view.state.selection.from,
+      to: view.state.selection.to,
     }
     const { from, to } = selection
+    const selectedText = from !== to ? view.state.doc.textBetween(from, to) : ''
+    const label = selectedText && selectedText !== '[[' ? selectedText : title
 
-    const alias = from !== to ? state.doc.textBetween(from, to) : null
-    const wikiLinkText = formatWikiLink(title, alias)
-    const tr = state.tr.insertText(wikiLinkText, from, to)
-
-    dispatch(tr.setSelection(TextSelection.create(tr.doc, from + wikiLinkText.length)))
-    inserted = true
+    inserted = insertWikiLinkIntoEditor(ctx, { noteId: id, label, from, to })
   })
 
   savedWikiSelection = null
@@ -408,6 +526,10 @@ function confirmLink() {
 onBeforeUnmount(() => {
   unregisterToolbarState?.()
   unregisterToolbarState = null
+  unregisterWikiLinkBracket?.()
+  unregisterWikiLinkBracket = null
+  unregisterWikiLinkEdit?.()
+  unregisterWikiLinkEdit = null
   editor?.destroy()
 })
 
@@ -486,7 +608,7 @@ defineExpose({
 }
 
 .markdown-editor .milkdown .ProseMirror .wiki-link-edit {
-  @apply text-blue-600 dark:text-blue-400 no-underline border-b border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-sm;
+  @apply text-blue-600 dark:text-blue-400 no-underline border-b border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20 rounded-sm cursor-pointer;
   text-decoration: none !important;
 }
 </style>

@@ -189,6 +189,7 @@
     <ConfirmDialog />
     <LinkNoteModal
       v-model:visible="showLinkModal"
+      :exclude-note-id="notesStore.currentNote?.id ?? null"
       @select="handleLinkSelect"
     />
 </template>
@@ -212,7 +213,7 @@ import SaveIndicator from '@/components/common/SaveIndicator.vue'
 import FolderSelector from '@/components/common/FolderSelector.vue'
 import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
 import BacklinksPanel from '@/components/BacklinksPanel.vue'
-import LinkNoteModal from '@/components/LinkNoteModal.vue'
+import LinkNoteModal, { type SelectedWikiLinkNote } from '@/components/LinkNoteModal.vue'
 import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
@@ -663,8 +664,8 @@ function confirmDelete() {
   })
 }
 
-function handleLinkSelect(noteTitle: string) {
-  const inserted = editorRef.value?.insertWikiLinkAtCursor(noteTitle)
+function handleLinkSelect(note: SelectedWikiLinkNote) {
+  const inserted = editorRef.value?.insertWikiLinkAtCursor(note.id, note.title)
 
   if (!inserted) {
     toast.add({
@@ -681,7 +682,7 @@ function handleLinkSelect(noteTitle: string) {
   toast.add({
     severity: 'success',
     summary: 'Ссылка добавлена',
-    detail: `Ссылка на «${noteTitle}» вставлена в позицию курсора`,
+    detail: `Ссылка на «${note.title}» вставлена в позицию курсора`,
     life: 3000,
   })
 }

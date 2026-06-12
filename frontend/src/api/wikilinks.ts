@@ -13,19 +13,17 @@ export interface ResolvedWikiLink {
 }
 
 export interface ResolveWikiLinksRequest {
-  titles: string[];
+  ids: string[];
 }
 
-export interface ResolveWikiLinksResponse {
-  [title: string]: ResolvedWikiLink | ResolvedWikiLink[] | null;
-}
+export type ResolveWikiLinksResponse = Record<string, ResolvedWikiLink | null>;
 
 export const wikiLinksApi = {
   async getBacklinks(noteId: string): Promise<BacklinkNote[]> {
     return apiClient.get<BacklinkNote[]>(`/notes/${noteId}/backlinks`);
   },
 
-  async resolveWikiLinks(titles: string[]): Promise<ResolveWikiLinksResponse> {
-    return apiClient.post<ResolveWikiLinksResponse>('/notes/resolve-wikilinks', { titles });
+  async resolveWikiLinks(ids: string[]): Promise<ResolveWikiLinksResponse> {
+    return apiClient.post<ResolveWikiLinksResponse>('/notes/resolve-wikilinks', { ids });
   },
 };
