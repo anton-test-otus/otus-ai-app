@@ -174,6 +174,7 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
 import { MODAL_WIDTH } from '@/constants/modal';
+import { useAppToast } from '@/composables/useAppToast';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 
@@ -193,6 +194,7 @@ const emit = defineEmits<{
 }>();
 
 const foldersStore = useFoldersStore();
+const { showError } = useAppToast();
 const isExpanded = ref(true);
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
@@ -227,7 +229,7 @@ async function createSubfolder() {
     isExpanded.value = true;
     emit('update');
   } catch (error) {
-    console.error('Failed to create subfolder:', error);
+    showError(error, 'Не удалось создать подпапку');
   }
 }
 
@@ -239,7 +241,7 @@ async function saveEdit() {
     showEditDialog.value = false;
     emit('update');
   } catch (error) {
-    console.error('Failed to update folder:', error);
+    showError(error, 'Не удалось обновить папку');
   }
 }
 
@@ -262,7 +264,7 @@ async function deleteFolder() {
     emit('delete');
     emit('update');
   } catch (error) {
-    console.error('Failed to delete folder:', error);
+    showError(error, 'Не удалось удалить папку');
   } finally {
     deleting.value = false;
   }

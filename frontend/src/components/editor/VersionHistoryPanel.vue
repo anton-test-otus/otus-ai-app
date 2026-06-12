@@ -11,16 +11,14 @@
       />
     </div>
 
-    <div v-if="loading" class="flex justify-center py-4">
-      <ProgressSpinner style="width: 30px; height: 30px" stroke-width="4" />
-    </div>
+    <LoadingState v-if="loading" compact />
 
-    <div
+    <ErrorState
       v-else-if="error"
-      class="text-sm text-red-600 bg-red-50 dark:bg-red-900/20 p-3 rounded-md"
-    >
-      {{ error }}
-    </div>
+      :message="error"
+      compact
+      @retry="fetchVersions(noteId)"
+    />
 
     <EmptyState
       v-else-if="!versions || versions.length === 0"
@@ -111,8 +109,10 @@
 import { ref, watch, computed } from 'vue'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
-import ProgressSpinner from 'primevue/progressspinner'
 import EmptyState from '@/components/common/EmptyState.vue'
+import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
+import { useAppToast } from '@/composables/useAppToast'
 import { MODAL_WIDTH } from '@/constants/modal'
 import { formatRelativeDate } from '@/utils/date'
 import { useNoteVersions } from '@/composables/useNoteVersions'
@@ -133,6 +133,7 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
+const { showError } = useAppToast()
 const { versions, loading, error, fetchVersions, restoreVersion } = useNoteVersions()
 
 const selectedVersion = ref<NoteVersion | null>(null)
@@ -167,8 +168,8 @@ const handleRestore = async (mode: RestoreVersionRequest['mode']) => {
     await restoreVersion(props.noteId, versionToRestore.value.id, mode)
     emit('restore', versionToRestore.value.id, mode)
     versionToRestore.value = null
-  } catch (error) {
-    console.error('Failed to restore version:', error)
+  } catch (err) {
+    showError(err, 'Не удалось восстановить версию')
   }
 }
 

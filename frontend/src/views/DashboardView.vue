@@ -9,13 +9,13 @@
         </p>
       </div>
 
-      <div v-if="notesStore.isLoading" class="flex justify-center py-12">
-        <ProgressSpinner />
-      </div>
+      <LoadingState v-if="notesStore.isLoading" />
 
-      <div v-else-if="notesStore.error" class="py-12">
-        <Message severity="error">{{ notesStore.error }}</Message>
-      </div>
+      <ErrorState
+        v-else-if="notesStore.error"
+        :message="notesStore.error"
+        @retry="loadNotes(1)"
+      />
 
       <EmptyState
         v-else-if="isEmpty"
@@ -85,22 +85,18 @@
       </div>
     </div>
 
-    <ConfirmDialog />
-    <Toast />
 </template>
 
 <script setup lang="ts">
 import { onMounted, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from 'primevue/useconfirm'
-import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
-import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
 import Paginator from 'primevue/paginator'
-import ConfirmDialog from 'primevue/confirmdialog'
-import Toast from 'primevue/toast'
 import EmptyState from '@/components/common/EmptyState.vue'
+import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
+import { useAppToast } from '@/composables/useAppToast'
 import NoteCard from '@/components/dashboard/NoteCard.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
@@ -114,7 +110,7 @@ const notesStore = useNotesStore()
 const foldersStore = useFoldersStore()
 const tagsStore = useTagsStore()
 const confirm = useConfirm()
-const toast = useToast()
+const { showSuccess, showError } = useAppToast()
 const { toggleFavorite } = useFavoriteToggle()
 const { openNewNote } = useCreateNote()
 
@@ -211,19 +207,9 @@ function confirmDelete(note: NoteListItem) {
     accept: async () => {
       try {
         await notesStore.deleteNote(note.id)
-        toast.add({
-          severity: 'success',
-          summary: 'Успешно',
-          detail: 'Заметка удалена',
-          life: 3000,
-        })
-      } catch {
-        toast.add({
-          severity: 'error',
-          summary: 'Ошибка',
-          detail: 'Не удалось удалить заметку',
-          life: 3000,
-        })
+        showSuccess('Заметка удалена')
+      } catch (error) {
+        showError(error, 'Не удалось удалить заметку')
       }
     },
   })

@@ -28,6 +28,8 @@
     </div>
 
     <KeyboardShortcutsDialog />
+    <Toast />
+    <ConfirmDialog />
   </div>
 </template>
 
@@ -35,6 +37,8 @@
 import { onMounted, watch, computed, ref, provide } from 'vue'
 import { useRoute, useRouter, RouterView } from 'vue-router'
 import Divider from 'primevue/divider'
+import Toast from 'primevue/toast'
+import ConfirmDialog from 'primevue/confirmdialog'
 import AppNavbar from './AppNavbar.vue'
 import AppSidebar from './AppSidebar.vue'
 import FolderTree from '@/components/sidebar/FolderTree.vue'

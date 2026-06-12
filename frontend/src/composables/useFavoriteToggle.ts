@@ -1,31 +1,24 @@
-import { useToast } from 'primevue/usetoast'
 import { useNotesStore } from '@/stores/notes'
+import { useAppToast } from '@/composables/useAppToast'
 import type { Note, NoteListItem } from '@/types'
 
 export function useFavoriteToggle() {
   const notesStore = useNotesStore()
-  const toast = useToast()
+  const { showSuccess, showError } = useAppToast()
 
   async function toggleFavorite(note: NoteListItem | Note) {
     try {
       const updated = await notesStore.toggleFavorite(note)
-      toast.add({
-        severity: 'success',
-        summary: updated.isFavorite ? 'Добавлено в избранное' : 'Убрано из избранного',
-        detail: updated.isFavorite
+      showSuccess(
+        updated.isFavorite
           ? `«${updated.title}» в избранном`
           : `«${updated.title}» больше не в избранном`,
-        life: 3000,
-      })
+        updated.isFavorite ? 'Добавлено в избранное' : 'Убрано из избранного',
+      )
       return updated
-    } catch {
-      toast.add({
-        severity: 'error',
-        summary: 'Ошибка',
-        detail: 'Не удалось обновить избранное',
-        life: 3000,
-      })
-      throw new Error('Failed to toggle favorite')
+    } catch (error) {
+      showError(error, 'Не удалось обновить избранное')
+      throw error
     }
   }
 

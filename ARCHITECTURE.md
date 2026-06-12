@@ -156,7 +156,7 @@ otus-ai-app/
 │   │   ├── components/
 │   │   │   ├── editor/        # MarkdownEditor, Preview
 │   │   │   ├── sidebar/       # FolderTree, TagList, Search
-│   │   │   └── common/        # Button, Modal, Toast
+│   │   │   └── common/        # LoadingState, ErrorState, EmptyState, Toast
 │   │   ├── composables/
 │   │   │   ├── useAutosave.ts
 │   │   │   ├── useNotes.ts
@@ -297,9 +297,22 @@ flowchart LR
 | `trash` | `stores/trash.ts` | Счётчик корзины в sidebar | `count` |
 
 **Паттерны stores:**
-- загрузка с API → запись в `ref`, ошибки в `error`, флаг `loading` / `isLoading`;
+- загрузка с API → запись в `ref`, ошибки в `error` через `getApiErrorMessage`, флаг `loading` / `isLoading`;
 - `folders` и `tags` — дедупликация параллельных `fetch*` через in-flight promise;
 - `notes.syncNoteInLists` / `syncFavoriteNotes` — локальная синхронизация после `PUT` / переключения избранного без полной перезагрузки списка.
+
+**Паттерны loading / error в UI (фаза 12):**
+
+| Слой | Компонент / composable | Когда |
+|------|------------------------|-------|
+| Загрузка страницы / панели | `LoadingState` (`compact` в sidebar) | Первичный fetch, пока нет данных |
+| Ошибка загрузки | `ErrorState` + кнопка «Повторить» | Сбой API при загрузке списка / заметки |
+| Пустой результат | `EmptyState` | Нет данных после успешной загрузки |
+| Ошибка мутации (CRUD) | `useAppToast().showError` | Toast с `getApiErrorMessage` |
+| Успех мутации | `useAppToast().showSuccess` | Toast |
+| Глобально | `Toast` + `ConfirmDialog` в `AppLayout` | Один экземпляр на всё приложение |
+
+Порядок в views: `loading` → `error` → `empty` → контент. Ошибки загрузки — inline (`ErrorState`); ошибки действий — toast.
 
 ### Фильтрация dashboard
 
@@ -379,6 +392,7 @@ flowchart LR
 | `useFavoriteToggle` | — | Обёртка над `notesStore.toggleFavorite` |
 | `useAppKeyboardShortcuts` | глобальный `keydown` | Новая заметка, поиск, справка |
 | `useKeyboardShortcutsHelp` | `shortcutsHelpVisible` | Открытие/закрытие `KeyboardShortcutsDialog` |
+| `useAppToast` | обёртка PrimeVue Toast | `showSuccess` / `showError` / `showInfo` с `getApiErrorMessage` |
 
 ### Что не хранится во frontend state
 

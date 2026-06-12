@@ -30,20 +30,22 @@
         </div>
       </div>
 
+      <LoadingState v-if="isLoading" />
+
+      <ErrorState
+        v-else-if="loadError"
+        :message="loadError"
+        @retry="loadTrash(meta.currentPage)"
+      />
+
       <EmptyState
-        v-if="!isLoading && notes && notes.length === 0"
+        v-else-if="notes.length === 0"
         icon="pi-trash"
         title="Корзина пуста"
         description="Удалённые заметки будут отображаться здесь"
       />
 
-      <!-- Loading State -->
-      <div v-if="isLoading" class="flex justify-center py-12">
-        <ProgressSpinner />
-      </div>
-
-      <!-- Notes List -->
-      <div v-if="!isLoading && notes.length > 0" class="space-y-4">
+      <div v-else class="space-y-4">
         <Card
           v-for="note in notes"
           :key="note.id"
@@ -148,7 +150,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import EmptyState from '@/components/common/EmptyState.vue';
-import { useToast } from 'primevue/usetoast';
+import LoadingState from '@/components/common/LoadingState.vue';
+import ErrorState from '@/components/common/ErrorState.vue';
+import { useAppToast } from '@/composables/useAppToast';
+import { getApiErrorMessage } from '@/utils/apiError';
 import { trashApi } from '../api/trash';
 import { useTrashStore } from '@/stores/trash';
 import { MODAL_WIDTH } from '@/constants/modal';
@@ -158,14 +163,14 @@ import Card from 'primevue/card';
 import Checkbox from 'primevue/checkbox';
 import Dialog from 'primevue/dialog';
 import Paginator from 'primevue/paginator';
-import ProgressSpinner from 'primevue/progressspinner';
 
-const toast = useToast();
+const { showSuccess, showError } = useAppToast();
 const trashStore = useTrashStore();
 
 const notes = ref<NoteListItem[]>([]);
 const selectedIds = ref<string[]>([]);
 const isLoading = ref(false);
+const loadError = ref<string | null>(null);
 const isRestoring = ref(false);
 const isEmptying = ref(false);
 
@@ -186,6 +191,7 @@ onMounted(() => {
 
 async function loadTrash(page = 1) {
   isLoading.value = true;
+  loadError.value = null;
   try {
     const response = await trashApi.getTrash(page, meta.value.perPage);
     notes.value = response.data || [];
@@ -197,14 +203,8 @@ async function loadTrash(page = 1) {
     };
     trashStore.count = meta.value.total;
   } catch (error) {
-    console.error('Trash load error:', error);
     notes.value = [];
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось загрузить корзину',
-      life: 3000,
-    });
+    loadError.value = getApiErrorMessage(error, 'Не удалось загрузить корзину');
   } finally {
     isLoading.value = false;
   }
@@ -213,21 +213,11 @@ async function loadTrash(page = 1) {
 async function restoreNote(id: string) {
   try {
     await trashApi.restore(id);
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: 'Заметка восстановлена',
-      life: 3000,
-    });
+    showSuccess('Заметка восстановлена');
     await loadTrash(meta.value.currentPage);
     selectedIds.value = selectedIds.value.filter((noteId) => noteId !== id);
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось восстановить заметку',
-      life: 3000,
-    });
+    showError(error, 'Не удалось восстановить заметку');
   }
 }
 
@@ -237,21 +227,11 @@ async function restoreSelected() {
   isRestoring.value = true;
   try {
     await Promise.all(selectedIds.value.map((id) => trashApi.restore(id)));
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Восстановлено заметок: ${selectedIds.value.length}`,
-      life: 3000,
-    });
+    showSuccess(`Восстановлено заметок: ${selectedIds.value.length}`);
     selectedIds.value = [];
     await loadTrash(meta.value.currentPage);
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось восстановить выбранные заметки',
-      life: 3000,
-    });
+    showError(error, 'Не удалось восстановить выбранные заметки');
   } finally {
     isRestoring.value = false;
   }
@@ -267,22 +247,12 @@ async function deleteNotePermanent() {
 
   try {
     await trashApi.deletePermanent(noteToDelete.value);
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: 'Заметка окончательно удалена',
-      life: 3000,
-    });
+    showSuccess('Заметка окончательно удалена');
     showDeleteDialog.value = false;
     noteToDelete.value = null;
     await loadTrash(meta.value.currentPage);
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось удалить заметку',
-      life: 3000,
-    });
+    showError(error, 'Не удалось удалить заметку');
   }
 }
 
@@ -294,21 +264,11 @@ async function emptyTrash() {
   isEmptying.value = true;
   try {
     await trashApi.emptyTrash();
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: 'Корзина очищена',
-      life: 3000,
-    });
+    showSuccess('Корзина очищена');
     showEmptyDialog.value = false;
     await loadTrash(1);
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось очистить корзину',
-      life: 3000,
-    });
+    showError(error, 'Не удалось очистить корзину');
   } finally {
     isEmptying.value = false;
   }

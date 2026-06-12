@@ -47,14 +47,20 @@
       </template>
 
       <template #content>
-        <div v-if="loading && tags.length === 0" class="flex justify-center py-8">
-          <ProgressSpinner style="width: 50px; height: 50px" stroke-width="4" />
-        </div>
+        <LoadingState v-if="loading && tags.length === 0" />
 
-        <div v-else-if="filteredTags.length === 0" class="text-center py-8 text-surface-500 dark:text-surface-400">
-          <i class="pi pi-tag text-4xl mb-4" />
-          <p>{{ searchQuery ? 'Теги не найдены' : 'У вас пока нет тегов' }}</p>
-        </div>
+        <ErrorState
+          v-else-if="tagsStore.error && tags.length === 0"
+          :message="tagsStore.error"
+          @retry="tagsStore.fetchTags(undefined, { force: true })"
+        />
+
+        <EmptyState
+          v-else-if="filteredTags.length === 0"
+          icon="pi-tag"
+          :title="searchQuery ? 'Теги не найдены' : 'У вас пока нет тегов'"
+          compact
+        />
 
         <DataTable
           v-else
@@ -168,12 +174,16 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
 import Message from 'primevue/message';
-import ProgressSpinner from 'primevue/progressspinner';
+import EmptyState from '@/components/common/EmptyState.vue';
+import LoadingState from '@/components/common/LoadingState.vue';
+import ErrorState from '@/components/common/ErrorState.vue';
+import { useAppToast } from '@/composables/useAppToast';
 import { MODAL_WIDTH } from '@/constants/modal';
 import { useTagsStore } from '../stores/tags';
 import type { Tag } from '../types';
 
 const tagsStore = useTagsStore();
+const { showSuccess, showError } = useAppToast();
 
 const newTagName = ref('');
 const searchQuery = ref('');
@@ -204,8 +214,9 @@ async function createTag() {
   try {
     await tagsStore.createTag(newTagName.value.trim());
     newTagName.value = '';
+    showSuccess('Тег создан');
   } catch (error) {
-    console.error('Failed to create tag:', error);
+    showError(error, 'Не удалось создать тег');
   } finally {
     creating.value = false;
   }
@@ -226,8 +237,9 @@ async function saveEdit() {
     showEditDialog.value = false;
     tagToEdit.value = null;
     editTagName.value = '';
+    showSuccess('Тег обновлён');
   } catch (error) {
-    console.error('Failed to update tag:', error);
+    showError(error, 'Не удалось обновить тег');
   } finally {
     updating.value = false;
   }
@@ -246,8 +258,9 @@ async function deleteTag() {
     await tagsStore.deleteTag(tagToDelete.value.id);
     showDeleteDialog.value = false;
     tagToDelete.value = null;
+    showSuccess('Тег удалён');
   } catch (error) {
-    console.error('Failed to delete tag:', error);
+    showError(error, 'Не удалось удалить тег');
   } finally {
     deleting.value = false;
   }

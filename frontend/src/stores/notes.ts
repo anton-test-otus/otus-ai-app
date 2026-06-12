@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { notesApi } from '@/api/notes'
 import { useTrashStore } from '@/stores/trash'
 import { toNoteListItem } from '@/utils/note'
+import { getApiErrorMessage } from '@/utils/apiError'
 import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from '@/types'
 
 export const useNotesStore = defineStore('notes', () => {
@@ -46,8 +47,8 @@ export const useNotesStore = defineStore('notes', () => {
       } else {
         favoriteNotes.value = []
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка загрузки заметок'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка загрузки заметок')
       throw err
     } finally {
       isLoading.value = false
@@ -60,8 +61,8 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       currentNote.value = await notesApi.getById(id)
       return currentNote.value
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка загрузки заметки'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка загрузки заметки')
       throw err
     } finally {
       isLoading.value = false
@@ -76,8 +77,8 @@ export const useNotesStore = defineStore('notes', () => {
       notes.value.unshift(toNoteListItem(note))
       currentNote.value = note
       return note
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка создания заметки'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка создания заметки')
       throw err
     } finally {
       isLoading.value = false
@@ -136,8 +137,8 @@ export const useNotesStore = defineStore('notes', () => {
       syncNoteInLists(updated)
       syncFavoriteNotes(updated)
       return updated
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка обновления избранного'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка обновления избранного')
       throw err
     }
   }
@@ -151,8 +152,8 @@ export const useNotesStore = defineStore('notes', () => {
         syncFavoriteNotes(note)
       }
       return note
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка обновления заметки'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка обновления заметки')
       throw err
     }
   }
@@ -168,8 +169,8 @@ export const useNotesStore = defineStore('notes', () => {
         currentNote.value = null
       }
       await useTrashStore().fetchCount()
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка удаления заметки'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка удаления заметки')
       throw err
     } finally {
       isLoading.value = false
@@ -185,8 +186,8 @@ export const useNotesStore = defineStore('notes', () => {
       if (response.meta) {
         pagination.value = response.meta
       }
-    } catch (err: any) {
-      error.value = err.response?.data?.message || 'Ошибка поиска заметок'
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка поиска заметок')
       throw err
     } finally {
       isLoading.value = false

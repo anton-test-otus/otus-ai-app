@@ -13,9 +13,14 @@
       />
     </div>
 
-    <div v-if="loading" class="flex justify-center py-4">
-      <ProgressSpinner style="width: 30px; height: 30px" stroke-width="4" />
-    </div>
+    <LoadingState v-if="loading" compact />
+
+    <ErrorState
+      v-else-if="tagsStore.error"
+      :message="tagsStore.error"
+      compact
+      @retry="retryLoadTags"
+    />
 
     <div v-else-if="!tags || tags.length === 0" class="text-sm text-surface-500 dark:text-surface-400 text-center py-4">
       Нет тегов
@@ -47,11 +52,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
+import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import TagPill from '@/components/common/TagPill.vue'
 import { useTagsStore } from '@/stores/tags'
+import { useFoldersStore } from '@/stores/folders'
 
 const tagsStore = useTagsStore()
+const foldersStore = useFoldersStore()
 
 const emit = defineEmits<{
   filterChange: [tagIds: string[]]
@@ -73,6 +81,13 @@ function toggleTag(tagId: string) {
 function clearFilters() {
   tagsStore.clearTagSelection()
   emit('filterChange', [])
+}
+
+async function retryLoadTags() {
+  await tagsStore.fetchTags({
+    folderId: foldersStore.selectedFolderId,
+    tags: tagsStore.selectedTags,
+  }, { force: true })
 }
 </script>
 

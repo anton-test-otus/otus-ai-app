@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { tagsApi, type TagListCriteria } from '../api/tags';
+import { getApiErrorMessage } from '@/utils/apiError';
 import type { Tag, Note, PaginatedResponse } from '../types';
 
 export const useTagsStore = defineStore('tags', () => {
@@ -40,10 +41,9 @@ export const useTagsStore = defineStore('tags', () => {
           tags.value.some((tag) => tag.id === tagId)
         );
         loadedCriteriaKey = criteriaKey;
-      } catch (e: any) {
-        console.error('Tags fetch error:', e);
+      } catch (e: unknown) {
         tags.value = [];
-        error.value = e.message || 'Ошибка загрузки тегов';
+        error.value = getApiErrorMessage(e, 'Ошибка загрузки тегов');
         throw e;
       } finally {
         loading.value = false;
@@ -63,8 +63,8 @@ export const useTagsStore = defineStore('tags', () => {
       tags.value.sort((a, b) => a.name.localeCompare(b.name));
       loadedCriteriaKey = null;
       return newTag;
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка создания тега';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка создания тега');
       throw e;
     } finally {
       loading.value = false;
@@ -83,8 +83,8 @@ export const useTagsStore = defineStore('tags', () => {
       }
       loadedCriteriaKey = null;
       return updated;
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка обновления тега';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка обновления тега');
       throw e;
     } finally {
       loading.value = false;
@@ -99,8 +99,8 @@ export const useTagsStore = defineStore('tags', () => {
       tags.value = tags.value.filter(t => t.id !== id);
       selectedTags.value = selectedTags.value.filter(tagId => tagId !== id);
       loadedCriteriaKey = null;
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка удаления тега';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка удаления тега');
       throw e;
     } finally {
       loading.value = false;
@@ -110,8 +110,8 @@ export const useTagsStore = defineStore('tags', () => {
   async function getTagNotes(id: string, page = 1, perPage = 20): Promise<PaginatedResponse<Note>> {
     try {
       return await tagsApi.getNotes(id, page, perPage);
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка загрузки заметок тега';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка загрузки заметок тега');
       throw e;
     }
   }

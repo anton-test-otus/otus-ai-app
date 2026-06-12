@@ -14,7 +14,16 @@
       />
     </div>
 
-    <div class="space-y-0.5">
+    <LoadingState v-if="foldersStore.loading && folders.length === 0" compact />
+
+    <ErrorState
+      v-else-if="foldersStore.error && folders.length === 0"
+      :message="foldersStore.error"
+      compact
+      @retry="retryLoadFolders"
+    />
+
+    <div v-else class="space-y-0.5">
       <div
         class="folder-row group flex items-center gap-2 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         :class="{
@@ -84,6 +93,9 @@ import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Dropdown from 'primevue/dropdown';
+import LoadingState from '@/components/common/LoadingState.vue';
+import ErrorState from '@/components/common/ErrorState.vue';
+import { useAppToast } from '@/composables/useAppToast';
 import { MODAL_WIDTH } from '@/constants/modal';
 import FolderTreeItem from './FolderTreeItem.vue';
 import { useFoldersStore } from '../../stores/folders';
@@ -101,6 +113,7 @@ const emit = defineEmits<{
 }>();
 
 const foldersStore = useFoldersStore();
+const { showError } = useAppToast();
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
@@ -139,9 +152,14 @@ async function createFolder() {
     newFolderParentId.value = null;
     showCreateDialog.value = false;
     emit('update');
-  } catch (error: any) {
-    console.error('Failed to create folder:', error);
+  } catch (error) {
+    showError(error, 'Не удалось создать папку');
   }
+}
+
+async function retryLoadFolders() {
+  await foldersStore.fetchFolders({ force: true });
+  emit('update');
 }
 
 function handleUpdate() {

@@ -28,16 +28,19 @@
       />
     </div>
 
-    <div v-if="loading" class="flex justify-center py-12">
-      <ProgressSpinner />
-    </div>
+    <LoadingState v-if="loading" />
 
-    <div v-else-if="users.length === 0" class="text-center py-12">
-      <i class="pi pi-users text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-      <p class="text-gray-500 dark:text-gray-400">
-        {{ searchQuery ? 'Пользователи не найдены' : 'Нет пользователей' }}
-      </p>
-    </div>
+    <ErrorState
+      v-else-if="loadError"
+      :message="loadError"
+      @retry="loadUsers"
+    />
+
+    <EmptyState
+      v-else-if="users.length === 0"
+      icon="pi-users"
+      :title="searchQuery ? 'Пользователи не найдены' : 'Нет пользователей'"
+    />
 
     <div v-else class="space-y-4">
       <Card
@@ -193,23 +196,13 @@
       class="mt-6"
     />
 
-    <ConfirmDialog>
-      <template #message="{ message }">
-        <div class="flex items-start gap-3">
-          <i class="pi pi-exclamation-triangle text-orange-500 text-3xl"></i>
-          <div>
-            <p class="font-semibold mb-2">{{ message.header }}</p>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ message.message }}</p>
-          </div>
-        </div>
-      </template>
-    </ConfirmDialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useToast } from 'primevue/usetoast'
+import { useAppToast } from '@/composables/useAppToast'
+import { getApiErrorMessage } from '@/utils/apiError'
 import { useConfirm } from 'primevue/useconfirm'
 import { adminApi } from '@/api/admin'
 import { useAuthStore } from '@/stores/auth'
@@ -218,16 +211,18 @@ import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
-import ProgressSpinner from 'primevue/progressspinner'
 import Paginator from 'primevue/paginator'
-import ConfirmDialog from 'primevue/confirmdialog'
+import EmptyState from '@/components/common/EmptyState.vue'
+import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 
 const authStore = useAuthStore()
-const toast = useToast()
+const { showSuccess, showError } = useAppToast()
 const confirm = useConfirm()
 
 const users = ref<User[]>([])
 const loading = ref(false)
+const loadError = ref<string | null>(null)
 const searchQuery = ref('')
 const currentPage = ref(1)
 const perPage = ref(10)
@@ -256,6 +251,7 @@ const clearSearch = () => {
 const loadUsers = async () => {
   try {
     loading.value = true
+    loadError.value = null
     const response = await adminApi.getUsers({
       page: currentPage.value,
       perPage: perPage.value,
@@ -267,13 +263,8 @@ const loadUsers = async () => {
     totalPages.value = response.meta.totalPages
     currentPage.value = response.meta.currentPage
   } catch (error) {
-    console.error('Failed to load users:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось загрузить список пользователей',
-      life: 3000,
-    })
+    users.value = []
+    loadError.value = getApiErrorMessage(error, 'Не удалось загрузить список пользователей')
   } finally {
     loading.value = false
   }
@@ -288,21 +279,10 @@ const enableUser = async (user: User) => {
   try {
     actionLoading[user.id] = true
     await adminApi.enableUser(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Пользователь ${user.email} активирован`,
-      life: 3000,
-    })
+    showSuccess(`Пользователь ${user.email} активирован`)
     await loadUsers()
   } catch (error) {
-    console.error('Failed to enable user:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось активировать пользователя',
-      life: 3000,
-    })
+    showError(error, 'Не удалось активировать пользователя')
   } finally {
     actionLoading[user.id] = false
   }
@@ -312,21 +292,10 @@ const disableUser = async (user: User) => {
   try {
     actionLoading[user.id] = true
     await adminApi.disableUser(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Пользователь ${user.email} деактивирован`,
-      life: 3000,
-    })
+    showSuccess(`Пользователь ${user.email} деактивирован`)
     await loadUsers()
   } catch (error) {
-    console.error('Failed to disable user:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось деактивировать пользователя',
-      life: 3000,
-    })
+    showError(error, 'Не удалось деактивировать пользователя')
   } finally {
     actionLoading[user.id] = false
   }
@@ -336,21 +305,10 @@ const promoteUser = async (user: User) => {
   try {
     actionLoading[user.id] = true
     await adminApi.promoteUser(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `${user.email} назначен администратором`,
-      life: 3000,
-    })
+    showSuccess(`${user.email} назначен администратором`)
     await loadUsers()
   } catch (error) {
-    console.error('Failed to promote user:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось назначить администратора',
-      life: 3000,
-    })
+    showError(error, 'Не удалось назначить администратора')
   } finally {
     actionLoading[user.id] = false
   }
@@ -360,21 +318,10 @@ const demoteUser = async (user: User) => {
   try {
     actionLoading[user.id] = true
     await adminApi.demoteUser(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Роль администратора снята с ${user.email}`,
-      life: 3000,
-    })
+    showSuccess(`Роль администратора снята с ${user.email}`)
     await loadUsers()
   } catch (error) {
-    console.error('Failed to demote user:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось снять роль администратора',
-      life: 3000,
-    })
+    showError(error, 'Не удалось снять роль администратора')
   } finally {
     actionLoading[user.id] = false
   }
@@ -396,21 +343,10 @@ const deleteUser = async (user: User) => {
   try {
     actionLoading[user.id] = true
     await adminApi.deleteUser(user.id)
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: `Пользователь ${user.email} удалён`,
-      life: 3000,
-    })
+    showSuccess(`Пользователь ${user.email} удалён`)
     await loadUsers()
   } catch (error) {
-    console.error('Failed to delete user:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось удалить пользователя',
-      life: 3000,
-    })
+    showError(error, 'Не удалось удалить пользователя')
   } finally {
     actionLoading[user.id] = false
   }

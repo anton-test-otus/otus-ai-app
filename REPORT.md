@@ -549,3 +549,28 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Состояния загрузки и обработка ошибок (фаза 12)
+
+**Задача:** Единые паттерны loading / empty / error; toast или inline для сбоев API; убрать ad-hoc `isLoading` и дублирование Toast.
+
+**Решение:**
+- `LoadingState.vue` — центрированный спиннер (`compact` для sidebar / панелей)
+- `ErrorState.vue` — inline-ошибка с кнопкой «Повторить» (`compact` для узких панелей)
+- `useAppToast` — обёртка над PrimeVue Toast: `showSuccess` / `showError` / `showInfo` через `getApiErrorMessage`
+- `Toast` и `ConfirmDialog` перенесены в `AppLayout` (один глобальный экземпляр)
+- Stores (`notes`, `folders`, `tags`) и `useNoteVersions` — ошибки через `getApiErrorMessage`
+- Views и sidebar: порядок `loading` → `error` → `empty` → контент; ошибки загрузки — `ErrorState`, мутации — toast
+- `NoteView`: при сбое загрузки заметки — `ErrorState` с повтором вместо редиректа на dashboard
+
+**Затронутые файлы:**
+- `frontend/src/components/common/LoadingState.vue`, `ErrorState.vue`
+- `frontend/src/composables/useAppToast.ts`
+- `frontend/src/components/layout/AppLayout.vue`
+- `frontend/src/stores/notes.ts`, `folders.ts`, `tags.ts`
+- `frontend/src/views/DashboardView.vue`, `NoteView.vue`, `TrashView.vue`, `TagsView.vue`, `SettingsView.vue`, `admin/AdminUsersView.vue`
+- `frontend/src/components/sidebar/TagsPanel.vue`, `FolderTree.vue`, `FolderTreeItem.vue`
+- `frontend/src/components/editor/VersionHistoryPanel.vue`
+- `frontend/src/composables/useFavoriteToggle.ts`, `useNoteVersions.ts`
+
+---
+

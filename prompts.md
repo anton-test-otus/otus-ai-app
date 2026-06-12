@@ -2685,3 +2685,21 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** общая логика склонения в одном месте, без дублирования между минутами и секундами.
 
 ---
+
+## Промпт 119
+
+> продолжаем фазу 12, состояние загрузки и обработку ошибок
+
+### Выполненные действия:
+
+- Добавлены общие компоненты `LoadingState` и `ErrorState` (режим `compact` для sidebar и панелей)
+- Composable `useAppToast` — единый toast с `getApiErrorMessage`
+- `Toast` и `ConfirmDialog` вынесены в `AppLayout` (убраны дубли из views)
+- Stores и `useNoteVersions` переведены на `getApiErrorMessage`
+- Мигрированы `DashboardView`, `NoteView`, `TrashView`, `TagsView`, `AdminUsersView`, `SettingsView`, sidebar и `VersionHistoryPanel`
+- `NoteView`: при ошибке загрузки — inline `ErrorState` с повтором вместо редиректа
+- Обновлены `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md`
+
+**Результат:** единый порядок `loading` → `error` → `empty` → контент; ошибки загрузки inline с retry, мутации — через toast.
+
+---

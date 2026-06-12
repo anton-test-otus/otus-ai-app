@@ -109,13 +109,17 @@
         </div>
       </div>
 
-      <div v-if="!isNoteReady" class="flex-1 flex items-center justify-center">
-        <ProgressSpinner />
-      </div>
+      <LoadingState
+        v-if="!isNoteReady && notesStore.isLoading"
+        class="flex-1"
+      />
 
-      <div v-else-if="notesStore.error" class="flex-1 flex items-center justify-center">
-        <Message severity="error">{{ notesStore.error }}</Message>
-      </div>
+      <ErrorState
+        v-else-if="!isNoteReady && notesStore.error"
+        class="flex-1"
+        :message="notesStore.error"
+        @retry="retryLoadNote"
+      />
 
       <div v-else class="flex-1 overflow-hidden flex flex-col min-w-0">
         <div
@@ -186,9 +190,7 @@
     </NoteMetadata>
   </div>
 
-  <Toast />
-    <ConfirmDialog />
-    <LinkNoteModal
+  <LinkNoteModal
       v-model:visible="showLinkModal"
       :exclude-note-id="notesStore.currentNote?.id ?? null"
       @select="handleLinkSelect"
@@ -198,16 +200,14 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue'
 import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
-import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
-import Message from 'primevue/message'
-import ProgressSpinner from 'primevue/progressspinner'
-import Toast from 'primevue/toast'
-import ConfirmDialog from 'primevue/confirmdialog'
+import LoadingState from '@/components/common/LoadingState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import NoteMetadata from '@/components/layout/NoteMetadata.vue'
+import { useAppToast } from '@/composables/useAppToast'
 import MarkdownEditor from '@/components/editor/MarkdownEditor.vue'
 import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
 import SaveIndicator from '@/components/common/SaveIndicator.vue'
@@ -231,7 +231,7 @@ import type { ViewMode, RestoreVersionRequest } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
-const toast = useToast()
+const { showSuccess, showError } = useAppToast()
 const confirm = useConfirm()
 const notesStore = useNotesStore()
 const foldersStore = useFoldersStore()
@@ -466,13 +466,18 @@ async function loadNote(noteId: string) {
     syncNoteContextForCreate()
     isNoteReady.value = true
   } catch {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось загрузить заметку',
-      life: 3000,
-    })
-    router.push({ name: 'dashboard' })
+    // Ошибка отображается через ErrorState
+  }
+}
+
+async function retryLoadNote() {
+  if (isDraft.value) {
+    return
+  }
+
+  const noteId = route.params.id
+  if (typeof noteId === 'string') {
+    await loadNote(noteId)
   }
 }
 
@@ -646,20 +651,10 @@ function confirmDelete() {
     accept: async () => {
       try {
         await notesStore.deleteNote(notesStore.currentNote!.id)
-        toast.add({
-          severity: 'success',
-          summary: 'Успешно',
-          detail: 'Заметка перемещена в корзину',
-          life: 3000,
-        })
+        showSuccess('Заметка перемещена в корзину')
         router.push({ name: 'dashboard' })
       } catch (error) {
-        toast.add({
-          severity: 'error',
-          summary: 'Ошибка',
-          detail: 'Не удалось удалить заметку',
-          life: 3000,
-        })
+        showError(error, 'Не удалось удалить заметку')
       }
     },
   })
@@ -669,23 +664,16 @@ function handleLinkSelect(note: SelectedWikiLinkNote) {
   const inserted = editorRef.value?.insertWikiLinkAtCursor(note.id, note.title)
 
   if (!inserted) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось вставить ссылку на заметку',
-      life: 3000,
-    })
+    showError(null, 'Не удалось вставить ссылку на заметку')
     return
   }
 
   triggerSave()
 
-  toast.add({
-    severity: 'success',
-    summary: 'Ссылка добавлена',
-    detail: `Ссылка на «${note.title}» вставлена в позицию курсора`,
-    life: 3000,
-  })
+  showSuccess(
+    `Ссылка на «${note.title}» вставлена в позицию курсора`,
+    'Ссылка добавлена',
+  )
 }
 
 async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequest['mode']) {
@@ -709,19 +697,9 @@ async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequ
       message = 'Версия восстановлена, текущее состояние сохранено'
     }
     
-    toast.add({
-      severity: 'success',
-      summary: 'Успешно',
-      detail: message,
-      life: 3000,
-    })
+    showSuccess(message)
   } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: 'Не удалось восстановить версию',
-      life: 3000,
-    })
+    showError(error, 'Не удалось восстановить версию')
   }
 }
 
@@ -732,12 +710,7 @@ function formatDate(dateString?: string): string {
 
 watch(saveError, (error) => {
   if (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка сохранения',
-      detail: error,
-      life: 3000,
-    })
+    showError(error, 'Ошибка сохранения', 'Ошибка сохранения')
   }
 })
 </script>

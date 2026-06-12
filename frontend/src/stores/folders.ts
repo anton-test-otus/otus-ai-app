@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { foldersApi } from '../api/folders';
+import { getApiErrorMessage } from '@/utils/apiError';
 import type { Folder } from '../types';
 
 export const useFoldersStore = defineStore('folders', () => {
@@ -49,10 +50,9 @@ export const useFoldersStore = defineStore('folders', () => {
         const result = await foldersApi.getAll();
         folders.value = result || [];
         initialized = true;
-      } catch (e: any) {
-        console.error('Folders fetch error:', e);
+      } catch (e: unknown) {
         folders.value = [];
-        error.value = e.message || 'Ошибка загрузки папок';
+        error.value = getApiErrorMessage(e, 'Ошибка загрузки папок');
         throw e;
       } finally {
         loading.value = false;
@@ -70,8 +70,8 @@ export const useFoldersStore = defineStore('folders', () => {
       const newFolder = await foldersApi.create({ name, parentId });
       await fetchFolders({ force: true });
       return newFolder;
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка создания папки';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка создания папки');
       throw e;
     } finally {
       loading.value = false;
@@ -85,8 +85,8 @@ export const useFoldersStore = defineStore('folders', () => {
       const updated = await foldersApi.update(id, data);
       await fetchFolders({ force: true });
       return updated;
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка обновления папки';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка обновления папки');
       throw e;
     } finally {
       loading.value = false;
@@ -102,8 +102,8 @@ export const useFoldersStore = defineStore('folders', () => {
         selectedFolderId.value = null;
       }
       await fetchFolders({ force: true });
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка удаления папки';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка удаления папки');
       throw e;
     } finally {
       loading.value = false;
@@ -113,8 +113,8 @@ export const useFoldersStore = defineStore('folders', () => {
   async function getFolderCount(id: string) {
     try {
       return await foldersApi.count(id);
-    } catch (e: any) {
-      error.value = e.message || 'Ошибка получения статистики папки';
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка получения статистики папки');
       throw e;
     }
   }

@@ -192,7 +192,7 @@
 import { computed, ref, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
-import { useToast } from 'primevue/usetoast'
+import { useAppToast } from '@/composables/useAppToast'
 import Card from 'primevue/card'
 import Dropdown from 'primevue/dropdown'
 import InputText from 'primevue/inputtext'
@@ -214,7 +214,7 @@ import type { Theme } from '@/types'
 
 const authStore = useAuthStore()
 const { theme, setTheme } = useTheme()
-const toast = useToast()
+const { showSuccess, showError } = useAppToast()
 const saving = ref(false)
 const changingPassword = ref(false)
 const showPasswordForm = ref(false)
@@ -303,18 +303,9 @@ async function saveSettings() {
     })
 
     if (success) {
-      toast.add({
-        severity: 'success',
-        summary: 'Настройки сохранены',
-        life: 3000,
-      })
+      showSuccess('Настройки сохранены')
     } else {
-      toast.add({
-        severity: 'error',
-        summary: 'Ошибка',
-        detail: authStore.error ?? 'Не удалось сохранить настройки',
-        life: 5000,
-      })
+      showError(authStore.error, 'Не удалось сохранить настройки')
     }
   } finally {
     saving.value = false
@@ -350,23 +341,13 @@ const onChangePassword = handleSubmit(async (values) => {
       newPassword: values.newPassword,
     })
 
-    toast.add({
-      severity: 'success',
-      summary: 'Пароль изменён',
-      life: 3000,
-    })
+    showSuccess('Пароль успешно изменён', 'Пароль изменён')
 
     resetForm()
     showPasswordForm.value = false
   } catch (err: unknown) {
     applyServerFieldErrors(err)
-
-    toast.add({
-      severity: 'error',
-      summary: 'Ошибка',
-      detail: authStore.error ?? 'Не удалось сменить пароль',
-      life: 5000,
-    })
+    showError(authStore.error ?? err, 'Не удалось сменить пароль')
   } finally {
     changingPassword.value = false
   }

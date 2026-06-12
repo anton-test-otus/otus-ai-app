@@ -1,5 +1,6 @@
 import { ref, Ref } from 'vue'
 import { apiClient } from '@/api/client'
+import { getApiErrorMessage } from '@/utils/apiError'
 import type { NoteVersion, HydraCollection, RestoreVersionRequest } from '@/types'
 
 interface UseNoteVersionsReturn {
@@ -36,9 +37,8 @@ export function useNoteVersions(initialNoteId?: string): UseNoteVersionsReturn {
           createdAt: version.createdAt || (version as any).created_at,
         }))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    } catch (e: any) {
-      error.value = e.message || 'Failed to load versions'
-      console.error('Failed to fetch versions:', e)
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка загрузки версий')
     } finally {
       loading.value = false
     }
@@ -60,9 +60,8 @@ export function useNoteVersions(initialNoteId?: string): UseNoteVersionsReturn {
       
       // Refresh versions list after restore
       await fetchVersions(noteId)
-    } catch (e: any) {
-      error.value = e.message || 'Failed to restore version'
-      console.error('Failed to restore version:', e)
+    } catch (e: unknown) {
+      error.value = getApiErrorMessage(e, 'Ошибка восстановления версии')
       throw e
     } finally {
       loading.value = false
