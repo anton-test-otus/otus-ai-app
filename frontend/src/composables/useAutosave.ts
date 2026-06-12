@@ -15,6 +15,7 @@ export function useAutosave(
   const delaySource = options.delay ?? appConfig.autosaveDelaySeconds * 1000
   const saveStatus = ref<SaveStatus>('idle')
   const saveError = ref<string | null>(null)
+  const lastSavedAt = ref<Date | null>(null)
 
   let activeSave: Promise<void> | null = null
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -42,12 +43,8 @@ export function useAutosave(
 
       try {
         await saveFunction()
+        lastSavedAt.value = new Date()
         saveStatus.value = 'saved'
-        setTimeout(() => {
-          if (saveStatus.value === 'saved') {
-            saveStatus.value = 'idle'
-          }
-        }, currentDelay)
       } catch (error: unknown) {
         saveStatus.value = 'error'
         saveError.value = getApiErrorMessage(error, 'Ошибка сохранения')
@@ -94,11 +91,13 @@ export function useAutosave(
     cancelDebouncedSave()
     saveStatus.value = 'idle'
     saveError.value = null
+    lastSavedAt.value = null
   }
 
   return {
     saveStatus,
     saveError,
+    lastSavedAt,
     triggerSave,
     flushSave,
     reset,

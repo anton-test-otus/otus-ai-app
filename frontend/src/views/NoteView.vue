@@ -28,6 +28,7 @@
             <div v-show="!isTitleFocused" class="flex items-center gap-1 md:gap-4 shrink-0">
               <SaveIndicator
                 :status="saveStatus"
+                :saved-at="lastSavedAt"
                 v-tooltip.bottom="`Сохранить (${formatShortcutKeys(SHORTCUT_KEYS.save)})`"
               />
 
@@ -396,7 +397,7 @@ function shouldAutosave(): boolean {
   return true
 }
 
-const { saveStatus, saveError, triggerSave, flushSave, reset: resetAutosave } = useAutosave(
+const { saveStatus, saveError, lastSavedAt, triggerSave, flushSave, reset: resetAutosave } = useAutosave(
   saveNoteIfChanged,
   { hasChanges: shouldAutosave, delay: effectiveAutosaveDelayMs },
 )

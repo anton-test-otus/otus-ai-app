@@ -246,7 +246,7 @@ otus-ai-app/
 ### 6. Автосохранение с уведомлением
 
 - Composable `useAutosave` с настраиваемым debounce (по умолчанию: 10 секунд; настраивается пользователем в `/settings`)
-- Индикатор статуса в UI: "Сохранение...", "Сохранено", "Ошибка"
+- Индикатор статуса в UI: «Сохранение...»; после успеха — «Сохранено N секунд/минут назад» с обновлением каждые 5 с (до минуты) и поминутно после (`formatSavedAgo`); при ошибке — «Ошибка сохранения»
 - Оптимистичные обновления UI
 - Обнаружение конфликтов (опционально: last-write-wins или запрос)
 
@@ -373,7 +373,7 @@ flowchart LR
 
 | Composable | Состояние | Назначение |
 |------------|-----------|------------|
-| `useAutosave` | `saveStatus`, `saveError`, in-flight promise | Debounced сохранение; один активный save на экземпляр |
+| `useAutosave` | `saveStatus`, `saveError`, `lastSavedAt`, in-flight promise | Debounced сохранение; один активный save на экземпляр; `lastSavedAt` для динамического `SaveIndicator` |
 | `useNoteVersions` | `versions`, `isLoading` | История версий в панели метаданных (не в общем списке) |
 | `useUserSettings` | computed из `authStore.user` | Эффективные задержки автосохранения и defaults |
 | `useFavoriteToggle` | — | Обёртка над `notesStore.toggleFavorite` |
