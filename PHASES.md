@@ -249,12 +249,31 @@
   - `FavoritesView`: полный список избранных; в dashboard и папках избранные тоже видны (со звёздочкой)
   - переиспользовать `notesStore.fetchFavorites`, `NoteCard`, переключение звёздочки; подгрузка — по тому же паттерну, что и на dashboard
 
-## Фаза 13: Экспорт заметок
+## Фаза 13: Экспорт заметок ✅ ЗАВЕРШЕНА
 
-Additive-фича; опирается на установленные loading/error-паттерны и тему.
+Additive-фича; опирается на установленные loading/error-паттерны и тему. **Демо MVP:** только экспорт **одной** заметки из `NoteView` (массовый экспорт и выбор набора — вне scope). **Без backend-endpoint** и **без jsPDF/html2canvas**.
 
-- [ ] Экспорт одной заметки и выборочного набора в **Markdown** (скачивание `.md`)
-- [ ] Экспорт в **PDF** на фронтенде (генерация из отрендеренного markdown/HTML; без отдельного backend-endpoint)
+- [x] Кнопка «Экспорт» в тулбаре `NoteView` → меню «Markdown» / «PDF»
+
+### Markdown (клиент)
+
+- [x] Скачивание `.md` через `Blob` + programmatic download
+- [x] **Markdown:** заголовок — `# …` в теле; метаданные — `### Метаданные` + список в футере; даты human-readable (`ru-RU`)
+- [x] **wiki-ссылки в теле:** `[\[\[label\]\]]` (alias или title); `sanitizeNoteText` убирает nbsp и прочие нечитаемые символы
+- [x] Имя файла: санитизированный `title`, fallback `note-{shortId}.md`
+- [x] Утилита `buildMarkdownExport()` + `getFolderPath()` (полный путь по дереву `foldersStore`)
+
+### Баги (отложено)
+
+- [ ] Нечитаемые символы Unicode (U+00A0 nbsp, zero-width и др.) не должны сохраняться в `title`/`content` заметки — нормализация при вводе и автосохранении (фронт) и при `POST`/`PUT` (бэкенд)
+
+### PDF (клиент, `window.print`)
+
+- [x] Маршрут `/notes/:id/print` — без navbar/sidebar (`NotePrintView`)
+- [x] Страница `NotePrintView`: метаданные `NoteExportMetadata` + `MarkdownPreview` с телом заметки
+- [x] Светлая тема на print-странице; `@media print` в `main.css`
+- [x] `?auto=1` — `window.print()` после готовности preview
+- [x] `document.title` = заголовок заметки (дефолтное имя PDF в диалоге печати)
 
 ## Фаза 14: Граф связей
 

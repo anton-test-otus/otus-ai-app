@@ -172,6 +172,7 @@ otus-ai-app/
 │   │   │   ├── DashboardView.vue
 │   │   │   ├── FavoritesView.vue
 │   │   │   ├── NoteView.vue
+│   │   │   ├── NotePrintView.vue
 │   │   │   ├── TrashView.vue
 │   │   │   ├── SettingsView.vue
 │   │   │   └── admin/
@@ -351,6 +352,8 @@ flowchart LR
 **Контекст «Новая заметка»:** composable `useCreateNote` держит module-level `activeNoteContext` (папка и теги открытой заметки), синхронизируемый из `NoteView`. На dashboard контекст берётся из `selectedFolderId` и `selectedTags`.
 
 **Автозаголовок:** пока пользователь не редактировал поле заголовка вручную (`titleWasManuallyEdited`), при изменении тела заметки вызывается `deriveAutoTitleFromMarkdown` (`utils/autoTitle.ts`): первое предложение первого абзаца, обрезка по границе слова до 128 символов. Обновляется только `noteTitle` — редактор не перерисовывается, курсор не сбрасывается.
+
+**Экспорт (фаза 13):** кнопка в тулбаре → меню Markdown / PDF. Перед экспортом — `flushSave()`. **Markdown:** `useNoteExport` + `utils/exportNote.ts` (заголовок `# …`, футер `### Метаданные` + список, wiki → `[\[\[label\]\]]`, `sanitizeNoteText`, `getFolderPath`, скачивание `.md`). **PDF:** маршрут `/notes/:id/print` (`NotePrintView`, без `AppLayout`) — блок метаданных `NoteExportMetadata` + `MarkdownPreview`, `window.print()` (query `auto=1` для автозапуска диалога).
 
 ### Горячие клавиши
 

@@ -1,0 +1,9 @@
+/** Нормализует текст заметки: nbsp, zero-width и прочие нечитаемые символы. */
+export function sanitizeNoteText(text: string): string {
+  return text
+    .replace(/\u00a0/g, ' ')
+    .replace(/\u202f/g, ' ')
+    .replace(/\u2007/g, ' ')
+    .replace(/[\u200b-\u200d\u2060\ufeff]/g, '')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
+}

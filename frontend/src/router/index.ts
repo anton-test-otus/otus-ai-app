@@ -16,6 +16,12 @@ const routes: RouteRecordRaw[] = [
     meta: { guest: true },
   },
   {
+    path: '/notes/:id/print',
+    name: 'note-print',
+    component: () => import('@/views/NotePrintView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/',
     component: () => import('@/components/layout/AppLayout.vue'),
     meta: { requiresAuth: true },

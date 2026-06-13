@@ -78,6 +78,19 @@
 
                 <Button
                   v-if="!isDraft && notesStore.currentNote"
+                  icon="pi pi-download"
+                  severity="secondary"
+                  text
+                  rounded
+                  class="note-action-btn"
+                  :loading="isExporting"
+                  :disabled="isExporting"
+                  @click="toggleExportMenu"
+                  v-tooltip.bottom="'Экспорт'"
+                />
+
+                <Button
+                  v-if="!isDraft && notesStore.currentNote"
                   icon="pi pi-trash"
                   severity="danger"
                   text
@@ -195,6 +208,8 @@
       :exclude-note-id="notesStore.currentNote?.id ?? null"
       @select="handleLinkSelect"
     />
+
+  <Menu ref="exportMenuRef" :model="exportMenuItems" popup />
 </template>
 
 <script setup lang="ts">
@@ -204,6 +219,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import Divider from 'primevue/divider'
+import Menu from 'primevue/menu'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import NoteMetadata from '@/components/layout/NoteMetadata.vue'
@@ -225,6 +241,7 @@ import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import { useNoteKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
+import { useNoteExport } from '@/composables/useNoteExport'
 import { deriveAutoTitleFromMarkdown } from '@/utils/autoTitle'
 import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
@@ -239,6 +256,7 @@ const { createNoteWithContent } = useCreateNote()
 const { isBelow3xl } = useBreakpoints()
 const { effectiveAutosaveDelayMs } = useUserSettings()
 const { toggleFavorite } = useFavoriteToggle()
+const { isExporting, exportMarkdown, openPrintView } = useNoteExport()
 
 const noteTitle = ref('')
 const noteContent = ref('')
@@ -251,6 +269,7 @@ const isTitleFocused = ref(false)
 const titleWasManuallyEdited = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
 const metadataRef = ref<InstanceType<typeof NoteMetadata> | null>(null)
+const exportMenuRef = ref<InstanceType<typeof Menu> | null>(null)
 const isNoteReady = ref(false)
 
 const isDraft = computed(() => route.name === 'note-new')
@@ -706,6 +725,65 @@ async function handleVersionRestore(_versionId: string, mode: RestoreVersionRequ
 function formatDate(dateString?: string): string {
   if (!dateString) return 'Неизвестно'
   return new Date(dateString).toLocaleString('ru-RU')
+}
+
+const exportMenuItems = [
+  {
+    label: 'Markdown (.md)',
+    icon: 'pi pi-file',
+    command: () => {
+      void handleExportMarkdown()
+    },
+  },
+  {
+    label: 'PDF (печать)',
+    icon: 'pi pi-print',
+    command: () => {
+      void handleExportPdf()
+    },
+  },
+]
+
+function toggleExportMenu(event: Event) {
+  exportMenuRef.value?.toggle(event)
+}
+
+async function handleExportMarkdown() {
+  const note = notesStore.currentNote
+  if (!note) {
+    return
+  }
+
+  syncEditorContent()
+  try {
+    await flushSave()
+    await exportMarkdown({
+      noteId: note.id,
+      title: noteTitle.value,
+      content: getCurrentContent(),
+      folderId: noteFolderId.value,
+      tags: [...noteTags.value],
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
+    })
+    showSuccess('Файл Markdown скачан')
+  } catch {
+    // toast уже показан в useNoteExport
+  }
+}
+
+async function handleExportPdf() {
+  if (!notesStore.currentNote) {
+    return
+  }
+
+  syncEditorContent()
+  try {
+    await flushSave()
+    openPrintView(notesStore.currentNote.id)
+  } catch (error) {
+    showError(error, 'Не удалось подготовить печать')
+  }
 }
 
 watch(saveError, (error) => {

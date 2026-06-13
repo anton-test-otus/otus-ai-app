@@ -1,4 +1,4 @@
-/** UUID заметки в wiki-ссылке: [[uuid]] или [[uuid|отображаемый текст]] */
+import { sanitizeNoteText } from '@/utils/sanitizeText'
 export const WIKI_LINK_UUID_SOURCE =
   '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 
@@ -44,6 +44,25 @@ export function replaceWikiLinksForPlainText(
 
     const normalizedId = normalizeWikiLinkUuid(noteId)
     return titlesById[normalizedId] ?? ''
+  })
+}
+
+function escapeWikiExportLabel(label: string): string {
+  return label.replace(/\\/g, '\\\\').replace(/\]/g, '\\]')
+}
+
+/** Для экспорта: wiki-ссылка → `[\[\[label\]\]]` (внутренняя ссылка в markdown) */
+export function replaceWikiLinksForExport(
+  content: string,
+  titlesById: Record<string, string> = {},
+): string {
+  return content.replace(createWikiLinkPattern(), (_match, noteId: string, alias?: string) => {
+    const normalizedId = normalizeWikiLinkUuid(noteId)
+    const trimmedAlias = alias?.trim()
+    const label = sanitizeNoteText(trimmedAlias || titlesById[normalizedId] || noteId)
+    const safe = escapeWikiExportLabel(label)
+
+    return `[\\[\\[${safe}\\]\\]]`
   })
 }
 

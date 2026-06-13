@@ -355,3 +355,52 @@
     @apply text-blue-600 dark:text-blue-400 underline;
   }
 }
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #111827 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .note-print-page {
+    min-height: auto;
+  }
+
+  .note-print-content {
+    max-width: none;
+    padding: 0;
+  }
+
+  .note-print-divider {
+    border-color: #d1d5db;
+  }
+
+  .markdown-prose .ProseMirror pre,
+  .markdown-prose .ProseMirror code {
+    background: #f3f4f6 !important;
+  }
+
+  .markdown-prose .ProseMirror blockquote {
+    border-color: #d1d5db !important;
+  }
+
+  .markdown-prose h1,
+  .markdown-prose h2,
+  .markdown-prose h3 {
+    break-after: avoid-page;
+  }
+
+  .markdown-prose pre,
+  .markdown-prose blockquote,
+  .markdown-prose table {
+    break-inside: avoid-page;
+  }
+}
