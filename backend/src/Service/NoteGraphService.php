@@ -9,7 +9,7 @@ use App\Repository\NoteLinkRepository;
 
 final class NoteGraphService
 {
-    public const DEFAULT_DEPTH = 2;
+    public const DEFAULT_DEPTH = 1;
     public const MIN_DEPTH = 1;
     public const MAX_DEPTH = 3;
     public const MAX_NODES = 120;
