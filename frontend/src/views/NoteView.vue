@@ -32,7 +32,7 @@
                 v-tooltip.bottom="`Сохранить (${formatShortcutKeys(SHORTCUT_KEYS.save)})`"
               />
 
-              <div class="flex items-center gap-1 md:gap-2">
+              <div class="flex items-center gap-1 md:gap-2 overflow-visible">
                 <Button
                   v-if="viewMode === 'preview'"
                   icon="pi pi-pencil"
@@ -865,7 +865,7 @@ watch(saveError, (error) => {
 
 <style scoped>
 .note-action-btn {
-  @apply !w-11 !h-11 md:!w-auto md:!h-auto;
+  @apply shrink-0 overflow-visible !w-11 !h-11 md:!w-auto md:!h-auto md:!p-1;
 }
 
 .note-title-field :deep(.p-inputtext) {

@@ -89,6 +89,7 @@ erDiagram
         uuid user_id FK
         uuid parent_id FK
         string name
+        string icon nullable
         timestamp deleted_at
     }
     
@@ -461,8 +462,8 @@ flowchart LR
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
 | GET | `/api/folders` | Список папок в виде дерева |
-| POST | `/api/folders` | Создание папки |
-| PUT | `/api/folders/{id}` | Обновление названия папки |
+| POST | `/api/folders` | Создание папки (`name`, `parent`, опционально `icon` — PrimeIcons без префикса `pi-`) |
+| PUT | `/api/folders/{id}` | Обновление папки (`name`, `parent`, `icon`) |
 | DELETE | `/api/folders/{id}` | Удаление папки (содержимое в корзину) |
 | PUT | `/api/folders/{id}/move` | Перемещение / изменение порядка папки |
 

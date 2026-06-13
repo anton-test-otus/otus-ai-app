@@ -1,5 +1,29 @@
 import type { Folder } from '@/types'
 
+export function findFolderDepthInTree(
+  items: Folder[] | undefined,
+  folderId: string,
+  depth = 0,
+): number | null {
+  if (!items?.length) {
+    return null
+  }
+
+  for (const item of items) {
+    if (item.id === folderId) {
+      return depth
+    }
+    if (item.children?.length) {
+      const childDepth = findFolderDepthInTree(item.children, folderId, depth + 1)
+      if (childDepth !== null) {
+        return childDepth
+      }
+    }
+  }
+
+  return null
+}
+
 export function getFolderPath(
   folderId: string | null | undefined,
   getFolderById: (id: string) => Folder | undefined,

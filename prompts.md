@@ -3403,3 +3403,17 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** сначала реализация иконок папок, затем code review.
 
 ---
+
+## Промпт 168
+
+> приступаем к фазе с иконками папок.
+
+### Выполненные действия:
+
+- **Бэкенд:** поле `icon` (nullable) в `Folder`; `FolderIconChoices` — 34 допустимых PrimeIcons; миграция `Version20260613130000`; `icon` в `FolderTreeProvider`
+- **Фронтенд:** `constants/folderIcons.ts`, `utils/folderIcon.ts`, `FolderIconPicker` (кнопка «По умолчанию» + сетка иконок); picker в диалогах `FolderTree` и `FolderTreeItem`; отображение в дереве через `resolveFolderTreeIcon` (fallback `pi-folder` / `pi-folder-open`)
+- Обновлены `PHASES.md` (фаза 16 ✅), `ARCHITECTURE.md`
+
+**Результат:** фаза 16 завершена; можно переходить к self-review (фаза 17).
+
+---

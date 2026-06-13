@@ -13,7 +13,7 @@
             class="flex items-center gap-1 min-w-0 max-w-[55%]"
             v-tooltip.top="note.folder.name"
           >
-            <i class="pi pi-folder shrink-0 text-xs" />
+            <i class="shrink-0 text-xs" :class="folderIconClass" />
             <span class="truncate">{{ note.folder.name }}</span>
           </span>
         </div>
@@ -58,10 +58,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import Card from 'primevue/card'
 import Button from 'primevue/button'
 import NoteTagsPreview from '@/components/common/NoteTagsPreview.vue'
+import { useFoldersStore } from '@/stores/folders'
+import { findFolderDepthInTree } from '@/utils/folderPath'
+import { resolveFolderTreeIcon } from '@/utils/folderIcon'
 import type { NoteListItem } from '@/types'
 
 const props = defineProps<{
@@ -69,6 +72,8 @@ const props = defineProps<{
   showFolder?: boolean
   formatDate: (dateString: string) => string
 }>()
+
+const foldersStore = useFoldersStore()
 
 const emit = defineEmits<{
   open: [id: string]
@@ -79,4 +84,23 @@ const emit = defineEmits<{
 
 const preview = computed(() => props.note.contentPreview)
 const formattedDate = computed(() => props.formatDate(props.note.updatedAt))
+
+const folderIconClass = computed(() => {
+  const folderId = props.note.folderId ?? props.note.folder?.id
+  if (!folderId) {
+    return resolveFolderTreeIcon(null, 0)
+  }
+
+  const treeFolder = foldersStore.getFolderById(folderId)
+  const icon = props.note.folder?.icon ?? treeFolder?.icon ?? null
+  const depth = findFolderDepthInTree(foldersStore.folders, folderId) ?? 0
+
+  return resolveFolderTreeIcon(icon, depth)
+})
+
+onMounted(async () => {
+  if (!foldersStore.folders.length) {
+    await foldersStore.fetchFolders()
+  }
+})
 </script>

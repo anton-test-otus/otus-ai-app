@@ -78,6 +78,7 @@ export interface Folder {
   parentId: string | null
   parent?: Folder
   name: string
+  icon?: string | null
   children?: Folder[]
   deletedAt: string | null
 }

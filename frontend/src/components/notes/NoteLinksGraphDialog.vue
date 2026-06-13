@@ -171,6 +171,9 @@ const canExpand = computed(() => {
 })
 
 function destroyNetwork() {
+  if (containerRef.value) {
+    containerRef.value.style.cursor = 'default'
+  }
   network.value?.destroy()
   network.value = null
 }
@@ -198,6 +201,33 @@ async function mountGraph() {
   network.value?.fit({ animation: false })
 }
 
+function attachNetworkCursorHandlers(instance: Network, container: HTMLElement) {
+  const setCursor = (cursor: string) => {
+    container.style.cursor = cursor
+
+    const visNetwork = container.querySelector<HTMLElement>('.vis-network')
+    if (visNetwork) {
+      visNetwork.style.cursor = cursor
+    }
+
+    const canvas = container.querySelector<HTMLElement>('canvas')
+    if (canvas) {
+      canvas.style.cursor = cursor
+    }
+
+    const internalContainer = (
+      instance as Network & { canvas?: { body?: { container?: HTMLElement } } }
+    ).canvas?.body?.container
+
+    if (internalContainer) {
+      internalContainer.style.cursor = cursor
+    }
+  }
+
+  instance.on('hoverNode', () => setCursor('pointer'))
+  instance.on('blurNode', () => setCursor('default'))
+}
+
 async function renderGraph(container: HTMLElement) {
   if (!graphData.value) {
     return
@@ -219,6 +249,7 @@ async function renderGraph(container: HTMLElement) {
   }
 
   network.value = new Network(container, data, options)
+  attachNetworkCursorHandlers(network.value, container)
   network.value.on('click', (params) => {
     const nodeId = params.nodes[0]
     if (!nodeId) {

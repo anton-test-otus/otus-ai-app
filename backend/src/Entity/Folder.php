@@ -9,6 +9,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Delete;
+use App\Folder\FolderIconChoices;
 use App\Repository\FolderRepository;
 use App\State\FolderTreeProvider;
 use App\State\FolderProcessor;
@@ -72,6 +73,14 @@ class Folder
     #[Assert\Length(max: 255, maxMessage: 'Название не может превышать {{ limit }} символов')]
     #[Groups(['folder:read', 'folder:write', 'note:read', 'note:list'])]
     private ?string $name = null;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    #[Assert\Choice(
+        callback: [FolderIconChoices::class, 'all'],
+        message: 'Недопустимая иконка папки'
+    )]
+    #[Groups(['folder:read', 'folder:write', 'note:read', 'note:list'])]
+    private ?string $icon = null;
 
     #[ORM\Column(nullable: true)]
     #[Groups(['folder:read'])]
@@ -166,6 +175,17 @@ class Folder
     public function setName(string $name): static
     {
         $this->name = $name;
+        return $this;
+    }
+
+    public function getIcon(): ?string
+    {
+        return $this->icon;
+    }
+
+    public function setIcon(?string $icon): static
+    {
+        $this->icon = $icon;
         return $this;
     }
 

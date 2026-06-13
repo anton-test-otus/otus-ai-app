@@ -40,6 +40,7 @@ class FolderTreeProvider implements ProviderInterface
                 $tree[] = [
                     'id' => $folder->getId()->toRfc4122(),
                     'name' => $folder->getName(),
+                    'icon' => $folder->getIcon(),
                     'parent' => $folder->getParent()?->getId()->toRfc4122(),
                     'children' => $this->buildTree($folders, $folder),
                 ];

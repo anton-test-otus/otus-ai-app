@@ -18,8 +18,8 @@
       </span>
 
       <i
-        class="pi w-4 shrink-0 text-sm text-primary-500"
-        :class="hasChildren && isExpanded ? 'pi-folder-open' : 'pi-folder'"
+        class="w-4 shrink-0 text-sm text-primary-500"
+        :class="folderIconClass"
       />
 
       <span class="folder-name relative flex-1 min-w-0 overflow-hidden">
@@ -33,6 +33,7 @@
           : 'bg-surface-100 dark:bg-surface-800'"
       >
         <Button
+          v-if="depth < MAX_FOLDER_TREE_DEPTH"
           icon="pi pi-plus"
           text
           rounded
@@ -101,6 +102,7 @@
         <p class="text-sm text-surface-500">
           Родительская папка: <strong>{{ folder.name }}</strong>
         </p>
+        <FolderIconPicker v-model="newSubfolderIcon" :depth="Math.min(depth + 1, MAX_FOLDER_TREE_DEPTH)" />
       </div>
 
       <template #footer>
@@ -126,6 +128,7 @@
             @keyup.enter="saveEdit"
           />
         </div>
+        <FolderIconPicker v-model="editIcon" :depth="depth" />
       </div>
 
       <template #footer>
@@ -168,13 +171,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import Message from 'primevue/message';
 import { MODAL_WIDTH } from '@/constants/modal';
+import { resolveFolderTreeIcon, MAX_FOLDER_TREE_DEPTH } from '@/utils/folderIcon';
 import { useAppToast } from '@/composables/useAppToast';
+import FolderIconPicker from './FolderIconPicker.vue';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 
@@ -200,15 +205,34 @@ const showCreateDialog = ref(false);
 const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const newSubfolderName = ref('');
+const newSubfolderIcon = ref<string | null>(null);
 const editName = ref(props.folder.name);
+const editIcon = ref<string | null>(props.folder.icon ?? null);
 const deleteCount = ref<{ folders: number; notes: number } | null>(null);
 const deleting = ref(false);
 
 const isSelected = computed(() => foldersStore.selectedFolderId === props.folder.id);
 const hasChildren = computed(() => props.folder.children && props.folder.children.length > 0);
+const folderIconClass = computed(() =>
+  resolveFolderTreeIcon(props.folder.icon, props.depth),
+);
 const rowIndentStyle = computed(() => ({
   paddingLeft: `${props.depth * 16}px`,
 }));
+
+watch(showEditDialog, (visible) => {
+  if (visible) {
+    editName.value = props.folder.name;
+    editIcon.value = props.folder.icon ?? null;
+  }
+});
+
+watch(showCreateDialog, (visible) => {
+  if (!visible) {
+    newSubfolderName.value = '';
+    newSubfolderIcon.value = null;
+  }
+});
 
 function handleSelect() {
   foldersStore.selectFolder(props.folder.id);
@@ -223,8 +247,13 @@ async function createSubfolder() {
   if (!newSubfolderName.value.trim()) return;
 
   try {
-    await foldersStore.createFolder(newSubfolderName.value, props.folder.id);
+    await foldersStore.createFolder(
+      newSubfolderName.value,
+      props.folder.id,
+      newSubfolderIcon.value,
+    );
     newSubfolderName.value = '';
+    newSubfolderIcon.value = null;
     showCreateDialog.value = false;
     isExpanded.value = true;
     emit('update');
@@ -237,7 +266,10 @@ async function saveEdit() {
   if (!editName.value.trim()) return;
 
   try {
-    await foldersStore.updateFolder(props.folder.id, { name: editName.value });
+    await foldersStore.updateFolder(props.folder.id, {
+      name: editName.value,
+      icon: editIcon.value,
+    });
     showEditDialog.value = false;
     emit('update');
   } catch (error) {

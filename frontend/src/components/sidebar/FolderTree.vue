@@ -66,17 +66,16 @@
 
         <div class="flex flex-col gap-2">
           <label for="parent-folder" class="font-semibold">Родительская папка (опционально)</label>
-          <Dropdown
+          <FolderDropdown
             id="parent-folder"
             v-model="newFolderParentId"
-            :options="selectableFolders"
-            option-label="label"
-            option-value="value"
+            input-id="parent-folder"
             placeholder="Без родителя"
-            show-clear
-            append-to="body"
+            only-selectable-parents
           />
         </div>
+
+        <FolderIconPicker v-model="newFolderIcon" :depth="newFolderDepth" />
       </div>
 
       <template #footer>
@@ -93,12 +92,15 @@ import { useRoute } from 'vue-router';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import Dropdown from 'primevue/dropdown';
 import LoadingState from '@/components/common/LoadingState.vue';
 import ErrorState from '@/components/common/ErrorState.vue';
+import FolderDropdown from '@/components/common/FolderDropdown.vue';
 import { useAppToast } from '@/composables/useAppToast';
 import { MODAL_WIDTH } from '@/constants/modal';
+import { findFolderDepthInTree } from '@/utils/folderPath'
+import { MAX_FOLDER_TREE_DEPTH, resolveFolderTreeIcon } from '@/utils/folderIcon'
 import FolderTreeItem from './FolderTreeItem.vue';
+import FolderIconPicker from './FolderIconPicker.vue';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 
@@ -119,30 +121,24 @@ const { showError } = useAppToast();
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
+const newFolderIcon = ref<string | null>(null);
+
+const newFolderDepth = computed(() => {
+  if (!newFolderParentId.value) {
+    return 0;
+  }
+
+  const parentDepth = findFolderDepthInTree(foldersStore.folders, newFolderParentId.value);
+  if (parentDepth === null) {
+    return 0;
+  }
+
+  return Math.min(parentDepth + 1, MAX_FOLDER_TREE_DEPTH);
+});
 
 const isAllNotesActive = computed(
   () => route.name === 'dashboard' && !foldersStore.selectedFolderId,
 );
-
-const selectableFolders = computed(() => {
-  const options: { label: string; value: string }[] = [];
-
-  const flatten = (items: Folder[], depth = 0) => {
-    if (!items || !Array.isArray(items)) return;
-    items.forEach(item => {
-      options.push({
-        label: '  '.repeat(depth) + item.name,
-        value: item.id,
-      });
-      if (item.children && item.children.length > 0) {
-        flatten(item.children, depth + 1);
-      }
-    });
-  };
-
-  flatten(foldersStore.folders || []);
-  return options;
-});
 
 function selectAllNotes() {
   foldersStore.clearFolderSelection();
@@ -153,9 +149,14 @@ async function createFolder() {
   if (!newFolderName.value.trim()) return;
 
   try {
-    await foldersStore.createFolder(newFolderName.value, newFolderParentId.value || undefined);
+    await foldersStore.createFolder(
+      newFolderName.value,
+      newFolderParentId.value || undefined,
+      newFolderIcon.value,
+    );
     newFolderName.value = '';
     newFolderParentId.value = null;
+    newFolderIcon.value = null;
     showCreateDialog.value = false;
     emit('update');
   } catch (error) {

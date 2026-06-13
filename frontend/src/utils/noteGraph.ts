@@ -143,6 +143,10 @@ export function getGraphColors(theme: Theme) {
         background: isDark ? '#475569' : '#cbd5e1',
         border: isDark ? '#94a3b8' : '#64748b',
       },
+      hover: {
+        background: isDark ? '#475569' : '#cbd5e1',
+        border: isDark ? '#cbd5e1' : '#475569',
+      },
       font: isDark ? '#e2e8f0' : '#1e293b',
     },
     focus: {
@@ -150,7 +154,11 @@ export function getGraphColors(theme: Theme) {
       border: isDark ? '#60a5fa' : '#1d4ed8',
       highlight: {
         background: isDark ? '#2563eb' : '#1d4ed8',
-        border: isDark ? '#93c5fd' : '#1e40af',
+        border: isDark ? '#93c5fd' : '#60a5fa',
+      },
+      hover: {
+        background: isDark ? '#1e3a8a' : '#1e40af',
+        border: isDark ? '#bfdbfe' : '#93c5fd',
       },
       font: '#ffffff',
     },
@@ -277,6 +285,7 @@ export function getNetworkOptions(theme: Theme) {
           background: colors.default.background,
           border: colors.default.border,
           highlight: colors.default.highlight,
+          hover: colors.default.hover,
         },
       },
       focus: {
@@ -289,6 +298,14 @@ export function getNetworkOptions(theme: Theme) {
           background: colors.focus.background,
           border: colors.focus.border,
           highlight: colors.focus.highlight,
+          hover: colors.focus.hover,
+        },
+        chosen: {
+          label: (values, _id, _selected, hovering) => {
+            if (hovering) {
+              values.color = colors.focus.font
+            }
+          },
         },
       },
       favorite: {

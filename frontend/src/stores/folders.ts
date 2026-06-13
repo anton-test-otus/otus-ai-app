@@ -63,11 +63,11 @@ export const useFoldersStore = defineStore('folders', () => {
     return fetchPromise;
   }
 
-  async function createFolder(name: string, parentId?: string) {
+  async function createFolder(name: string, parentId?: string, icon?: string | null) {
     loading.value = true;
     error.value = null;
     try {
-      const newFolder = await foldersApi.create({ name, parentId });
+      const newFolder = await foldersApi.create({ name, parentId, icon });
       await fetchFolders({ force: true });
       return newFolder;
     } catch (e: unknown) {
