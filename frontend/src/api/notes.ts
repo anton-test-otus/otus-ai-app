@@ -1,5 +1,6 @@
 import { apiClient } from './client'
 import { normalizeNote, normalizeNoteListItem } from '@/utils/note'
+import { sanitizeNoteContent, sanitizeNoteTitle } from '@/utils/sanitizeText'
 import { resolveTagNamesToIris } from '@/utils/tags'
 import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
@@ -113,8 +114,8 @@ export const notesApi = {
 
   async create(data: CreateNoteRequest): Promise<Note> {
     const payload: Record<string, unknown> = {
-      title: data.title,
-      content: data.content,
+      title: sanitizeNoteTitle(data.title),
+      content: sanitizeNoteContent(data.content),
     }
 
     if (data.folderId) {
@@ -133,6 +134,14 @@ export const notesApi = {
     // Преобразуем folderId в IRI для API Platform
     const payload: any = {
       ...data,
+    }
+
+    if ('title' in data && data.title !== undefined) {
+      payload.title = sanitizeNoteTitle(data.title)
+    }
+
+    if ('content' in data && data.content !== undefined) {
+      payload.content = sanitizeNoteContent(data.content)
     }
     
     if ('folderId' in data) {

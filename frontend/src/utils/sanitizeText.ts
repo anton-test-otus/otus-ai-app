@@ -7,3 +7,11 @@ export function sanitizeNoteText(text: string): string {
     .replace(/[\u200b-\u200d\u2060\ufeff]/g, '')
     .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '')
 }
+
+export function sanitizeNoteTitle(title: string): string {
+  return sanitizeNoteText(title)
+}
+
+export function sanitizeNoteContent(content: string): string {
+  return sanitizeNoteText(content)
+}

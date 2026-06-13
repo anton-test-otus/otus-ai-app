@@ -243,6 +243,7 @@ import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import { useNoteKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
 import { useNoteExport } from '@/composables/useNoteExport'
 import { deriveAutoTitleFromMarkdown } from '@/utils/autoTitle'
+import { sanitizeNoteContent, sanitizeNoteTitle } from '@/utils/sanitizeText'
 import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
 
@@ -339,6 +340,22 @@ function syncEditorContent() {
   }
 }
 
+function normalizeEditableFields(): { title: string; content: string } {
+  const title = sanitizeNoteTitle(noteTitle.value)
+  if (title !== noteTitle.value) {
+    noteTitle.value = title
+  }
+
+  let content = getCurrentContent()
+  const sanitizedContent = sanitizeNoteContent(content)
+  if (sanitizedContent !== content) {
+    content = sanitizedContent
+    noteContent.value = sanitizedContent
+  }
+
+  return { title, content }
+}
+
 let persistDraftPromise: Promise<void> | null = null
 
 function isDraftPersistInFlight(): boolean {
@@ -346,13 +363,13 @@ function isDraftPersistInFlight(): boolean {
 }
 
 async function saveNoteIfChanged() {
-  const content = getCurrentContent()
+  const { title, content } = normalizeEditableFields()
 
   if (isDraft.value) {
     if (!hasUnsavedChanges() || !hasNoteBody(content) || isDraftPersistInFlight()) {
       return
     }
-    await persistDraftNote(content)
+    await persistDraftNote(content, title)
     return
   }
 
@@ -365,7 +382,7 @@ async function saveNoteIfChanged() {
   }
 
   await notesStore.updateNote(notesStore.currentNote.id, {
-    title: noteTitle.value,
+    title,
     content,
     folderId: noteFolderId.value,
     tags: noteTags.value,
@@ -374,7 +391,7 @@ async function saveNoteIfChanged() {
   syncSavedSnapshot()
 }
 
-async function persistDraftNote(content: string): Promise<void> {
+async function persistDraftNote(content: string, title = noteTitle.value): Promise<void> {
   if (persistDraftPromise) {
     return persistDraftPromise
   }
@@ -385,7 +402,7 @@ async function persistDraftNote(content: string): Promise<void> {
 
   persistDraftPromise = (async () => {
     const note = await createNoteWithContent({
-      title: noteTitle.value,
+      title,
       content,
       folderId: noteFolderId.value,
       tags: noteTags.value,
@@ -596,6 +613,10 @@ watch(
 )
 
 function handleTitleChange() {
+  const sanitized = sanitizeNoteTitle(noteTitle.value)
+  if (sanitized !== noteTitle.value) {
+    noteTitle.value = sanitized
+  }
   titleWasManuallyEdited.value = true
   triggerSave()
 }

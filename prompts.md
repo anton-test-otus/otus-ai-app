@@ -2981,3 +2981,17 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** браузер подставляет имя заметки в диалоге «Сохранить как PDF».
 
 ---
+
+## Промпт 141
+
+> Закроем баг в 13-й фазе по поводу сохранения заметки без нечитамых символов
+
+### Выполненные действия:
+
+- Бэкенд: `NoteTextSanitizer` + вызов в `NoteProcessor` при `POST`/`PUT`/`PATCH`
+- Фронтенд: `sanitizeNoteTitle` / `sanitizeNoteContent` в `notesApi.create`/`update`; нормализация заголовка при вводе и перед autosave в `NoteView`
+- Обновлены `PHASES.md`, `ARCHITECTURE.md`
+
+**Результат:** nbsp, zero-width и control chars не попадают в `title`/`content` при сохранении заметки.
+
+---

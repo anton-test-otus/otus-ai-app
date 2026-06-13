@@ -9,6 +9,7 @@ use App\Dto\NoteSnapshot;
 use App\Entity\Note;
 use App\Entity\NoteLink;
 use App\Repository\NoteRepository;
+use App\Service\NoteTextSanitizer;
 use App\Service\WikiLinkParser;
 use App\Service\NoteVersionService;
 use App\Service\UserSettingsResolver;
@@ -24,6 +25,7 @@ class NoteProcessor implements ProcessorInterface
         private NoteRepository $noteRepository,
         private NoteVersionService $versionService,
         private UserSettingsResolver $userSettingsResolver,
+        private NoteTextSanitizer $noteTextSanitizer,
         private PersistProcessor $persistProcessor,
     ) {
     }
@@ -54,6 +56,10 @@ class NoteProcessor implements ProcessorInterface
             $data->setDeletedAt(new \DateTimeImmutable());
             $this->em->flush();
             return $data;
+        }
+
+        if (in_array($operation->getMethod(), ['POST', 'PUT', 'PATCH'], true)) {
+            $this->noteTextSanitizer->sanitizeNote($data);
         }
 
         $previousState = null;

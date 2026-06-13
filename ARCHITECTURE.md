@@ -347,6 +347,8 @@ flowchart LR
 3. Параметр `autosaveDelaySeconds` из `auth.user.settings` (fallback — env/defaults) задаёт debounce в `useUserSettings` → `useAutosave`.
 4. Окно версионирования (`versionConsolidationWindowMinutes`) на фронте **не участвует** в сохранении — только на бэкенде при `PUT` (создание записи в `note_versions`).
 
+**Нормализация текста:** `sanitizeNoteText` (`utils/sanitizeText.ts`) убирает nbsp, zero-width и control chars из `title`/`content` при вводе заголовка и перед autosave в `NoteView`; те же правила в `notesApi.create` / `update`. На бэкенде — `NoteTextSanitizer` в `NoteProcessor` при `POST`/`PUT`/`PATCH`.
+
 **Уход со страницы:** `leaveNote()` → `flushSave()` (тот же путь, что autosave; для черновика — тоже один `POST` через mutex).
 
 **Контекст «Новая заметка»:** composable `useCreateNote` держит module-level `activeNoteContext` (папка и теги открытой заметки), синхронизируемый из `NoteView`. На dashboard контекст берётся из `selectedFolderId` и `selectedTags`.
