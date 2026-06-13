@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\NoteSnapshot;
 use App\Entity\Note;
+use App\Security\ResourceOwnershipAssert;
 use App\Service\NoteLinkSyncService;
 use App\Service\NoteTextSanitizer;
 use App\Service\NoteVersionService;
@@ -38,6 +39,8 @@ class NoteProcessor implements ProcessorInterface
         // Для новых заметок устанавливаем пользователя
         if (!$data->getId()) {
             $data->setUser($user);
+        } else {
+            ResourceOwnershipAssert::assertOwnedBy($data->getUser(), $user);
         }
 
         // Обработка DELETE операций

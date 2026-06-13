@@ -33,7 +33,7 @@ class NoteVersionsByNoteProvider implements ProviderInterface
 
         $note = $this->noteRepository->find($noteId);
         if (!$note) {
-            throw new NotFoundHttpException('Note not found');
+            throw new NotFoundHttpException('Не найдена');
         }
 
         if ($note->getUser() !== $user) {

@@ -5,9 +5,9 @@ namespace App\State;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\NoteLink;
+use App\Security\ResourceOwnershipAssert;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
-use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 class NoteLinkProcessor implements ProcessorInterface
 {
@@ -24,18 +24,9 @@ class NoteLinkProcessor implements ProcessorInterface
         }
 
         $user = $this->security->getUser();
-        
-        // Валидация: можно создавать линки только между своими заметками
-        $sourceNote = $data->getSourceNote();
-        $targetNote = $data->getTargetNote();
 
-        if ($sourceNote && $sourceNote->getUser() !== $user) {
-            throw new AccessDeniedHttpException('Нет доступа к исходной заметке');
-        }
-
-        if ($targetNote && $targetNote->getUser() !== $user) {
-            throw new AccessDeniedHttpException('Нет доступа к целевой заметке');
-        }
+        ResourceOwnershipAssert::assertOwnedBy($data->getSourceNote()?->getUser(), $user);
+        ResourceOwnershipAssert::assertOwnedBy($data->getTargetNote()?->getUser(), $user);
 
         // Удаление
         if ($operation->getMethod() === 'DELETE') {

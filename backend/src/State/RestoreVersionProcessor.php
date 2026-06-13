@@ -36,7 +36,7 @@ class RestoreVersionProcessor implements ProcessorInterface
         $note = $data->getNote();
         
         if (!$note) {
-            throw new NotFoundHttpException('Note not found');
+            throw new NotFoundHttpException('Не найдена');
         }
 
         if ($note->getUser() !== $user) {

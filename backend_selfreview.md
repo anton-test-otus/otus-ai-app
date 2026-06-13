@@ -37,7 +37,7 @@
 - [ ] Добавить `QueryItemExtensionInterface` для `Note`, `Folder`, `Tag` (и при необходимости `NoteVersion`, `NoteLink`) — `andWhere entity.user = :currentUser`
 - [ ] В процессорах на мутациях существующих сущностей — `assertSame($data->getUser(), $user)` или `AccessDeniedHttpException`
 - [ ] Для `GET /notes/{id}` — отдавать 404 (не 403), если заметка чужая или в корзине (`deletedAt IS NOT NULL`), если так задумано для UX
-- [ ] Smoke: два пользователя; user A не может `GET`/`PUT`/`PATCH`/`DELETE` ресурсы user B по UUID
+- [ ] Smoke: один пользователь — свои CRUD и корзина без регрессии; IDOR A→B — см. [`future_autotests.md`](./future_autotests.md)
 
 ---
 

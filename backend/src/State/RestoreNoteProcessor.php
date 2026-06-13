@@ -35,7 +35,7 @@ class RestoreNoteProcessor implements ProcessorInterface
         ]);
 
         if (!$note) {
-            throw new NotFoundHttpException('Note not found');
+            throw new NotFoundHttpException('Не найдена');
         }
 
         if (!$note->getDeletedAt()) {

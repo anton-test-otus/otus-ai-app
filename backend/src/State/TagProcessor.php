@@ -6,6 +6,7 @@ use ApiPlatform\Doctrine\Common\State\PersistProcessor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Tag;
+use App\Security\ResourceOwnershipAssert;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 
@@ -29,6 +30,8 @@ class TagProcessor implements ProcessorInterface
         // Для новых тегов устанавливаем пользователя
         if (!$data->getId()) {
             $data->setUser($user);
+        } else {
+            ResourceOwnershipAssert::assertOwnedBy($data->getUser(), $user);
         }
 
         // Удаление

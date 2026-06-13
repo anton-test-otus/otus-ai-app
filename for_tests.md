@@ -111,3 +111,19 @@
 
 ### Автотесты (позже)
 - Unit: `fetchPaginatedList` — dedup in-flight, append merge, criteriaKey guard (фаза 20).
+
+---
+
+## BE Шаг 1 — IDOR / ownership на item-операциях
+
+**Источник:** `backend_selfreview.md`, шаг 1
+
+### Smoke (ручная проверка)
+- [ ] Под одним пользователем: `GET` / `PUT` / `PATCH` / `DELETE` своей заметки, папки, тега — без регрессии
+- [ ] Soft-delete заметки → `GET` той же заметки → **404**; из корзины `DELETE` (permanent) — успех
+
+**Ожидание:** собственные CRUD и корзина работают как до фикса.
+
+### Автотесты (фаза 20+)
+
+Сценарий с **двумя пользователями и чужими UUID** — в [`future_autotests.md`](./future_autotests.md) («BE IDOR — item-операции только для владельца»). Ручная регистрация A/B не требуется.
