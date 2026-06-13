@@ -891,5 +891,16 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** smoke подтверждён пользователем (2026-06-13).
 
+### BE Шаг 5: дубликат email при регистрации (исправлено)
+
+**Проблема:** `AuthController::register` не проверял уникальность email до `flush()`. Повторная регистрация приводила к исключению Doctrine по unique index → **500**.
+
+**Решение:** после валидации формата — `findOneBy(['email' => …])`; при совпадении → **409** с `{"error":"Email уже занят"}`.
+
+**Затронутые файлы:**
+- `backend/src/Controller/AuthController.php`
+
+**Проверка:** smoke подтверждён пользователем (2026-06-14).
+
 ---
 

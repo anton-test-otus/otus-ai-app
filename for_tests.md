@@ -182,3 +182,19 @@
 
 ### Автотесты (фаза 20+)
 - Admin guards: self disable/delete → 400; last admin demote → 409.
+
+---
+
+## BE Шаг 5 — дубликат email при регистрации
+
+**Источник:** `backend_selfreview.md`, шаг 5
+
+### Smoke (ручная проверка)
+- [x] `POST /api/auth/register` с новым email → **201**, тело с `token` и `user`
+- [x] Повторный `POST /api/auth/register` с тем же email (другой пароль допустим) → **409**, `{"error":"Email уже занят"}`, без 500 в логах
+- [x] Невалидный email → по-прежнему **400** с `errors`, не 409
+
+**Ожидание:** предсказуемый конфликт при повторной регистрации; первая регистрация без регрессии.
+
+### Автотесты (фаза 20+)
+- Register duplicate email → 409; first register → 201.

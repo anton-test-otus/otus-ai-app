@@ -60,6 +60,13 @@ class AuthController extends AbstractController
             return $this->json(['errors' => $errorMessages], Response::HTTP_BAD_REQUEST);
         }
 
+        $existingUser = $this->entityManager->getRepository(User::class)->findOneBy([
+            'email' => $user->getEmail(),
+        ]);
+        if ($existingUser !== null) {
+            return $this->json(['error' => 'Email уже занят'], Response::HTTP_CONFLICT);
+        }
+
         $hashedPassword = $this->passwordHasher->hashPassword($user, $user->getPlainPassword());
         $user->setPassword($hashedPassword);
         $user->eraseCredentials();

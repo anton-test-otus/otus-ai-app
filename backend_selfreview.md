@@ -98,9 +98,9 @@
 
 **Файл:** `Controller/AuthController.php`, `Entity/User.php`
 
-- [ ] Перед persist: `findOneBy(['email' => $email])` → `409` «Email уже занят»
-- [ ] Либо `#[UniqueEntity(fields: ['email'])]` на `User` + обработка в контроллере
-- [ ] Smoke: повторный POST `/api/auth/register` — предсказуемый HTTP-код
+- [x] Перед persist: `findOneBy(['email' => $email])` → `409` «Email уже занят»
+- [x] Либо `#[UniqueEntity(fields: ['email'])]` на `User` + обработка в контроллере *(не делали: достаточно явной проверки в контроллере)*
+- [x] Smoke: повторный POST `/api/auth/register` — предсказуемый HTTP-код
 
 ---
 
