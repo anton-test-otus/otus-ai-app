@@ -175,7 +175,8 @@ otus-ai-app/
 ├── Makefile
 ├── ARCHITECTURE.md             # Архитектура приложения
 ├── PHASES.md                   # План реализации
-├── REPORT.md                   # Отчёты о рефакторинге
+├── demoseed.md                 # Спецификация demo seed (фаза 14.4)
+├── REPORT.md                   # Проблемы рефакторинга и их решения
 └── prompts.md                  # История разработки
 ```
 
@@ -310,7 +311,8 @@ docker compose build --no-cache && docker compose up -d
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Подробная архитектура приложения
 - [PHASES.md](./PHASES.md) - План реализации по фазам
 - [prompts.md](./prompts.md) - История разработки
-- [REPORT.md](./REPORT.md) - Отчёты о рефакторинге
+- [REPORT.md](./REPORT.md) - Проблемы рефакторинга и их решения
+- [demoseed.md](./demoseed.md) - Спецификация demo seed (фаза 14.4)
 
 ## Swagger UI
 

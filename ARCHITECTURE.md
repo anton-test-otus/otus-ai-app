@@ -203,7 +203,8 @@ otus-ai-app/
 ├── docker-compose.yml          # PostgreSQL, PHP-FPM, Nginx
 ├── docker-compose.prod.yml     # (фаза 16) demo/prod без node-сервиса
 ├── ARCHITECTURE.md
-├── REPORT.md                   # Заметки о рефакторинге и решениях
+├── demoseed.md                 # Спецификация demo seed (фаза 15)
+├── REPORT.md                   # Проблемы рефакторинга и их решения
 └── README.md
 ```
 
