@@ -27,6 +27,10 @@ interface ResolvedWikiLinkState {
   id: string
 }
 
+export function clearWikiLinkTitleCache(): void {
+  resolvedTitleCache.clear()
+}
+
 async function resolveWikiLink(noteId: string): Promise<ResolvedWikiLinkState> {
   const normalizedId = normalizeWikiLinkUuid(noteId)
   const cachedTitle = resolvedTitleCache.get(normalizedId)

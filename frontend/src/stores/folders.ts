@@ -142,6 +142,15 @@ export const useFoldersStore = defineStore('folders', () => {
     selectedFolderId.value = null;
   }
 
+  function reset() {
+    folders.value = [];
+    selectedFolderId.value = null;
+    loading.value = false;
+    error.value = null;
+    initialized = false;
+    fetchPromise = null;
+  }
+
   return {
     folders,
     folderTree,
@@ -158,5 +167,6 @@ export const useFoldersStore = defineStore('folders', () => {
     getFolderById,
     selectFolder,
     clearFolderSelection,
+    reset,
   };
 });

@@ -137,6 +137,15 @@ export const useTagsStore = defineStore('tags', () => {
     return tags.value.find(t => t.name.toLowerCase() === name.toLowerCase());
   }
 
+  function reset() {
+    tags.value = [];
+    selectedTags.value = [];
+    loading.value = false;
+    error.value = null;
+    loadedCriteriaKey = null;
+    fetchPromise = null;
+  }
+
   return {
     tags,
     selectedTags,
@@ -151,5 +160,6 @@ export const useTagsStore = defineStore('tags', () => {
     clearTagSelection,
     getTagById,
     getTagByName,
+    reset,
   };
 });

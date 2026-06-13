@@ -18,9 +18,15 @@ export const useTrashStore = defineStore('trash', () => {
     }
   }
 
+  function reset() {
+    count.value = 0
+    isLoading.value = false
+  }
+
   return {
     count,
     isLoading,
     fetchCount,
+    reset,
   }
 })

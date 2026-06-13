@@ -48,7 +48,7 @@ export const wikiLinksApi = {
 
   async getGraph(
     noteId: string,
-    depth = 2,
+    depth = 1,
     direction: NoteGraphDirection = 'both',
   ): Promise<NoteGraphResponse> {
     return apiClient.get<NoteGraphResponse>(`/notes/${noteId}/graph`, {

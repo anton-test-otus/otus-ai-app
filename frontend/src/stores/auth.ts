@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authApi } from '@/api/auth'
 import { getApiErrorMessage } from '@/utils/apiError'
+import { resetUserStores } from '@/stores/resetUserStores'
 import type {
   User,
   LoginRequest,
@@ -109,9 +110,11 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function logout() {
+    resetUserStores()
     user.value = null
     token.value = null
     refreshToken.value = null
+    error.value = null
     localStorage.removeItem('token')
     localStorage.removeItem('refreshToken')
   }

@@ -5,7 +5,7 @@ const MAX_NODE_LABEL_LENGTH = 28
 const EDGE_SPRING_LENGTH = 160
 const MUTUAL_EDGE_ROUNDNESS = 0.5
 
-export const NOTE_GRAPH_DEFAULT_DEPTH = 2
+export const NOTE_GRAPH_DEFAULT_DEPTH = 1
 export const NOTE_GRAPH_MAX_DEPTH = 3
 
 export function hasNoteLinks(incoming: number, outgoing: number): boolean {

@@ -346,6 +346,35 @@ export const useNotesStore = defineStore('notes', () => {
     currentNote.value = null
   }
 
+  function reset() {
+    notes.value = []
+    favoriteNotes.value = []
+    currentNote.value = null
+    isLoading.value = false
+    isLoadingMore.value = false
+    isLoadingFavorites.value = false
+    isLoadingMoreFavorites.value = false
+    error.value = null
+    favoritesError.value = null
+    pagination.value = {
+      currentPage: 1,
+      perPage: 20,
+      total: 0,
+      totalPages: 0,
+    }
+    favoritesPagination.value = {
+      currentPage: 1,
+      perPage: 20,
+      total: 0,
+      totalPages: 0,
+    }
+    listCriteriaKey = null
+    fetchNotesPromise = null
+    loadMorePromise = null
+    fetchFavoritesPromise = null
+    loadMoreFavoritesPromise = null
+  }
+
   return {
     notes,
     favoriteNotes,
@@ -371,5 +400,6 @@ export const useNotesStore = defineStore('notes', () => {
     deleteNote,
     searchNotes,
     clearCurrentNote,
+    reset,
   }
 })
