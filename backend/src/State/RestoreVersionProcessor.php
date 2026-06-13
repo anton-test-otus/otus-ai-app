@@ -7,6 +7,7 @@ use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Note;
 use App\Entity\NoteVersion;
 use App\Repository\NoteRepository;
+use App\Service\NoteLinkSyncService;
 use App\Service\NoteVersionService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
@@ -17,6 +18,7 @@ class RestoreVersionProcessor implements ProcessorInterface
 {
     public function __construct(
         private NoteVersionService $versionService,
+        private NoteLinkSyncService $noteLinkSyncService,
         private NoteRepository $noteRepository,
         private Security $security
     ) {
@@ -61,6 +63,8 @@ class RestoreVersionProcessor implements ProcessorInterface
             default:
                 throw new BadRequestException('Invalid restore mode. Use: create_version, overwrite, or copy');
         }
+
+        $this->noteLinkSyncService->syncFromContent($note);
 
         return $note;
     }

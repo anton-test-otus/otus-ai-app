@@ -147,3 +147,20 @@
 ### Автотесты (фаза 20+)
 
 См. [`future_autotests.md`](./future_autotests.md) — «BE owned relations при записи».
+
+---
+
+## BE Шаг 3 — sync wiki-ссылок после restore версии
+
+**Источник:** `backend_selfreview.md`, шаг 3
+
+### Smoke (ручная проверка)
+- [x] Заметка A с wiki-ссылками на B и C — в БД/`GET /notes/{id}` есть исходящие связи (`linkStats.outgoing` > 0 или граф)
+- [x] В истории версий выбрать **старую версию без ссылок** → restore **overwrite** (или `create_version`)
+- [x] Повторить проверку связей: исходящие из A соответствуют **восстановленному** `content` (пусто, если ссылок не было)
+- [x] Restore **copy** из версии **со ссылками** → у **новой** заметки появились исходящие связи по content копии
+
+**Ожидание:** `note_links` синхронизированы с `content` после restore; граф и `linkStats` не показывают «хвост» от состояния до restore.
+
+### Автотесты (фаза 20+)
+- Restore overwrite/create_version/copy — mock или fixture: content меняется → `syncFromContent` вызван для правильной заметки.

@@ -866,5 +866,16 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** код-ревью подтверждено; ручной smoke не выполнялся — сценарии в [`future_autotests.md`](./future_autotests.md) («BE owned relations»).
 
+### BE Шаг 3: sync wiki-ссылок после restore версии (исправлено)
+
+**Проблема:** `RestoreVersionProcessor` восстанавливал `title`/`content` из версии, но не вызывал `NoteLinkSyncService::syncFromContent`. Таблица `note_links` оставалась от состояния до restore; для режима `copy` у новой заметки связи не создавались.
+
+**Решение:** после всех режимов restore (`overwrite`, `create_version`, `copy`) — один вызов `syncFromContent($note)`; для `copy` в `$note` уже новая заметка.
+
+**Затронутые файлы:**
+- `backend/src/State/RestoreVersionProcessor.php`
+
+**Проверка:** smoke подтверждён пользователем (2026-06-13).
+
 ---
 

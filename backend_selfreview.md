@@ -67,9 +67,9 @@
 
 **Файлы:** `State/RestoreVersionProcessor.php`, `Service/NoteLinkSyncService.php`
 
-- [ ] После restore (все режимы `overwrite` / `create_version` / `copy`) — `syncFromContent` для затронутой заметки
-- [ ] Для режима `copy` — sync для **новой** заметки
-- [ ] Smoke: заметка с wiki-ссылками → restore версии без ссылок → `note_links` обновлены
+- [x] После restore (все режимы `overwrite` / `create_version` / `copy`) — `syncFromContent` для затронутой заметки
+- [x] Для режима `copy` — sync для **новой** заметки
+- [x] Smoke: заметка с wiki-ссылками → restore версии без ссылок → `note_links` обновлены
 
 ---
 
