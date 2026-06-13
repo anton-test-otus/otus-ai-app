@@ -180,12 +180,13 @@
           @restore="handleVersionRestore"
         />
 
-        <Divider />
+        <template v-if="!isDraft && notesStore.currentNote && showLinksGraph">
+          <Divider />
 
-        <BacklinksPanel
-          v-if="!isDraft && notesStore.currentNote"
-          :note-id="notesStore.currentNote.id"
-        />
+          <NoteLinksGraphPanel
+            :note-id="notesStore.currentNote.id"
+          />
+        </template>
 
         <Divider />
 
@@ -229,7 +230,7 @@ import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
 import SaveIndicator from '@/components/common/SaveIndicator.vue'
 import FolderSelector from '@/components/common/FolderSelector.vue'
 import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
-import BacklinksPanel from '@/components/BacklinksPanel.vue'
+import NoteLinksGraphPanel from '@/components/notes/NoteLinksGraphPanel.vue'
 import LinkNoteModal, { type SelectedWikiLinkNote } from '@/components/LinkNoteModal.vue'
 import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
@@ -237,6 +238,7 @@ import { useFoldersStore } from '@/stores/folders'
 import { useAutosave } from '@/composables/useAutosave'
 import { useCreateNote, syncActiveNoteContext } from '@/composables/useCreateNote'
 import { DEFAULT_NOTE_TITLE, hasNoteBody } from '@/utils/note'
+import { hasNoteLinks } from '@/utils/noteGraph'
 import { useUserSettings } from '@/composables/useUserSettings'
 import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
@@ -274,6 +276,15 @@ const exportMenuRef = ref<InstanceType<typeof Menu> | null>(null)
 const isNoteReady = ref(false)
 
 const isDraft = computed(() => route.name === 'note-new')
+
+const showLinksGraph = computed(() => {
+  const stats = notesStore.currentNote?.linkStats
+  if (!stats) {
+    return false
+  }
+
+  return hasNoteLinks(stats.incoming, stats.outgoing)
+})
 
 function syncNoteContextForCreate() {
   syncActiveNoteContext({

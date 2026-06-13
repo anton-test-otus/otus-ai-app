@@ -1,0 +1,58 @@
+---
+description: Установка npm/Composer-пакетов только внутри Docker-контейнеров
+alwaysApply: true
+---
+
+# Установка пакетов через Docker
+
+В этом проекте **не запускай** `npm`, `composer` и другие менеджеры зависимостей на хосте.
+
+`node_modules` лежит в Docker volume (`volumes/node_modules`), PHP-зависимости — в контейнере `php`. Установка с хоста ломает окружение или создаёт несовместимые артефакты.
+
+## Перед установкой
+
+Убедись, что контейнеры запущены:
+
+```bash
+docker compose up -d
+```
+
+## Frontend (npm)
+
+Рабочая директория в контейнере: `/app` (сервис `node`).
+
+```bash
+# все зависимости
+docker compose exec node npm install
+
+# добавить пакет
+docker compose exec node npm install <package>
+
+# dev-зависимость
+docker compose exec node npm install -D <package>
+```
+
+## Backend (Composer)
+
+Рабочая директория в контейнере: `/var/www/backend` (сервис `php`).
+
+```bash
+# все зависимости
+docker compose exec php composer install
+
+# добавить пакет
+docker compose exec php composer require <vendor/package>
+
+# dev-зависимость
+docker compose exec php composer require --dev <vendor/package>
+```
+
+## Запрещено
+
+- `npm install` / `npm add` в `./frontend` на хосте
+- `composer require` / `composer install` в `./backend` на хосте
+- править `package-lock.json` / `composer.lock` без фактической установки в контейнере
+
+## Если контейнер не запущен
+
+Сначала подними нужный сервис (`node` или `php`), затем выполни команду через `docker compose exec`.

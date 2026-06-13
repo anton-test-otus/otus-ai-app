@@ -50,6 +50,11 @@ export interface NoteListItem {
   deletedAt?: string | null
 }
 
+export interface NoteLinkStats {
+  incoming: number
+  outgoing: number
+}
+
 export interface Note {
   id: string
   userId?: string
@@ -59,6 +64,7 @@ export interface Note {
   content: string
   contentPreview?: string
   isFavorite: boolean
+  linkStats?: NoteLinkStats
   tags?: Tag[]
   createdAt: string
   updatedAt: string

@@ -650,6 +650,50 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## UI графа связей (фаза 14.3)
+
+**Задача:** Визуализация локального subgraph wiki-связей вместо списка обратных ссылок в метаданных заметки.
+
+**Решение:**
+- Зависимость `vis-network@^10.1.0` (peer `vis-data` ≥ 8); установка только в Docker-контейнере `node`
+- `NoteLinksGraphPanel` в `NoteView` / `NoteMetadata`: кнопка с badge `incoming↔outgoing` по `linkStats` из `note:read`
+- `NoteLinksGraphDialog` — PrimeVue `Dialog` (`MODAL_WIDTH.xl`), vis-network (forceAtlas2Based, directed edges, zoom/pan/drag)
+- Подписи рёбер в `utils/noteGraph.ts`: первый alias или title target; при нескольких вхождениях — «alias ×N», полный список в tooltip
+- Текущая заметка — группа `focus` (увеличенный узел); избранные — группа `favorite`; цвета адаптированы к light/dark через `useTheme`
+- «+1 уровень» — повторный запрос `GET /graph?depth=N+1` с merge на клиенте (`mergeNoteGraphData`), до depth 3
+- Клик по узлу → `/notes/:id?mode=preview`; loading / error / empty — `LoadingState`, `ErrorState`, `EmptyState`
+- `BacklinksPanel.vue` удалён из UI; `GET /notes/{id}/backlinks` в API сохранён
+
+**Затронутые файлы:**
+- `frontend/package.json`, `frontend/package-lock.json`
+- `frontend/src/api/wikilinks.ts`
+- `frontend/src/types/index.ts` (`NoteLinkStats`)
+- `frontend/src/utils/noteGraph.ts`
+- `frontend/src/components/notes/NoteLinksGraphPanel.vue`
+- `frontend/src/components/notes/NoteLinksGraphDialog.vue`
+- `frontend/src/views/NoteView.vue`
+- удалён `frontend/src/components/BacklinksPanel.vue`
+
+---
+
+## Рефакторинг UI графа связей
+
+**Задача:** Упростить читаемость графа: название заметки на узле, alias — только при hover на ребро.
+
+**Решение:**
+- Узлы: `shape: 'box'`, `shapeProperties.borderRadius: 8`, `label` с обрезанным title (max 28 символов), полное название — tooltip
+- Рёбра: без видимых подписей; `title` с полным списком alias при наведении
+- Убрана динамическая длина рёбер по длине подписи; фиксированный `springLength: 160`, усилено отталкивание узлов
+- Взаимные ссылки — разведённые дуги (без `fontAlign`, который был нужен для подписей)
+- Легенда и подсказки в `NoteLinksGraphDialog` обновлены под прямоугольные узлы
+
+**Затронутые файлы:**
+- `frontend/src/utils/noteGraph.ts`
+- `frontend/src/components/notes/NoteLinksGraphDialog.vue`
+- `ARCHITECTURE.md`
+
+---
+
 ## Demo seed (фаза 14.4) — предложение по реализации
 
 **Задача:** Консольная команда для наполнения БД demo-данными (3 вселенные × ~40 заметок) — dev, скринкаст, ручная проверка графа связей.

@@ -56,6 +56,7 @@ flowchart TB
 | Утилиты | VueUse | Composables (автосохранение, debounce) |
 | Валидация | VeeValidate + Zod | Валидация форм на фронтенде |
 | Drag & Drop | vue-draggable-plus | Перетаскивание в дереве |
+| Граф связей | vis-network | Локальная визуализация wiki-связей в `NoteView` |
 | CSS | Tailwind CSS | Mobile-first утилитарные стили |
 
 ## Модель данных
@@ -159,6 +160,7 @@ otus-ai-app/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── editor/        # MarkdownEditor, Preview
+│   │   │   ├── notes/         # NoteLinksGraphPanel, NoteLinksGraphDialog
 │   │   │   ├── sidebar/       # FolderTree, TagList, Search
 │   │   │   └── common/        # LoadingState, ErrorState, EmptyState, Toast
 │   │   ├── composables/
@@ -444,6 +446,8 @@ flowchart LR
 
 Поле **`linkStats`** (`{ incoming, outgoing }`) добавляется в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer` — счётчики исходящих/входящих связей из `note_links` (без удалённых заметок).
 
+**UI (фаза 14.3):** в панели метаданных `NoteView` — `NoteLinksGraphPanel` (кнопка «Граф связей» с badge `incoming↔outgoing`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`). Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, vis-network): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро, клик по узлу → preview заметки, «+1 уровень» при `truncated` / `frontierNodeIds`. Endpoint `GET /notes/{id}/backlinks` в API сохранён, из UI удалён.
+
 ### Папки
 
 | Метод | Endpoint | Описание |
@@ -569,7 +573,7 @@ const noteSchema = z.object({
 
 - `AppSidePanel` — общая логика fixed/drawer для левой и правой панелей
 - `AppSidebar` — навигация (избранное, папки, теги) + footer с системной навигацией (корзина, админка, аккаунт): drawer `< lg`, fixed `≥ lg`
-- `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`
+- `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`; блок «Граф связей» (`NoteLinksGraphPanel`) при ненулевых `linkStats`
 - Список заметок: карточки на всю ширину на мобильных, компактный список на десктопе
 - Редактор: полноэкранный на мобильных, split-pane на десктопе
 - Модальные окна: полноэкранные на мобильных, по центру на десктопе
