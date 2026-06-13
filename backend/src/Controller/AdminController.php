@@ -31,7 +31,7 @@ class AdminController extends AbstractController
         $perPage = min(100, max(1, (int) $request->query->get('perPage', 20)));
         $query = $request->query->get('q', '');
 
-        $repository = $this->entityManager->getRepository(User::class);
+        $repository = $this->userRepository;
 
         if ($query) {
             $users = $repository->searchUsers($query, $page, $perPage);
@@ -46,8 +46,14 @@ class AdminController extends AbstractController
             $total = $repository->count([]);
         }
 
-        $usersData = array_map(function (User $user) use ($repository) {
-            $stats = $repository->getUserStatistics($user);
+        $userIds = array_map(
+            static fn (User $user): string => $user->getId()->toRfc4122(),
+            $users,
+        );
+        $statsByUserId = $repository->getUsersStatisticsBatch($userIds);
+
+        $usersData = array_map(function (User $user) use ($statsByUserId) {
+            $stats = $statsByUserId[$user->getId()->toRfc4122()];
             
             return [
                 'id' => $user->getId()->toRfc4122(),
@@ -79,8 +85,7 @@ class AdminController extends AbstractController
     #[Route('/users/{id}', name: 'api_admin_users_get', methods: ['GET'])]
     public function getUserDetails(User $user): JsonResponse
     {
-        $repository = $this->entityManager->getRepository(User::class);
-        $stats = $repository->getUserStatistics($user);
+        $stats = $this->userRepository->getUserStatistics($user);
 
         return $this->json([
             'id' => $user->getId()->toRfc4122(),

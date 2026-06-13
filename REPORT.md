@@ -902,5 +902,20 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** smoke подтверждён пользователем (2026-06-14).
 
+### BE Шаг 6: batch статистика пользователей в админке (исправлено)
+
+**Проблема:** `listUsers` вызывал `getUserStatistics` в цикле — 5 SQL на пользователя (~102 на страницу из 20). `getUserDetails` — те же 5 запросов на один вызов.
+
+**Решение:**
+- `UserRepository::getUsersStatisticsBatch` — 3 агрегирующих запроса (`notes`, `folders`, `tags`) с `GROUP BY user_id`
+- `getUserStatistics` — обёртка над batch (3 SQL для одного пользователя)
+- `listUsers` — один batch на всю страницу
+
+**Затронутые файлы:**
+- `backend/src/Repository/UserRepository.php`
+- `backend/src/Controller/AdminController.php`
+
+**Проверка:** smoke подтверждён пользователем (2026-06-14).
+
 ---
 

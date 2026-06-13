@@ -113,9 +113,9 @@
 
 **Файлы:** `Controller/AdminController.php`, `Repository/UserRepository.php`
 
-- [ ] `getUsersStatisticsBatch(array $userIds): array` — один-два агрегирующих запроса (notes/folders/tags/count/size/lastActivity)
-- [ ] Использовать в `listUsers`; `getUserDetails` оставить точечным
-- [ ] Smoke: список из 20 пользователей — заметно меньше запросов в profiler
+- [x] `getUsersStatisticsBatch(array $userIds): array` — один-два агрегирующих запроса (notes/folders/tags/count/size/lastActivity)
+- [x] Использовать в `listUsers`; `getUserStatistics` — обёртка над batch (в т.ч. для `getUserDetails`, 3 SQL вместо 5)
+- [x] Smoke: список из 20 пользователей — заметно меньше запросов в profiler
 
 ---
 

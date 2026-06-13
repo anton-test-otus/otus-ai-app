@@ -198,3 +198,20 @@
 
 ### Автотесты (фаза 20+)
 - Register duplicate email → 409; first register → 201.
+
+---
+
+## BE Шаг 6 — batch статистика пользователей в админке
+
+**Источник:** `backend_selfreview.md`, шаг 6
+
+### Smoke (ручная проверка)
+- [x] `GET /api/admin/users?perPage=20` — список загружается, `statistics` у каждого пользователя на месте
+- [x] Для одного id из списка: `GET /api/admin/users/{id}` — те же `notesCount`, `foldersCount`, `tagsCount`, `lastActivity`, `storageSize`, что в списке
+- [x] Symfony profiler / Doctrine: на list ~5 SQL (список + count + 3 batch), на details ~3 SQL (не 5)
+- [x] Поиск `?q=...` — статистика без регрессии
+
+**Ожидание:** меньше запросов к БД; формат JSON ответа не изменился.
+
+### Автотесты (фаза 20+)
+- `getUsersStatisticsBatch` — пустой массив, один id, несколько id; совпадение с прежним `getUserStatistics`.
