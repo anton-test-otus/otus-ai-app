@@ -130,14 +130,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+import { ref, computed, onMounted, onBeforeUnmount, type ComponentPublicInstance } from 'vue';
 import { useRouter } from 'vue-router';
 
-const props = withDefaults(defineProps<{
+const { inModal = false } = defineProps<{
   inModal?: boolean
-}>(), {
-  inModal: false,
-})
+}>()
 
 const emit = defineEmits<{
   'note-opened': []
@@ -158,7 +156,7 @@ import { highlightMatch as highlightSearchMatch } from '@/utils/highlightMatch';
 const router = useRouter();
 const { showError } = useAppToast();
 const searchBarRef = ref<HTMLElement | null>(null);
-const inputRef = ref<InstanceType<typeof InputText> | null>(null);
+const inputRef = ref<ComponentPublicInstance | null>(null);
 const searchQuery = ref('');
 const quickResults = ref<NoteListItem[]>([]);
 const fullResults = ref<NoteListItem[]>([]);

@@ -39,7 +39,11 @@ type TooltipAlignContext = {
   getTooltipElement: (el: TooltipHost) => HTMLElement | null
 }
 
-export const Tooltip = PrimeTooltip.extend('tooltip', {
+type PrimeTooltipDirective = typeof PrimeTooltip & {
+  extend: (name: string, options: object) => typeof PrimeTooltip
+}
+
+export const Tooltip = (PrimeTooltip as PrimeTooltipDirective).extend('tooltip', {
   methods: {
     align(this: TooltipAlignContext, el: TooltipHost) {
       const modifiers = el.$_ptooltipModifiers ?? {}

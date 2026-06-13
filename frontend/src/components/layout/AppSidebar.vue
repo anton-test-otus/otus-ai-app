@@ -4,7 +4,7 @@
     position="left"
     :collapsed="isBelowLg"
     fixed-visibility-class="hidden lg:block"
-    aria-label="Папки и теги"
+    ariaLabel="Папки и теги"
     drawer-title="Навигация"
   >
     <slot />

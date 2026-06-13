@@ -4,7 +4,7 @@
     position="right"
     :collapsed="isBelow3xl"
     fixed-visibility-class="hidden 3xl:block"
-    aria-label="Метаданные заметки"
+    ariaLabel="Метаданные заметки"
     drawer-title="Метаданные"
   >
     <template #header>

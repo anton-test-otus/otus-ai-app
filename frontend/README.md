@@ -53,21 +53,47 @@ make logs        # Просмотр логов
 
 Frontend будет доступен на http://localhost:5173
 
-## Локальная разработка (без Docker)
+### `node_modules` в volume
+
+npm-зависимости **не** лежат в `frontend/node_modules` на диске. Они в `volumes/node_modules` и монтируются в контейнер как `/app/node_modules`.
+
+- Установка пакетов: `docker compose exec node npm install` (из корня проекта)
+- Production-сборка: `docker compose exec node npm run build`
+- **Не** запускай `npm install` в `frontend/` на хосте
+
+### IDE / TypeScript (Cursor, VS Code)
+
+На хосте `frontend/node_modules` пустой — IDE не видит типы из `@milkdown/*`, `@types/*` и показывает ложные ошибки (`implicit any`), хотя `vue-tsc` в Docker проходит.
+
+Один раз после первого `docker compose up`:
+
+```bash
+# из корня репозитория
+rm -rf frontend/node_modules
+ln -s ../volumes/node_modules frontend/node_modules
+```
+
+Перезапусти TS Server в IDE. Symlink не коммитится ( `frontend/node_modules` в `.gitignore`).
+
+## Локальная разработка без Docker
+
+Не рекомендуется для этого проекта. Если всё же нужно — `npm install` создаст **отдельный** `node_modules` на хосте, несовместимый с Docker-volume. Для штатной работы используй Docker + symlink выше.
 
 ```bash
 cd frontend
-npm install
+npm install   # только вне Docker-схемы проекта
 npm run dev
 ```
 
 ## Сборка production
 
+В Docker (рекомендуется):
+
 ```bash
-npm run build
+docker compose exec node npm run build
 ```
 
-Собранные файлы будут в директории `dist/`.
+Собранные файлы: `frontend/dist/`.
 
 ## Доступные команды
 

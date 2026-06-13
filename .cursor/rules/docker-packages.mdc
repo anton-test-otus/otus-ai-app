@@ -53,6 +53,42 @@ docker compose exec php composer require --dev <vendor/package>
 - `composer require` / `composer install` в `./backend` на хосте
 - править `package-lock.json` / `composer.lock` без фактической установки в контейнере
 
+## `node_modules` и IDE (TypeScript на хосте)
+
+Зависимости фронтенда лежат в **`volumes/node_modules`**, а не в `frontend/node_modules`.
+
+В `docker-compose.yml`:
+
+```yaml
+- ./frontend:/app
+- ./volumes/node_modules:/app/node_modules
+```
+
+Второй mount **перекрывает** `node_modules` только **внутри контейнера** `node`. На хосте это две отдельные папки:
+
+| Путь на хосте | Содержимое |
+|---------------|------------|
+| `frontend/node_modules/` | обычно **пустая** |
+| `volumes/node_modules/` | реальные npm-пакеты |
+
+Поэтому:
+
+- `docker compose exec node npm run build` — корректная проверка (полный `node_modules` в контейнере)
+- IDE/Cursor на хосте без symlink **не резолвит** `@milkdown/*`, `@types/*` и т.д. → ложные `implicit any`, расхождение с `vue-tsc` в Docker
+
+### Symlink для IDE (рекомендуется один раз после клона)
+
+Из корня репозитория, **после** первого `docker compose up` (чтобы `volumes/node_modules` был заполнен):
+
+```bash
+rm -rf frontend/node_modules
+ln -s ../volumes/node_modules frontend/node_modules
+```
+
+Затем в IDE: **TypeScript: Restart TS Server**.
+
+Не запускай `npm install` на хосте в `frontend/` — symlink должен указывать на volume, который обновляется только через `docker compose exec node npm …`.
+
 ## Если контейнер не запущен
 
 Сначала подними нужный сервис (`node` или `php`), затем выполни команду через `docker compose exec`.

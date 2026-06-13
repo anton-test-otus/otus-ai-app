@@ -754,5 +754,27 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/components/editor/MarkdownEditor.vue`
 - `frontend/src/utils/sanitizeText.ts`
 
+### Шаг 3: мёртвые npm-зависимости (исправлено)
+
+**Проблема:** в `package.json` оставались неиспользуемые пакеты (`marked`, `vue-draggable-plus`, часть `@milkdown/*`); `unist-util-visit` и `@types/mdast` использовались в коде только как transitive.
+
+**Решение:**
+- Удалены: `marked`, `vue-draggable-plus`, `@milkdown/plugin-tooltip`, `@milkdown/theme-nord`, `@milkdown/vue` (−87 пакетов в lock)
+- Добавлены явные зависимости: `unist-util-visit`, `@types/mdast` (dev)
+- `vite build` проходит; `npm run build` — ok после правок типов (23 pre-existing `vue-tsc` ошибки в 9 файлах)
+
+**Затронутые файлы:**
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `frontend/src/components/common/SearchBar.vue`
+- `frontend/src/components/editor/wikiLinkNode.ts`
+- `frontend/src/components/layout/AppNavbar.vue`
+- `frontend/src/components/layout/AppSidebar.vue`
+- `frontend/src/components/layout/NoteMetadata.vue`
+- `frontend/src/composables/useAppKeyboardShortcuts.ts`
+- `frontend/src/directives/tooltip.ts`
+- `frontend/src/utils/noteGraph.ts`
+- `frontend/src/views/DashboardView.vue`
+
 ---
 

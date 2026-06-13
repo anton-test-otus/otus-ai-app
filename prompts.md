@@ -3571,3 +3571,17 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** некритичные шаги selfreview не стартуют без согласования с пользователем.
 
 ---
+
+## Промпт 180
+
+> добавь в README и cursor-rule
+
+### Выполненные действия:
+
+- В `.cursor/rules/docker-packages.mdc` — секция про `volumes/node_modules` vs пустой `frontend/node_modules`, symlink для IDE, перезапуск TS Server
+- В `frontend/README.md` — volume, команды сборки через Docker, инструкция symlink, предупреждение про `npm install` на хосте
+- В корневой `README.md` — краткий блок «Frontend: node_modules и IDE» со ссылками
+
+**Результат:** задокументировано, почему IDE показывает ложные TS-ошибки без symlink и как это исправить.
+
+---

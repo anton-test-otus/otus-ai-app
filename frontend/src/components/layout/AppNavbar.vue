@@ -50,14 +50,14 @@
             v-if="showNewNoteButton"
             icon="pi pi-plus"
             label="Новая заметка"
-            @click="openNewNote"
+            @click="() => openNewNote()"
             class="hidden lg:flex"
             v-tooltip.bottom="`Новая заметка (${formatShortcutKeys(SHORTCUT_KEYS.newNote)})`"
           />
           <Button
             v-if="showNewNoteButton"
             icon="pi pi-plus"
-            @click="openNewNote"
+            @click="() => openNewNote()"
             class="lg:hidden"
             rounded
             v-tooltip.bottom="`Новая заметка (${formatShortcutKeys(SHORTCUT_KEYS.newNote)})`"

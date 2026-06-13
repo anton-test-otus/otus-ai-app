@@ -301,7 +301,7 @@ export function getNetworkOptions(theme: Theme) {
           hover: colors.focus.hover,
         },
         chosen: {
-          label: (values, _id, _selected, hovering) => {
+          label: (values: { color?: string }, _id: string, _selected: boolean, hovering: boolean) => {
             if (hovering) {
               values.color = colors.focus.font
             }

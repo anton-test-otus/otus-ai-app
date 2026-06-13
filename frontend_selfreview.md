@@ -33,7 +33,7 @@
 - [x] Добавить `escapeHtml()` в `utils/` (или рядом с `highlightMatch`)
 - [x] В `highlightMatch`: сначала `escapeHtml(text)`, затем обёртка совпадений в `<mark>`
 - [x] Либо отказаться от `v-html`: разбить текст на сегменты и рендерить `<mark>` в шаблоне
-- [ ] Smoke: заметка с `<script>` / `<img onerror=...>` в title — в результатах поиска отображается как текст
+- [x] Smoke: заметка с `<script>` / `<img onerror=...>` в title — в результатах поиска отображается как текст
 
 ---
 
@@ -51,7 +51,7 @@
 - [x] Выбрать подход: remark-плагин (отключить HTML-узлы) или DOMPurify перед рендером
 - [x] Применить единообразно в preview, editor view и print
 - [x] Переименовать или задокументировать `sanitizeNoteText` / `sanitizeNoteContent` как **нормализацию**, не XSS defense
-- [ ] Smoke: markdown с `<script>`, `<img onerror=...>` — не выполняется в preview
+- [x] Smoke: markdown с `<script>`, `<img onerror=...>` — не выполняется в preview
 
 ---
 
@@ -72,10 +72,10 @@
 
 **Transitive без прямой зависимости:** `unist-util-visit`, `@types/mdast` — импорт в `wikiLinkNode.ts`
 
-- [ ] `docker compose exec node npm uninstall marked vue-draggable-plus @milkdown/plugin-tooltip @milkdown/theme-nord @milkdown/vue`
-- [ ] `docker compose exec node npm install unist-util-visit`
-- [ ] `docker compose exec node npm install -D @types/mdast` (если нужен для tsc)
-- [ ] `docker compose exec node npm run build` — без ошибок
+- [x] `docker compose exec node npm uninstall marked vue-draggable-plus @milkdown/plugin-tooltip @milkdown/theme-nord @milkdown/vue`
+- [x] `docker compose exec node npm install unist-util-visit`
+- [x] `docker compose exec node npm install -D @types/mdast` (если нужен для tsc)
+- [x] `docker compose exec node npm run build` — без ошибок
 
 ---
 

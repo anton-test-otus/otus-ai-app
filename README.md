@@ -263,6 +263,22 @@ make frontend-build   # Сборка production фронтенда
 make clean            # Удаление всех контейнеров и volumes
 ```
 
+### Frontend: `node_modules` и IDE
+
+npm-пакеты фронтенда хранятся в **`volumes/node_modules`** (Docker volume), а не в `frontend/node_modules`. В контейнере `node` путь `/app/node_modules` указывает на volume; на хосте `frontend/node_modules` при этом остаётся пустым.
+
+- Сборка и typecheck: `docker compose exec node npm run build` или `make frontend-build`
+- Установка пакетов: `docker compose exec node npm install` (не на хосте в `frontend/`)
+
+**Для Cursor / VS Code** — symlink, чтобы IDE резолвила типы (после первого `make up`):
+
+```bash
+rm -rf frontend/node_modules
+ln -s ../volumes/node_modules frontend/node_modules
+```
+
+Затем перезапустить TypeScript Server в IDE. Подробнее: [`frontend/README.md`](./frontend/README.md), правило `.cursor/rules/docker-packages.mdc`.
+
 ### Прямые команды Docker (без Make)
 
 ```bash

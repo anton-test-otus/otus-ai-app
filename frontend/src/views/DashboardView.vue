@@ -26,7 +26,7 @@
           <Button
             :label="foldersStore.selectedFolderId ? 'Создать заметку' : 'Создать первую заметку'"
             icon="pi pi-plus"
-            @click="openNewNote"
+            @click="() => openNewNote()"
           />
         </template>
       </EmptyState>

@@ -115,7 +115,7 @@ export const wikiLinkSchema = $nodeSchema('wiki_link', () => ({
   parseMarkdown: {
     match: ({ type }) => type === 'wikiLink',
     runner: (state, node, type) => {
-      const wikiNode = node as WikiLinkMdastNode
+      const wikiNode = node as unknown as WikiLinkMdastNode
       state.addNode(type, {
         noteId: wikiNode.noteId,
         label: wikiNode.label || '',
@@ -144,7 +144,7 @@ function wikiLinkToMarkdownExtension() {
 }
 
 /** Регистрирует mdast-handler, чтобы при сохранении выводить [[uuid|alias]] без экранирования */
-function remarkWikiLinkStringify(this: { data: () => Record<string, unknown> }) {
+function remarkWikiLinkStringify(this: { data: () => { toMarkdownExtensions?: unknown[] } }) {
   const data = this.data()
   const extensions = (data.toMarkdownExtensions as unknown[]) ?? []
   if (!data.toMarkdownExtensions) {
@@ -196,7 +196,7 @@ export const remarkWikiLinkPlugin = $remark('wikiLink', () => () => (tree: Root)
       children.push({ type: 'text', value: value.slice(lastIndex) })
     }
 
-    parent.children.splice(index, 1, ...children)
+    parent.children.splice(index, 1, ...(children as Root['children']))
   })
 })
 
@@ -236,7 +236,10 @@ export async function resolveWikiLinkTitle(noteId: string): Promise<string> {
 
 export const updateWikiLinkCommand = $command(
   'UpdateWikiLink',
-  (ctx) => (payload: UpdateWikiLinkPayload) => (state, dispatch) => {
+  () => (payload?: UpdateWikiLinkPayload) => (state, dispatch) => {
+    if (!payload) {
+      return false
+    }
     const node = state.doc.nodeAt(payload.pos)
     if (!node || node.type.name !== 'wiki_link') {
       return false
@@ -260,7 +263,10 @@ export const updateWikiLinkCommand = $command(
 
 export const insertWikiLinkCommand = $command(
   'InsertWikiLink',
-  (ctx) => (payload: InsertWikiLinkPayload) => (state, dispatch) => {
+  (ctx) => (payload?: InsertWikiLinkPayload) => (state, dispatch) => {
+    if (!payload) {
+      return false
+    }
     if (!dispatch) {
       return true
     }

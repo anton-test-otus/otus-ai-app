@@ -54,7 +54,7 @@ export function useAppKeyboardShortcuts() {
     const inEditable = isEditableTarget(event.target)
     const inEditor = isProseMirrorEditor(event.target)
 
-    if (matchesShortcut(event, SHORTCUT_MATCH.newNote)) {
+    if (SHORTCUT_MATCH.newNote && matchesShortcut(event, SHORTCUT_MATCH.newNote)) {
       if (route.name === 'trash') {
         return false
       }
@@ -63,7 +63,7 @@ export function useAppKeyboardShortcuts() {
       return true
     }
 
-    if (matchesShortcut(event, SHORTCUT_MATCH.search) && !inEditor) {
+    if (SHORTCUT_MATCH.search && matchesShortcut(event, SHORTCUT_MATCH.search) && !inEditor) {
       event.preventDefault()
       focusAppSearch()
       return true
@@ -121,19 +121,19 @@ export function useNoteKeyboardShortcuts(handlers: {
       return false
     }
 
-    if (matchesShortcut(event, SHORTCUT_MATCH.save)) {
+    if (SHORTCUT_MATCH.save && matchesShortcut(event, SHORTCUT_MATCH.save)) {
       event.preventDefault()
       void handlers.onSave()
       return true
     }
 
-    if (matchesShortcut(event, SHORTCUT_MATCH.toggleMode)) {
+    if (SHORTCUT_MATCH.toggleMode && matchesShortcut(event, SHORTCUT_MATCH.toggleMode)) {
       event.preventDefault()
       handlers.onToggleMode()
       return true
     }
 
-    if (matchesShortcut(event, SHORTCUT_MATCH.goBack)) {
+    if (SHORTCUT_MATCH.goBack && matchesShortcut(event, SHORTCUT_MATCH.goBack)) {
       event.preventDefault()
       void handlers.onGoBack()
       return true
