@@ -9,6 +9,8 @@
         ref="sidebarRef"
       >
         <div class="stack-sections">
+          <FavoritesNavLink />
+
           <FolderTree
             :folders="foldersStore.folderTree"
             @select="handleFolderSelect"
@@ -42,6 +44,7 @@ import ConfirmDialog from 'primevue/confirmdialog'
 import AppNavbar from './AppNavbar.vue'
 import AppSidebar from './AppSidebar.vue'
 import FolderTree from '@/components/sidebar/FolderTree.vue'
+import FavoritesNavLink from '@/components/sidebar/FavoritesNavLink.vue'
 import TagsPanel from '@/components/sidebar/TagsPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFoldersStore } from '@/stores/folders'

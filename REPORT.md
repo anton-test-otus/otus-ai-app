@@ -579,7 +579,7 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 **Задача:** Infinite scroll на dashboard (и поиск) вместо кнопок пагинации.
 
 **Решение:**
-- `notesStore.fetchNotes` — режим `append` для следующих страниц; `loadMoreNotes`, `isLoadingMore`, `hasMore`; дедупликация in-flight запросов; сброс списка и избранных при смене фильтров
+- `notesStore.fetchNotes` — режим `append` для следующих страниц; `loadMoreNotes`, `isLoadingMore`, `hasMore`; дедупликация in-flight запросов; сброс списка при смене фильтров
 - Composable `useInfiniteList` — sentinel + `IntersectionObserver` с автоопределением scroll-контейнера (`main` в `AppLayout`)
 - `DashboardView` — убран `Paginator`, индикатор `LoadingState compact` внизу при подгрузке
 - `SearchBar` — полный поиск в модалке по тому же паттерну (append + sentinel)
@@ -589,6 +589,26 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/stores/notes.ts`
 - `frontend/src/views/DashboardView.vue`
 - `frontend/src/components/common/SearchBar.vue`
+
+---
+
+## Избранное — отдельная вкладка (фаза 12)
+
+**Задача:** Вынести избранные заметки из dashboard в отдельный вид; пункт «Избранное» в sidebar перед папками.
+
+**Решение:**
+- Убран блок «Избранные» с `DashboardView`; избранные доступны на вкладке `/favorites` и в списках dashboard/папок
+- Маршрут `/favorites`, `FavoritesView` с `NoteCard`, infinite scroll через `fetchFavorites` / `loadMoreFavorites`
+- В store — отдельные `favoritesPagination`, loading/error-флаги; `fetchFavorites` больше не вызывается из `fetchNotes`
+- Компонент `FavoritesNavLink` в sidebar над `FolderTree`; «Все заметки» подсвечивается только на dashboard без выбранной папки
+- Уточнение: избранные включены в списки dashboard и папок (со звёздочкой); вкладка «Избранное» — отдельная выборка только избранных
+
+**Затронутые файлы:**
+- `frontend/src/views/FavoritesView.vue`, `DashboardView.vue`
+- `frontend/src/components/sidebar/FavoritesNavLink.vue`, `FolderTree.vue`
+- `frontend/src/components/layout/AppLayout.vue`
+- `frontend/src/stores/notes.ts`, `frontend/src/api/notes.ts`
+- `frontend/src/router/index.ts`
 
 ---
 

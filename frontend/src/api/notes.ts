@@ -54,12 +54,11 @@ export const notesApi = {
 
   async getAll(page = 1, perPage = 20, folderId?: string | null, tags?: string[]): Promise<ApiResponse<NoteListItem[]>> {
     if (tags && tags.length > 0) {
-      return this.filter({ page, perPage, folderId, tags, isFavorite: false })
+      return this.filter({ page, perPage, folderId, tags })
     }
     const params: Record<string, string | number | boolean> = {
       page,
       itemsPerPage: perPage,
-      isFavorite: false,
     }
     if (folderId !== undefined && folderId !== null) {
       params['folder.id'] = folderId
@@ -80,27 +79,26 @@ export const notesApi = {
     }
   },
 
-  async getFavorites(
-    folderId?: string | null,
-    perPage = 100,
-    tags?: string[],
-  ): Promise<ApiResponse<NoteListItem[]>> {
-    if (tags && tags.length > 0) {
-      return this.filter({ page: 1, perPage, folderId, tags, isFavorite: true })
-    }
-
+  async getFavorites(page = 1, perPage = 20): Promise<ApiResponse<NoteListItem[]>> {
     const params: Record<string, string | number | boolean> = {
       isFavorite: true,
+      page,
       itemsPerPage: perPage,
-    }
-    if (folderId !== undefined && folderId !== null) {
-      params['folder.id'] = folderId
     }
     const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
 
     const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem)
+    const total = response['hydra:totalItems'] || response['totalItems'] || 0
 
-    return { data }
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+      },
+    }
   },
 
   async toggleFavorite(id: string, isFavorite: boolean): Promise<Note> {

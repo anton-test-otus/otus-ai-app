@@ -26,6 +26,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/DashboardView.vue'),
       },
       {
+        path: 'favorites',
+        name: 'favorites',
+        component: () => import('@/views/FavoritesView.vue'),
+      },
+      {
         path: 'notes/new',
         name: 'note-new',
         component: () => import('@/views/NoteView.vue'),

@@ -27,8 +27,8 @@
       <div
         class="folder-row group flex items-center gap-2 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
         :class="{
-          'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': !foldersStore.selectedFolderId,
-          'border-l-2 border-transparent pl-[6px]': foldersStore.selectedFolderId,
+          'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isAllNotesActive,
+          'border-l-2 border-transparent pl-[6px]': !isAllNotesActive,
         }"
         @click="selectAllNotes"
       >
@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRoute } from 'vue-router';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -113,10 +114,15 @@ const emit = defineEmits<{
 }>();
 
 const foldersStore = useFoldersStore();
+const route = useRoute();
 const { showError } = useAppToast();
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
+
+const isAllNotesActive = computed(
+  () => route.name === 'dashboard' && !foldersStore.selectedFolderId,
+);
 
 const selectableFolders = computed(() => {
   const options: { label: string; value: string }[] = [];

@@ -12,8 +12,17 @@ export const useNotesStore = defineStore('notes', () => {
   const currentNote = ref<Note | null>(null)
   const isLoading = ref(false)
   const isLoadingMore = ref(false)
+  const isLoadingFavorites = ref(false)
+  const isLoadingMoreFavorites = ref(false)
   const error = ref<string | null>(null)
+  const favoritesError = ref<string | null>(null)
   const pagination = ref<PaginationMeta>({
+    currentPage: 1,
+    perPage: 20,
+    total: 0,
+    totalPages: 0,
+  })
+  const favoritesPagination = ref<PaginationMeta>({
     currentPage: 1,
     perPage: 20,
     total: 0,
@@ -24,9 +33,15 @@ export const useNotesStore = defineStore('notes', () => {
     () => pagination.value.currentPage < pagination.value.totalPages,
   )
 
+  const favoritesHasMore = computed(
+    () => favoritesPagination.value.currentPage < favoritesPagination.value.totalPages,
+  )
+
   let listCriteriaKey: string | null = null
   let fetchNotesPromise: Promise<void> | null = null
   let loadMorePromise: Promise<void> | null = null
+  let fetchFavoritesPromise: Promise<void> | null = null
+  let loadMoreFavoritesPromise: Promise<void> | null = null
 
   function buildListCriteriaKey(folderId?: string | null, tagIds?: string[]) {
     return JSON.stringify({
@@ -35,13 +50,73 @@ export const useNotesStore = defineStore('notes', () => {
     })
   }
 
-  async function fetchFavorites(folderId?: string | null, tagIds?: string[]) {
-    try {
-      const response = await notesApi.getFavorites(folderId, 100, tagIds)
-      favoriteNotes.value = response.data
-    } catch {
+  async function fetchFavorites(
+    page = 1,
+    perPage = favoritesPagination.value.perPage,
+    options?: { append?: boolean },
+  ) {
+    const append = options?.append ?? false
+
+    if (append) {
+      if (isLoadingMoreFavorites.value || isLoadingFavorites.value || !favoritesHasMore.value) {
+        return
+      }
+      if (loadMoreFavoritesPromise) {
+        return loadMoreFavoritesPromise
+      }
+      isLoadingMoreFavorites.value = true
+    } else {
+      if (fetchFavoritesPromise) {
+        return fetchFavoritesPromise
+      }
+      isLoadingFavorites.value = true
+      favoritesError.value = null
       favoriteNotes.value = []
     }
+
+    const promise = (async () => {
+      try {
+        const response = await notesApi.getFavorites(page, perPage)
+
+        if (append) {
+          const existingIds = new Set(favoriteNotes.value.map((n) => n.id))
+          const newItems = response.data.filter((n) => !existingIds.has(n.id))
+          favoriteNotes.value = [...favoriteNotes.value, ...newItems]
+        } else {
+          favoriteNotes.value = response.data
+        }
+
+        if (response.meta) {
+          favoritesPagination.value = response.meta
+        }
+      } catch (err: unknown) {
+        if (!append) {
+          favoritesError.value = getApiErrorMessage(err, 'Ошибка загрузки избранного')
+        }
+        throw err
+      } finally {
+        if (append) {
+          isLoadingMoreFavorites.value = false
+          loadMoreFavoritesPromise = null
+        } else {
+          isLoadingFavorites.value = false
+          fetchFavoritesPromise = null
+        }
+      }
+    })()
+
+    if (append) {
+      loadMoreFavoritesPromise = promise
+    } else {
+      fetchFavoritesPromise = promise
+    }
+
+    return promise
+  }
+
+  async function loadMoreFavorites() {
+    const nextPage = favoritesPagination.value.currentPage + 1
+    await fetchFavorites(nextPage, favoritesPagination.value.perPage, { append: true })
   }
 
   async function fetchNotes(
@@ -72,7 +147,6 @@ export const useNotesStore = defineStore('notes', () => {
       isLoading.value = true
       error.value = null
       notes.value = []
-      favoriteNotes.value = []
       listCriteriaKey = criteriaKey
     }
 
@@ -86,7 +160,6 @@ export const useNotesStore = defineStore('notes', () => {
           notes.value = [...notes.value, ...newItems]
         } else {
           notes.value = response.data
-          await fetchFavorites(folderId, tagIds)
         }
 
         if (response.meta) {
@@ -171,34 +244,31 @@ export const useNotesStore = defineStore('notes', () => {
 
   function syncFavoriteNotes(note: Note) {
     const item = toNoteListItem(note)
+
     if (note.isFavorite) {
       const index = favoriteNotes.value.findIndex((n) => n.id === note.id)
       if (index !== -1) {
         favoriteNotes.value[index] = item
       } else {
         favoriteNotes.value.unshift(item)
+        favoritesPagination.value.total += 1
+        favoritesPagination.value.totalPages = Math.ceil(
+          favoritesPagination.value.total / favoritesPagination.value.perPage,
+        )
       }
       favoriteNotes.value.sort(
         (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       )
-      notes.value = notes.value.filter((n) => n.id !== note.id)
-      if (pagination.value.total > 0) {
-        pagination.value.total -= 1
-        pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
-      }
       return
     }
 
     favoriteNotes.value = favoriteNotes.value.filter((n) => n.id !== note.id)
-    const index = notes.value.findIndex((n) => n.id === note.id)
-    if (index === -1) {
-      notes.value.push(item)
-      notes.value.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+    if (favoritesPagination.value.total > 0) {
+      favoritesPagination.value.total -= 1
+      favoritesPagination.value.totalPages = Math.ceil(
+        favoritesPagination.value.total / favoritesPagination.value.perPage,
       )
     }
-    pagination.value.total += 1
-    pagination.value.totalPages = Math.ceil(pagination.value.total / pagination.value.perPage)
   }
 
   async function toggleFavorite(note: NoteListItem | Note) {
@@ -235,7 +305,14 @@ export const useNotesStore = defineStore('notes', () => {
     try {
       await notesApi.delete(id)
       notes.value = notes.value.filter((n) => n.id !== id)
+      const wasFavorite = favoriteNotes.value.some((n) => n.id === id)
       favoriteNotes.value = favoriteNotes.value.filter((n) => n.id !== id)
+      if (wasFavorite && favoritesPagination.value.total > 0) {
+        favoritesPagination.value.total -= 1
+        favoritesPagination.value.totalPages = Math.ceil(
+          favoritesPagination.value.total / favoritesPagination.value.perPage,
+        )
+      }
       if (currentNote.value?.id === id) {
         currentNote.value = null
       }
@@ -275,12 +352,18 @@ export const useNotesStore = defineStore('notes', () => {
     currentNote,
     isLoading,
     isLoadingMore,
+    isLoadingFavorites,
+    isLoadingMoreFavorites,
     hasMore,
+    favoritesHasMore,
     error,
+    favoritesError,
     pagination,
+    favoritesPagination,
     fetchNotes,
     loadMoreNotes,
     fetchFavorites,
+    loadMoreFavorites,
     fetchNoteById,
     createNote,
     updateNote,

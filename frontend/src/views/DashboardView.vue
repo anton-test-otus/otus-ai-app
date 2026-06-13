@@ -32,47 +32,19 @@
       </EmptyState>
 
       <div v-else class="stack-sections">
-        <section v-if="showFavoritesBlock && notesStore.favoriteNotes.length > 0">
-          <h2 class="section-title flex items-center gap-2">
-            <i class="pi pi-star-fill text-amber-500" />
-            Избранные
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-            <NoteCard
-              v-for="note in notesStore.favoriteNotes"
-              :key="`favorite-${note.id}`"
-              :note="note"
-              :show-folder="!foldersStore.selectedFolderId"
-              :format-date="formatDate"
-              @open="openNote"
-              @edit="openNoteInEditMode"
-              @delete="confirmDelete"
-              @toggle-favorite="handleToggleFavorite"
-            />
-          </div>
-        </section>
-
-        <section v-if="notesStore.notes.length > 0 || !showFavoritesBlock">
-          <h2
-            v-if="showFavoritesBlock && notesStore.favoriteNotes.length > 0"
-            class="section-title"
-          >
-            Все заметки
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
-            <NoteCard
-              v-for="note in notesStore.notes"
-              :key="note.id"
-              :note="note"
-              :show-folder="!foldersStore.selectedFolderId"
-              :format-date="formatDate"
-              @open="openNote"
-              @edit="openNoteInEditMode"
-              @delete="confirmDelete"
-              @toggle-favorite="handleToggleFavorite"
-            />
-          </div>
-        </section>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-stretch">
+          <NoteCard
+            v-for="note in notesStore.notes"
+            :key="note.id"
+            :note="note"
+            :show-folder="!foldersStore.selectedFolderId"
+            :format-date="formatDate"
+            @open="openNote"
+            @edit="openNoteInEditMode"
+            @delete="confirmDelete"
+            @toggle-favorite="handleToggleFavorite"
+          />
+        </div>
 
         <div
           v-if="notesStore.hasMore || notesStore.isLoadingMore"
@@ -114,20 +86,11 @@ const { showSuccess, showError } = useAppToast()
 const { toggleFavorite } = useFavoriteToggle()
 const { openNewNote } = useCreateNote()
 
-const showFavoritesBlock = computed(() => notesStore.favoriteNotes.length > 0)
-
 const isInitialLoading = computed(
-  () =>
-    notesStore.isLoading &&
-    notesStore.notes.length === 0 &&
-    notesStore.favoriteNotes.length === 0,
+  () => notesStore.isLoading && notesStore.notes.length === 0,
 )
 
-const isEmpty = computed(
-  () =>
-    notesStore.notes.length === 0 &&
-    (!showFavoritesBlock.value || notesStore.favoriteNotes.length === 0)
-)
+const isEmpty = computed(() => notesStore.notes.length === 0)
 
 const selectedTagNames = computed(() =>
   tagsStore.selectedTags

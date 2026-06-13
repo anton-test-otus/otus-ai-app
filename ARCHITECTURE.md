@@ -170,6 +170,7 @@ otus-ai-app/
 │   │   │   ├── LoginView.vue
 │   │   │   ├── RegisterView.vue
 │   │   │   ├── DashboardView.vue
+│   │   │   ├── FavoritesView.vue
 │   │   │   ├── NoteView.vue
 │   │   │   ├── TrashView.vue
 │   │   │   ├── SettingsView.vue
@@ -291,7 +292,7 @@ flowchart LR
 | Store | Файл | Назначение | Ключевые поля |
 |-------|------|------------|---------------|
 | `auth` | `stores/auth.ts` | Сессия пользователя | `user`, `token`, `isAuthenticated`, `isAdmin`; `user.settings` / `user.defaults` — задержка автосохранения и окно версионирования |
-| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` / `favoriteNotes` — `NoteListItem[]` (без `content`, с `contentPreview`); `currentNote` — полный `Note`; `pagination`, `isLoading`, `isLoadingMore`, `hasMore`, `error` |
+| `notes` | `stores/notes.ts` | Заметки текущего пользователя | `notes` / `favoriteNotes` — `NoteListItem[]` (без `content`, с `contentPreview`); `currentNote` — полный `Note`; `pagination` / `favoritesPagination`, `isLoading`, `isLoadingMore`, `hasMore`, `isLoadingFavorites`, `isLoadingMoreFavorites`, `favoritesHasMore`, `error`, `favoritesError` |
 | `folders` | `stores/folders.ts` | Дерево папок и выбор в сайдбаре | `folders`, `selectedFolderId`, `selectedFolder` |
 | `tags` | `stores/tags.ts` | Теги и фильтр в сайдбаре | `tags` (список с учётом контекста папки/фильтра), `selectedTags` |
 | `trash` | `stores/trash.ts` | Счётчик корзины в sidebar | `count` |
@@ -320,7 +321,7 @@ flowchart LR
 
 - **папка** → `notesApi.getAll(..., folderId)` и `tagsApi.getAll({ folderId })`;
 - **теги** (логика **И**) → `notesApi.filter({ tags })` или комбинация с `folderId`;
-- **избранные** загружаются отдельно (`favoriteNotes`), в общем списке `isFavorite=false`.
+- **избранные** — отдельный маршрут `/favorites` (`FavoritesView`); в dashboard и папках показываются вместе с остальными (со звёздочкой на карточке)
 
 Выбор папки/тегов живёт в Pinia; списки заметок и тегов — производное состояние от API-ответов.
 
@@ -398,7 +399,7 @@ flowchart LR
 ### Что не хранится во frontend state
 
 - **Версии заметок** — отдельная таблица/API; в Pinia не кэшируются глобально, только в `useNoteVersions` на время открытой панели.
-- **Полный список заметок пользователя** — подгружается порциями (infinite scroll на dashboard); метаданные пагинации в `notes.pagination`; избранные — отдельный блок над списком (до выноса в `/favorites`).
+- **Полный список заметок пользователя** — подгружается порциями (infinite scroll на dashboard); избранные — на `/favorites` с тем же паттерном подгрузки
 
 ## API Endpoints
 
@@ -554,7 +555,7 @@ const noteSchema = z.object({
 ### Ключевые адаптивные компоненты
 
 - `AppSidePanel` — общая логика fixed/drawer для левой и правой панелей
-- `AppSidebar` — навигация (папки, теги) + footer с системной навигацией (корзина, админка, аккаунт): drawer `< lg`, fixed `≥ lg`
+- `AppSidebar` — навигация (избранное, папки, теги) + footer с системной навигацией (корзина, админка, аккаунт): drawer `< lg`, fixed `≥ lg`
 - `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`
 - Список заметок: карточки на всю ширину на мобильных, компактный список на десктопе
 - Редактор: полноэкранный на мобильных, split-pane на десктопе
