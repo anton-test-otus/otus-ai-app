@@ -3102,3 +3102,18 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** дизайн зафиксирован; к реализации можно вернуться без повторного обсуждения.
 
 ---
+
+## Промпт 150
+
+> Продолжим с API графа (фаза 14.2)
+
+### Выполненные действия:
+
+- `GET /api/notes/{id}/graph` — BFS subgraph (`NoteGraphService`): `depth` 1–3 (default 2), `direction` (`both`/`outgoing`/`incoming`), max 120 узлов, `truncated` + `frontierNodeIds`
+- `NoteLinkRepository` — `findLinksForNode()`, `countLinkStats()` (без удалённых заметок)
+- `linkStats: { incoming, outgoing }` в `note:read` через `NoteReadNormalizer`
+- Обновлены `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md`
+
+**Результат:** фаза 14.2 завершена; готово к UI графа (14.3).
+
+---

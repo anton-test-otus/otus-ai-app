@@ -34,3 +34,7 @@ services:
     App\Serializer\NoteListNormalizer:
         tags:
             - { name: serializer.normalizer, priority: 64 }
+
+    App\Serializer\NoteReadNormalizer:
+        tags:
+            - { name: serializer.normalizer, priority: 64 }

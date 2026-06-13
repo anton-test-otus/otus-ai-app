@@ -148,6 +148,7 @@ otus-ai-app/
 │   │   │   ├── NoteService.php
 │   │   │   ├── WikiLinkParser.php
 │   │   │   ├── NoteLinkSyncService.php
+│   │   │   ├── NoteGraphService.php
 │   │   │   └── TrashService.php
 │   │   ├── EventSubscriber/   # Doctrine event subscribers
 │   │   └── Command/           # Консольные команды (очистка корзины)
@@ -220,6 +221,7 @@ otus-ai-app/
 - `[[uuid]]` в preview показывает актуальный заголовок целевой заметки; `[[uuid|alias]]` — заданный alias
 - В редакторе UUID не отображается: atom-узел `wiki_link` с NodeView; alias редактируется по клику или через кнопку wiki-ссылки (`Ctrl+Alt+W`) — диалог «Редактировать ссылку на заметку»
 - Сервис `WikiLinkParser` извлекает UUID и alias; `NoteLinkSyncService` сохраняет `NoteLink` (одна строка на пару source→target, массив `aliases` — порядок вхождений в markdown, `null` = без alias) при POST/PUT/PATCH
+- `NoteGraphService` — BFS subgraph для `GET /api/notes/{id}/graph` (depth, direction, max 120 узлов, `frontierNodeIds` при обрезке)
 - Двунаправленность: панель обратных ссылок показывает все заметки, ссылающиеся на текущую
 
 ### 3. Иерархические папки с Drag-and-Drop
@@ -438,6 +440,9 @@ flowchart LR
 | GET | `/api/notes/{id}/versions` | Получение истории версий |
 | POST | `/api/notes/{id}/restore-version/{versionId}` | Восстановление из версии |
 | GET | `/api/notes/{id}/backlinks` | Получение заметок, ссылающихся на эту |
+| GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 2; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
+
+Поле **`linkStats`** (`{ incoming, outgoing }`) добавляется в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer` — счётчики исходящих/входящих связей из `note_links` (без удалённых заметок).
 
 ### Папки
 

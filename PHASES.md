@@ -288,16 +288,16 @@ Additive-фича; опирается на установленные loading/er
 - [x] миграция `Version20260613120000`; alias заполняются при следующем POST/PUT/PATCH заметки (или после сброса БД);
 - global order ссылок в заметке и поиск по alias — вне scope
 
-### 14.2 API графа и linkStats
+### 14.2 API графа и linkStats ✅ ЗАВЕРШЕНА
 
-- [ ] `GET /api/notes/{id}/graph?depth=N` — локальный subgraph (BFS от заметки):
+- [x] `GET /api/notes/{id}/graph?depth=N` — локальный subgraph (BFS от заметки):
   - `depth`: 1–3, default **2**; опционально «+1 уровень» — повторный запрос с `depth+1`, merge на клиенте;
   - `maxNodes` (~100–150) на бэкенде; при обрезке — `truncated: true` и `frontierNodeIds[]`;
   - ответ: `nodes` (id, title, folderId?, isFavorite?) + `edges` (id, source, target, aliases[]);
   - подпись ребра: первый не-null alias или `target.title`; при `aliases.length > 1` — «alias ×N», полный список в tooltip;
   - query `direction`: `both` (default) | `outgoing` | `incoming` — опционально для MVP;
   - только связи из `note_links` (битые исключены)
-- [ ] `linkStats` в `note:read`: `{ incoming: number, outgoing: number }` — для видимости кнопки без загрузки графа
+- [x] `linkStats` в `note:read`: `{ incoming: number, outgoing: number }` — для видимости кнопки без загрузки графа
 
 ### 14.3 UI: граф вместо обратных ссылок
 

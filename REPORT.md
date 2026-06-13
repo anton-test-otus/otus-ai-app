@@ -631,6 +631,25 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## API графа и linkStats (фаза 14.2)
+
+**Задача:** Endpoint локального subgraph wiki-связей и счётчики `linkStats` в `note:read` для UI кнопки «Граф связей» (фаза 14.3).
+
+**Решение:**
+- `GET /api/notes/{id}/graph` в `WikiLinkController`: query `depth` (1–3, default 2), `direction` (`both` \| `outgoing` \| `incoming`)
+- `NoteGraphService::buildSubgraph()` — BFS от корневой заметки, max 120 узлов; `truncated` + `frontierNodeIds` если есть не включённые соседи (лимит depth или maxNodes)
+- `NoteLinkRepository::findLinksForNode()` — исходящие/входящие связи с фильтром удалённых заметок; `countLinkStats()` — incoming/outgoing для `NoteReadNormalizer`
+- Ответ графа: `nodes[]` (id, title, folderId, isFavorite), `edges[]` (id, source, target, aliases); подписи рёбер — на клиенте (14.3)
+
+**Затронутые файлы:**
+- `backend/src/Service/NoteGraphService.php`
+- `backend/src/Repository/NoteLinkRepository.php`
+- `backend/src/Serializer/NoteReadNormalizer.php`
+- `backend/src/Controller/WikiLinkController.php`
+- `backend/config/services.yaml`
+
+---
+
 ## Demo seed (фаза 14.4) — предложение по реализации
 
 **Задача:** Консольная команда для наполнения БД demo-данными (3 вселенные × ~40 заметок) — dev, скринкаст, ручная проверка графа связей.
