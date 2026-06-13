@@ -717,3 +717,13 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Фаза 18: Self-review — фронтенд
+
+**Дата:** 2026-06-13
+
+Систематический обход `frontend/src` по чеклисту фазы 18. Полный список замечаний, чеклисты и **14 шагов правок** — в [`frontend_selfreview.md`](./frontend_selfreview.md).
+
+**Краткая сводка:** 1 critical (XSS в `SearchBar`), 23 medium, 13 low. Исправления — отдельными коммитами по шагам из `frontend_selfreview.md`; после каждого шага — отметка в чеклисте и запись в этом файле.
+
+---
+
