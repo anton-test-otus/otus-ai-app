@@ -160,7 +160,7 @@ otus-ai-app/
 │   ├── src/
 │   │   ├── components/
 │   │   │   ├── editor/        # MarkdownEditor, Preview
-│   │   │   ├── notes/         # NoteLinksGraphPanel, NoteLinksGraphDialog
+│   │   │   ├── notes/         # NoteLinksGraphDialog
 │   │   │   ├── sidebar/       # FolderTree, TagList, Search
 │   │   │   └── common/        # LoadingState, ErrorState, EmptyState, Toast
 │   │   ├── composables/
@@ -444,9 +444,9 @@ flowchart LR
 | GET | `/api/notes/{id}/backlinks` | Получение заметок, ссылающихся на эту |
 | GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 2; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
 
-Поле **`linkStats`** (`{ incoming, outgoing }`) добавляется в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer` — счётчики исходящих/входящих связей из `note_links` (без удалённых заметок).
+Поля **`linkStats`** (`{ incoming, outgoing }`) и **`versionCount`** добавляются в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer`.
 
-**UI (фаза 14.3):** в панели метаданных `NoteView` — `NoteLinksGraphPanel` (кнопка «Граф связей» с badge `incoming↔outgoing`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`). Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, vis-network): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро, клик по узлу → preview заметки, «+1 уровень» при `truncated` / `frontierNodeIds`. Endpoint `GET /notes/{id}/backlinks` в API сохранён, из UI удалён.
+**UI (фаза 14.3):** в тулбаре `NoteView` — кнопки «Связанные заметки» (`pi-share-alt`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`) и «История версий» (`pi-history`, не на черновиках); обе открывают модалки. Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, fullscreen `< md`): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро. `VersionHistoryDialog` — список версий, diff и restore. Сайдбар метаданных: папка, теги, информация (включая `versionCount` из `note:read`). Endpoint `GET /notes/{id}/backlinks` в API сохранён, из UI удалён.
 
 ### Папки
 
@@ -573,10 +573,10 @@ const noteSchema = z.object({
 
 - `AppSidePanel` — общая логика fixed/drawer для левой и правой панелей
 - `AppSidebar` — навигация (избранное, папки, теги) + footer с системной навигацией (корзина, админка, аккаунт): drawer `< lg`, fixed `≥ lg`
-- `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`; блок «Граф связей» (`NoteLinksGraphPanel`) при ненулевых `linkStats`
+- `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`; папка, теги, информация (`versionCount`)
 - Список заметок: карточки на всю ширину на мобильных, компактный список на десктопе
 - Редактор: полноэкранный на мобильных, split-pane на десктопе
-- Модальные окна: полноэкранные на мобильных, по центру на десктопе
+- Модальные окна: fullscreen `< md` для графа и истории версий; по центру на десктопе
 
 ## Тема оформления (светлая / тёмная)
 

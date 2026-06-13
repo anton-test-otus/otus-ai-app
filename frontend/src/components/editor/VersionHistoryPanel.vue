@@ -1,16 +1,5 @@
 <template>
   <div class="version-history-panel">
-    <div class="versions-header flex justify-between items-center mb-4">
-      <h3 class="section-title">История версий</h3>
-      <Button
-        icon="pi pi-times"
-        text
-        rounded
-        @click="$emit('close')"
-        v-tooltip.top="'Закрыть'"
-      />
-    </div>
-
     <LoadingState v-if="loading" compact />
 
     <ErrorState
@@ -86,7 +75,9 @@
       modal
       :header="diffModalHeader"
       :style="MODAL_WIDTH.xl"
-      :breakpoints="{ '960px': '90vw', '640px': '95vw' }"
+      :breakpoints="MODAL_FULLSCREEN_MOBILE_BREAKPOINTS"
+      :class="MODAL_FULLSCREEN_MOBILE_CLASS"
+      class="version-diff-dialog"
     >
       <VersionDiff
         v-if="selectedVersion && currentNote"
@@ -113,7 +104,7 @@ import EmptyState from '@/components/common/EmptyState.vue'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import { useAppToast } from '@/composables/useAppToast'
-import { MODAL_WIDTH } from '@/constants/modal'
+import { MODAL_FULLSCREEN_MOBILE_BREAKPOINTS, MODAL_FULLSCREEN_MOBILE_CLASS, MODAL_WIDTH } from '@/constants/modal'
 import { formatRelativeDate } from '@/utils/date'
 import { useNoteVersions } from '@/composables/useNoteVersions'
 import VersionDiff from './VersionDiff.vue'
@@ -126,7 +117,6 @@ interface Props {
 }
 
 interface Emits {
-  (e: 'close'): void
   (e: 'restore', versionId: string, mode: RestoreVersionRequest['mode']): void
 }
 
@@ -198,7 +188,14 @@ watch(
 }
 
 .versions-list {
-  max-height: calc(100vh - 200px);
+  max-height: min(60vh, 32rem);
   overflow-y: auto;
+}
+
+@media (max-width: 767px) {
+  .version-history-dialog .versions-list {
+    max-height: none;
+    flex: 1;
+  }
 }
 </style>

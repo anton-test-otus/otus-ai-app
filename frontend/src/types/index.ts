@@ -65,6 +65,7 @@ export interface Note {
   contentPreview?: string
   isFavorite: boolean
   linkStats?: NoteLinkStats
+  versionCount?: number
   tags?: Tag[]
   createdAt: string
   updatedAt: string

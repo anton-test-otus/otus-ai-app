@@ -298,13 +298,15 @@ Additive-фича; опирается на установленные loading/er
   - query `direction`: `both` (default) | `outgoing` | `incoming` — опционально для MVP;
   - только связи из `note_links` (битые исключены)
 - [x] `linkStats` в `note:read`: `{ incoming: number, outgoing: number }` — для видимости кнопки без загрузки графа
+- [x] `versionCount` в `note:read` — для блока «Информация» в метаданных
 
 ### 14.3 UI: граф вместо обратных ссылок ✅ ЗАВЕРШЕНА
 
 - [x] библиотека: **vis-network** (`^10.1.0`); force-directed, directed edges, zoom/pan/drag;
-- [x] `NoteLinksGraphDialog` (Dialog, `MODAL_WIDTH.lg` / `xl`): граф + кнопка «+1 уровень» при `truncated` / frontier;
+- [x] `NoteLinksGraphDialog` (Dialog, `MODAL_WIDTH.xl`, fullscreen `< md`): граф + кнопка «+1 уровень» при `truncated` / frontier;
 - [x] клик по узлу → `/notes/:id?mode=preview`; текущая заметка — подсветка (focus);
-- [x] в `NoteMetadata`: убрать `BacklinksPanel`; кнопка «Граф связей» с badge (`incoming↔outgoing`) — **только если** `incoming > 0 OR outgoing > 0`;
+- [x] кнопки «Связанные заметки» (`pi-share-alt`) и «История версий» (`pi-history`) в тулбаре `NoteView` → модалки; граф — **только если** `incoming > 0 OR outgoing > 0`;
+- [x] `VersionHistoryDialog`; сайдбар метаданных — папка, теги, информация (`versionCount`);
 - [x] loading / error / empty — по паттернам фазы 12; endpoint `/notes/{id}/backlinks` можно оставить в API, из UI убрать
 
 ### 14.4 Demo seed (консольная команда)

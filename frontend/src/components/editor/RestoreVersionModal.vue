@@ -4,6 +4,8 @@
     modal
     header="Восстановление версии"
     :style="MODAL_WIDTH.md"
+    :breakpoints="MODAL_FULLSCREEN_MOBILE_BREAKPOINTS"
+    :class="MODAL_FULLSCREEN_MOBILE_CLASS"
     @hide="handleCancel"
   >
     <p class="text-sm text-muted mb-4">
@@ -51,7 +53,7 @@ import { ref } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
 import RadioButton from 'primevue/radiobutton'
-import { MODAL_WIDTH } from '@/constants/modal'
+import { MODAL_FULLSCREEN_MOBILE_BREAKPOINTS, MODAL_FULLSCREEN_MOBILE_CLASS, MODAL_WIDTH } from '@/constants/modal'
 import { formatDateTime } from '@/utils/date'
 import type { RestoreVersionRequest } from '@/types'
 

@@ -46,6 +46,16 @@ class NoteVersionRepository extends ServiceEntityRepository
     /**
      * Подсчет версий для заметки
      */
+    public function countByNote(Note $note): int
+    {
+        return (int) $this->createQueryBuilder('v')
+            ->select('COUNT(v.id)')
+            ->where('v.note = :note')
+            ->setParameter('note', $note)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * Версии сверх лимита (самые старые), отсортированы от новых к старым
      */

@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
-import Tooltip from 'primevue/tooltip'
+import { Tooltip } from '@/directives/tooltip'
 import Ripple from 'primevue/ripple'
 
 import App from './App.vue'

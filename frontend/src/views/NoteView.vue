@@ -54,6 +54,40 @@
                   v-tooltip.bottom="`Просмотр (${formatShortcutKeys(SHORTCUT_KEYS.toggleMode)})`"
                 />
 
+                <span
+                  v-if="!isDraft && notesStore.currentNote"
+                  class="inline-flex shrink-0"
+                  v-tooltip.bottom="graphButtonTooltip"
+                  :title="showLinksGraph ? undefined : graphButtonTooltip"
+                >
+                  <Button
+                    icon="pi pi-share-alt"
+                    severity="secondary"
+                    text
+                    rounded
+                    class="note-action-btn"
+                    :disabled="!showLinksGraph"
+                    @click="showGraphDialog = true"
+                  />
+                </span>
+
+                <span
+                  v-if="!isDraft && notesStore.currentNote"
+                  class="inline-flex shrink-0"
+                  v-tooltip.bottom="versionButtonTooltip"
+                  :title="hasVersions ? undefined : versionButtonTooltip"
+                >
+                  <Button
+                    icon="pi pi-history"
+                    severity="secondary"
+                    text
+                    rounded
+                    class="note-action-btn"
+                    :disabled="!hasVersions"
+                    @click="showVersionHistoryDialog = true"
+                  />
+                </span>
+
                 <Button
                   v-if="isBelow3xl"
                   icon="pi pi-info-circle"
@@ -63,17 +97,6 @@
                   class="note-action-btn"
                   @click="openMetadata"
                   v-tooltip.bottom="'Метаданные'"
-                />
-
-                <Button
-                  v-if="!isDraft"
-                  icon="pi pi-history"
-                  severity="secondary"
-                  text
-                  rounded
-                  class="note-action-btn"
-                  @click="showVersionHistory = !showVersionHistory"
-                  v-tooltip.bottom="'История версий'"
                 />
 
                 <Button
@@ -170,24 +193,6 @@
           @update:model-value="handleTagsChange"
         />
 
-        <Divider v-if="showVersionHistory" />
-
-        <VersionHistoryPanel
-          v-if="!isDraft && showVersionHistory && notesStore.currentNote"
-          :note-id="notesStore.currentNote.id"
-          :current-note="notesStore.currentNote"
-          @close="showVersionHistory = false"
-          @restore="handleVersionRestore"
-        />
-
-        <template v-if="!isDraft && notesStore.currentNote && showLinksGraph">
-          <Divider />
-
-          <NoteLinksGraphPanel
-            :note-id="notesStore.currentNote.id"
-          />
-        </template>
-
         <Divider />
 
         <div>
@@ -197,12 +202,28 @@
             <template v-else>
               <div>Создано: {{ formatDate(notesStore.currentNote?.createdAt) }}</div>
               <div>Обновлено: {{ formatDate(notesStore.currentNote?.updatedAt) }}</div>
+              <div>Версий: {{ versionCountLabel }}</div>
             </template>
           </div>
         </div>
       </div>
     </NoteMetadata>
   </div>
+
+  <NoteLinksGraphDialog
+    v-if="!isDraft && notesStore.currentNote"
+    v-model:visible="showGraphDialog"
+    :note-id="notesStore.currentNote.id"
+    :focus-note-id="notesStore.currentNote.id"
+  />
+
+  <VersionHistoryDialog
+    v-if="!isDraft && notesStore.currentNote"
+    v-model:visible="showVersionHistoryDialog"
+    :note-id="notesStore.currentNote.id"
+    :current-note="notesStore.currentNote"
+    @restore="handleVersionRestore"
+  />
 
   <LinkNoteModal
       v-model:visible="showLinkModal"
@@ -230,9 +251,9 @@ import MarkdownPreview from '@/components/editor/MarkdownPreview.vue'
 import SaveIndicator from '@/components/common/SaveIndicator.vue'
 import FolderSelector from '@/components/common/FolderSelector.vue'
 import NoteTagsEditor from '@/components/common/NoteTagsEditor.vue'
-import NoteLinksGraphPanel from '@/components/notes/NoteLinksGraphPanel.vue'
+import NoteLinksGraphDialog from '@/components/notes/NoteLinksGraphDialog.vue'
+import VersionHistoryDialog from '@/components/editor/VersionHistoryDialog.vue'
 import LinkNoteModal, { type SelectedWikiLinkNote } from '@/components/LinkNoteModal.vue'
-import VersionHistoryPanel from '@/components/editor/VersionHistoryPanel.vue'
 import { useNotesStore } from '@/stores/notes'
 import { useFoldersStore } from '@/stores/folders'
 import { useAutosave } from '@/composables/useAutosave'
@@ -246,8 +267,9 @@ import { useNoteKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
 import { useNoteExport } from '@/composables/useNoteExport'
 import { deriveAutoTitleFromMarkdown } from '@/utils/autoTitle'
 import { sanitizeNoteContent, sanitizeNoteTitle } from '@/utils/sanitizeText'
-import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
+import { formatVersionCount } from '@/utils/version'
 import type { ViewMode, RestoreVersionRequest } from '@/types'
+import { formatShortcutKeys, SHORTCUT_KEYS } from '@/constants/keyboardShortcuts'
 
 const route = useRoute()
 const router = useRouter()
@@ -267,7 +289,8 @@ const noteFolderId = ref<string | null>(null)
 const noteTags = ref<string[]>([])
 const viewMode = ref<ViewMode>('preview')
 const showLinkModal = ref(false)
-const showVersionHistory = ref(false)
+const showGraphDialog = ref(false)
+const showVersionHistoryDialog = ref(false)
 const isTitleFocused = ref(false)
 const titleWasManuallyEdited = ref(false)
 const editorRef = ref<InstanceType<typeof MarkdownEditor> | null>(null)
@@ -284,6 +307,21 @@ const showLinksGraph = computed(() => {
   }
 
   return hasNoteLinks(stats.incoming, stats.outgoing)
+})
+
+const hasVersions = computed(() => (notesStore.currentNote?.versionCount ?? 0) > 0)
+
+const graphButtonTooltip = computed(() => (
+  showLinksGraph.value ? 'Связанные заметки' : 'Нет wiki-связей с другими заметками'
+))
+
+const versionButtonTooltip = computed(() => (
+  hasVersions.value ? 'История версий' : 'Версий пока нет'
+))
+
+const versionCountLabel = computed(() => {
+  const count = notesStore.currentNote?.versionCount
+  return formatVersionCount(count ?? 0)
 })
 
 function syncNoteContextForCreate() {

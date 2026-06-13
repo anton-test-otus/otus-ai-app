@@ -4,7 +4,9 @@
     modal
     header="Связанные заметки"
     :style="MODAL_WIDTH.xl"
+    :breakpoints="MODAL_FULLSCREEN_MOBILE_BREAKPOINTS"
     :dismissable-mask="true"
+    :class="MODAL_FULLSCREEN_MOBILE_CLASS"
     class="note-links-graph-dialog"
     @show="handleDialogShow"
     @hide="handleHide"
@@ -115,7 +117,7 @@ import 'vis-network/styles/vis-network.min.css'
 import LoadingState from '@/components/common/LoadingState.vue'
 import ErrorState from '@/components/common/ErrorState.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import { MODAL_WIDTH } from '@/constants/modal'
+import { MODAL_FULLSCREEN_MOBILE_BREAKPOINTS, MODAL_FULLSCREEN_MOBILE_CLASS, MODAL_WIDTH } from '@/constants/modal'
 import { wikiLinksApi, type NoteGraphResponse } from '@/api/wikilinks'
 import { useTheme } from '@/composables/useTheme'
 import { getApiErrorMessage } from '@/utils/apiError'
@@ -357,6 +359,21 @@ onBeforeUnmount(() => {
   width: 100%;
   height: min(60vh, 32rem);
   min-height: 20rem;
+}
+
+@media (max-width: 767px) {
+  .note-links-graph-dialog.modal-fullscreen-mobile .note-links-graph {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .note-links-graph-dialog.modal-fullscreen-mobile .note-links-graph__canvas {
+    flex: 1;
+    height: auto;
+    min-height: 12rem;
+  }
 }
 
 .note-links-graph__canvas :deep(.vis-network),
