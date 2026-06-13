@@ -277,21 +277,35 @@ Additive-фича; опирается на установленные loading/er
 
 ## Фаза 14: Граф связей
 
-Визуализация wiki-связей (`NoteLink`, `WikiLinkParser`, backlinks).
+Локальная визуализация wiki-связей (`NoteLink`, `WikiLinkParser`). **Без отдельной страницы** — кнопка в `NoteMetadata` вместо `BacklinksPanel`. Битые ссылки (UUID без target) **не** попадают в граф.
 
-- [ ] **Alias wiki-ссылок в `note_links` (перед графом):**
-  - колонка `aliases JSONB NOT NULL` в `note_links`; одна строка на пару `(source_note_id, target_note_id)` — без дублирования связей и без таблицы occurrences;
+### 14.1 Alias wiki-ссылок в `note_links` (прerequisite)
+
+- [ ] колонка `aliases JSONB NOT NULL` в `note_links`; одна строка на пару `(source_note_id, target_note_id)`;
   - элемент массива — alias из `[[uuid|alias]]` или `null` для `[[uuid]]` (при отображении подставлять актуальный `target.title`);
   - порядок элементов — порядок появления ссылок на этот target в тексте source-заметки; длина массива = число вхождений;
-  - синхронизация при POST/PUT/PATCH: `WikiLinkParser::parseLinksWithAliases()` → группировка по target → upsert / удаление устаревших строк;
-  - миграция + backfill alias из существующего markdown;
-  - global order ссылок в заметке и поиск по alias — вне scope
+- [ ] синхронизация при POST/PUT/PATCH: `WikiLinkParser::parseLinksWithAliases()` → группировка по target → upsert / удаление устаревших строк;
+- [ ] миграция + backfill alias из существующего markdown;
+- global order ссылок в заметке и поиск по alias — вне scope
 
-- [ ] **Граф связей между заметками:**
-  - страница или панель с интерактивным графом узлов (заметки) и рёбер (wiki-ссылки / `NoteLink`);
-  - **бэкенд:** endpoint графа (nodes + edges для текущего пользователя); подпись ребра из `aliases` (`null` → title target), без парсинга тел заметок;
-  - **фронтенд:** рендер графа (например force-directed); клик по узлу → `/notes/:id`; подсветка текущей заметки при открытии из `NoteView`;
-  - учесть «битые» и неоднозначные ссылки; пустое состояние при отсутствии связей
+### 14.2 API графа и linkStats
+
+- [ ] `GET /api/notes/{id}/graph?depth=N` — локальный subgraph (BFS от заметки):
+  - `depth`: 1–3, default **2**; опционально «+1 уровень» — повторный запрос с `depth+1`, merge на клиенте;
+  - `maxNodes` (~100–150) на бэкенде; при обрезке — `truncated: true` и `frontierNodeIds[]`;
+  - ответ: `nodes` (id, title, folderId?, isFavorite?) + `edges` (id, source, target, aliases[]);
+  - подпись ребра: первый не-null alias или `target.title`; при `aliases.length > 1` — «alias ×N», полный список в tooltip;
+  - query `direction`: `both` (default) | `outgoing` | `incoming` — опционально для MVP;
+  - только связи из `note_links` (битые исключены)
+- [ ] `linkStats` в `note:read`: `{ incoming: number, outgoing: number }` — для видимости кнопки без загрузки графа
+
+### 14.3 UI: граф вместо обратных ссылок
+
+- [ ] библиотека: **vis-network** (`^10.1.0`); force-directed, directed edges, zoom/pan/drag;
+- [ ] `NoteLinksGraphDialog` (Dialog, `MODAL_WIDTH.lg` / `xl`): граф + кнопка «+1 уровень» при `truncated` / frontier;
+- [ ] клик по узлу → `/notes/:id?mode=preview`; текущая заметка — подсветка (focus);
+- [ ] в `NoteMetadata`: убрать `BacklinksPanel`; кнопка «Граф связей» с badge (`incoming↔outgoing`) — **только если** `incoming > 0 OR outgoing > 0`;
+- [ ] loading / error / empty — по паттернам фазы 12; endpoint `/notes/{id}/backlinks` можно оставить в API, из UI убрать
 
 ## Фаза 15: Однопользовательский режим (без авторизации)
 
