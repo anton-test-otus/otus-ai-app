@@ -612,3 +612,168 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Alias wiki-ссылок в note_links (фаза 14.1)
+
+**Задача:** Хранить alias (и порядок вхождений) wiki-ссылок в `note_links` для подписей рёбер графа (фаза 14.2).
+
+**Решение:**
+- Миграция `Version20260613120000`: колонка `aliases JSONB NOT NULL DEFAULT '[]'`
+- `NoteLink.aliases` — массив `(string|null)[]`; пустой alias после trim → `null`
+- `NoteLinkSyncService::syncFromContent()` — `parseLinksWithAliases()` → группировка по target → upsert существующих строк / удаление устаревших (вместо delete-all + recreate)
+- `NoteProcessor` делегирует синхронизацию сервису при POST/PUT/PATCH
+- Отдельная backfill-команда не нужна: dev-БД можно сбросить; в prod alias появятся при пересохранении заметок
+
+**Затронутые файлы:**
+- `backend/migrations/Version20260613120000.php`
+- `backend/src/Entity/NoteLink.php`
+- `backend/src/Service/NoteLinkSyncService.php`
+- `backend/src/State/NoteProcessor.php`
+
+---
+
+## Demo seed (фаза 14.4) — предложение по реализации
+
+**Задача:** Консольная команда для наполнения БД demo-данными (3 вселенные × ~40 заметок) — dev, скринкаст, ручная проверка графа связей.
+
+**Ограничения:** новые Doctrine-сущности **не нужны**; не ходить через API Platform / HTTP — прямая работа с EntityManager и существующими сервисами.
+
+### Команда
+
+| Параметр | Значение |
+|----------|----------|
+| Имя | `app:seed-demo-data` |
+| Флаг | `--force` — удалить demo-пользователей по email и пересоздать данные |
+| Без `--force` | если любой из demo-email уже есть — предупреждение и exit 1 (не трогать чужие данные) |
+
+**Demo-пользователи** (общий пароль `demo1234`):
+
+| Email | Вселенная | Роль |
+|-------|-----------|------|
+| `hogwarts@demo.local` | Гарри Поттер | `ROLE_USER` |
+| `westeros@demo.local` | Игра престолов | `ROLE_USER` |
+| `witcher@demo.local` | Ведьмак | `ROLE_USER` (+ опционально `ROLE_ADMIN` для проверки админки) |
+
+Удаление при `--force`: `UserRepository::findOneBy(['email' => …])` → `$em->remove($user)` → `flush()`; каскад через `orphanRemoval` на `notes`/`folders`/`tags`, FK на `note_links`/`note_versions` — CASCADE.
+
+**Типичный dev-сценарий:**
+
+```bash
+docker compose exec php php bin/console app:reset-schema
+docker compose exec php php bin/console app:seed-demo-data
+# опционально: app:create-admin для отдельного админа из .env
+```
+
+### Структура кода (backend)
+
+```
+backend/src/
+  Command/
+    SeedDemoDataCommand.php          # CLI: --force, вывод статистики
+  DemoSeed/
+    DemoUniverseDefinition.php       # DTO: email, roles, folders[], notes[]
+    DemoNoteDefinition.php           # key, title, folderPath?, content, isFavorite?
+    DemoUniverseSeeder.php           # оркестратор одной вселенной
+    Universe/
+      PotterUniverse.php             # implements/returns DemoUniverseDefinition
+      WesterosUniverse.php
+      WitcherUniverse.php
+```
+
+- **Нет** отдельных Entity, **нет** Doctrine Fixtures bundle — только PHP-массивы/heredoc markdown в классах вселенных.
+- Каждый `*Universe.php` — статический метод `definition(): DemoUniverseDefinition` (~800–1500 строк markdown суммарно на вселенную — нормально).
+
+### Алгоритм `DemoUniverseSeeder`
+
+1. Создать `User`, захешировать пароль (`UserPasswordHasherInterface`).
+2. **Папки:** обойти дерево из definition (`['Хогвартс', 'Факультеты']` → path key `'Хогвартс/Факультеты'`); map `path → Folder`.
+3. **Заметки (pass 1):** для каждой `DemoNoteDefinition`:
+   - создать `Note` с `title`, `content` (пока с плейсхолдерами), `folder`, `isFavorite`;
+   - map `noteKey → Note`.
+4. **Wiki-ссылки (pass 2):** в content заменить плейсхолдеры на реальные UUID:
+   - синтаксис в definition: `{{link:harry}}` → `[[uuid]]`, `{{link:harry|Мальчик-который-выжил}}` → `[[uuid|alias]]`;
+   - regex replace по map `noteKey → (string) note->getId()`.
+5. **Links:** для каждой заметки вызвать `NoteLinkSyncService::syncFromContent($note)` (не дублировать логику парсера).
+6. Один `flush()` в конце вселенной (или batch по 20 заметок — по желанию при OOM).
+
+Плейсхолдеры вместо UUID в definition — чтобы не генерировать контент вручную с заведомо несуществующими id и упростить читаемость фикстуры.
+
+### Контент по вселенным (~40 заметок каждая)
+
+**Potter (`hogwarts@demo.local`)**
+
+| Папки (7) | Примеры заметок |
+|-----------|-----------------|
+| Хогвартс → Факультеты | Гриффиндор, Слизерин, … |
+| Хогвартс → Предметы | Зельеварение, Защита от ДАР |
+| Персонажи | Гарри, Гермиона, Дамблдор, Волан-де-Морт |
+| Заклинания | Expelliarmus, Patronus, … |
+| Артефакты | Мантия-невидимка, Философский камень |
+| События | Турнир Трёх волшебников, Битва при Хогвартсе |
+| *(корень)* | «Магическое сообщество», «Краткий путеводитель» |
+
+**Westeros (`westeros@demo.local`)**
+
+| Папки (8) | Примеры |
+|-----------|---------|
+| Дома → Север | Старки, Болтоны |
+| Дома → Юг | Ланнистеры, Тиреллы |
+| Персонажи | Нед, Арья, Тирион, Дейнерис |
+| Локации | Винтерфелл, Королевская Гавань, Стена |
+| Войны | Война Пяти королей, Long Night |
+| Интриги | Красная свадьба, Purple Wedding |
+| *(корень)* | «Печать: зима близка», «Совет мейстера» |
+
+**Witcher (`witcher@demo.local`)**
+
+| Папки (7) | Примеры |
+|-----------|---------|
+| Ведьмаки | Геральт, Лютик, Весемир |
+| Чудовища | Грифон, Стрыга, Леший |
+| Локации → Королевства | Новигруд, Velen, Skellige |
+| Алхимия и знаки | Кошачий, Кваен, масла |
+| Квесты | Семейное дело, Охота на грифона |
+| *(корень)* | «Закон surprise», «Записи бестиария» |
+
+У каждой вселенной **5–8 заметок `isFavorite: true`** (хабы и главные персонажи).
+
+### Граф wiki-ссылок (идея связности)
+
+Цель — локальный граф depth=2 выглядит насыщенно; не полный mesh.
+
+- **1–2 hub-заметки** на вселенную — много исходящих ссылок (`[[uuid]]` без alias).
+- **Персонажи** ссылаются друг на друга и на hub; часть ссылок с alias (`[[uuid|Профессор]]`).
+- **События** — несколько ссылок на одних персонажей (проверка `aliases.length > 1` в 14.2).
+- **3–5 заметок** только входящие ссылки (leaf) — для `incoming` badge.
+- **Битых ссылок нет** — все `{{link:key}}` резолвятся в map.
+
+Ориентир: ~60–90 исходящих `note_links` строк на пользователя (не 40, т.к. несколько ссылок на один target сливаются в одну строку с массивом aliases).
+
+### Markdown в заметках
+
+- H2/H3, списки, blockquote, **жирный**, `inline code`
+- 1–2 заметки с таблицей (дома × девиз × регион; знаки × эффект)
+- 1 заметка с fenced code block (например «рецепт зелья» / «клятва Night's Watch»)
+- Длина тела: 200–800 символов в среднем, hub — до 1200
+
+### Что сознательно не делаем
+
+- Теги — в scope 14.4 не упоминались; можно добавить позже без смены архитектуры.
+- `NoteVersion` — не сидить; версии появятся при редактировании в UI.
+- Backfill / отдельная команда — только `app:seed-demo-data`.
+- Фронтенд — без изменений.
+
+### Документация после реализации
+
+- `README.md` — секция «Demo-данные» с email/паролем и двумя командами reset + seed.
+- `ARCHITECTURE.md` — строка в структуре `DemoSeed/` и список консольных команд.
+
+### Порядок работ при реализации
+
+1. DTO + `DemoUniverseSeeder` + smoke на 3 заметки без контента.
+2. `SeedDemoDataCommand` с `--force`.
+3. `PotterUniverse` полностью → проверка графа / backlinks в UI.
+4. `WesterosUniverse`, `WitcherUniverse`.
+5. README + отметить 14.4 ✅ в `PHASES.md`.
+
+---
+

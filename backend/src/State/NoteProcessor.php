@@ -7,10 +7,8 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\NoteSnapshot;
 use App\Entity\Note;
-use App\Entity\NoteLink;
-use App\Repository\NoteRepository;
+use App\Service\NoteLinkSyncService;
 use App\Service\NoteTextSanitizer;
-use App\Service\WikiLinkParser;
 use App\Service\NoteVersionService;
 use App\Service\UserSettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,8 +19,7 @@ class NoteProcessor implements ProcessorInterface
     public function __construct(
         private EntityManagerInterface $em,
         private Security $security,
-        private WikiLinkParser $wikiLinkParser,
-        private NoteRepository $noteRepository,
+        private NoteLinkSyncService $noteLinkSyncService,
         private NoteVersionService $versionService,
         private UserSettingsResolver $userSettingsResolver,
         private NoteTextSanitizer $noteTextSanitizer,
@@ -96,59 +93,10 @@ class NoteProcessor implements ProcessorInterface
             );
         }
 
-        // Parse and update wiki-links after save
         if (in_array($operation->getMethod(), ['POST', 'PUT', 'PATCH'], true)) {
-            $this->updateWikiLinks($note);
+            $this->noteLinkSyncService->syncFromContent($note);
         }
 
         return $note;
-    }
-
-    private function updateWikiLinks(Note $note): void
-    {
-        $targetIds = array_values(array_unique($this->wikiLinkParser->parseLinks($note->getContent())));
-
-        foreach ($note->getOutgoingLinks() as $link) {
-            $this->em->remove($link);
-        }
-        $note->getOutgoingLinks()->clear();
-
-        $user = $note->getUser();
-        if ($targetIds === [] || $user === null) {
-            $this->em->flush();
-            return;
-        }
-
-        $sourceId = $note->getId() !== null ? strtolower((string) $note->getId()) : null;
-        $idsToFetch = array_values(array_filter(
-            $targetIds,
-            static fn (string $targetId) => $sourceId === null || $targetId !== $sourceId,
-        ));
-
-        if ($idsToFetch === []) {
-            $this->em->flush();
-            return;
-        }
-
-        $notesById = [];
-        foreach ($this->noteRepository->findActiveByIdsForUser($idsToFetch, $user) as $targetNote) {
-            $notesById[strtolower((string) $targetNote->getId())] = $targetNote;
-        }
-
-        foreach ($idsToFetch as $targetId) {
-            $targetNote = $notesById[$targetId] ?? null;
-            if ($targetNote === null) {
-                continue;
-            }
-
-            $link = new NoteLink();
-            $link->setSourceNote($note);
-            $link->setTargetNote($targetNote);
-
-            $this->em->persist($link);
-            $note->addOutgoingLink($link);
-        }
-
-        $this->em->flush();
     }
 }

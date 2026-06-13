@@ -118,8 +118,10 @@ erDiagram
     }
     
     NoteLink {
+        uuid id PK
         uuid source_note_id FK
         uuid target_note_id FK
+        jsonb aliases
     }
 ```
 
@@ -145,6 +147,7 @@ otus-ai-app/
 │   │   ├── Service/
 │   │   │   ├── NoteService.php
 │   │   │   ├── WikiLinkParser.php
+│   │   │   ├── NoteLinkSyncService.php
 │   │   │   └── TrashService.php
 │   │   ├── EventSubscriber/   # Doctrine event subscribers
 │   │   └── Command/           # Консольные команды (очистка корзины)
@@ -216,7 +219,7 @@ otus-ai-app/
 - UUID вставляется только через UI: кнопка тулбара, `Ctrl+Alt+W` или ввод `[[` → модалка выбора заметки
 - `[[uuid]]` в preview показывает актуальный заголовок целевой заметки; `[[uuid|alias]]` — заданный alias
 - В редакторе UUID не отображается: atom-узел `wiki_link` с NodeView; alias редактируется по клику или через кнопку wiki-ссылки (`Ctrl+Alt+W`) — диалог «Редактировать ссылку на заметку»
-- Сервис `WikiLinkParser` извлекает UUID и сохраняет `NoteLink` при сохранении (POST/PUT/PATCH)
+- Сервис `WikiLinkParser` извлекает UUID и alias; `NoteLinkSyncService` сохраняет `NoteLink` (одна строка на пару source→target, массив `aliases` — порядок вхождений в markdown, `null` = без alias) при POST/PUT/PATCH
 - Двунаправленность: панель обратных ссылок показывает все заметки, ссылающиеся на текущую
 
 ### 3. Иерархические папки с Drag-and-Drop

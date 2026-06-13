@@ -41,6 +41,10 @@ class NoteLink
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Note $targetNote = null;
 
+    /** @var array<int, string|null> */
+    #[ORM\Column(type: 'json')]
+    private array $aliases = [];
+
     public function getId(): ?Uuid
     {
         return $this->id;
@@ -65,6 +69,24 @@ class NoteLink
     public function setTargetNote(?Note $targetNote): static
     {
         $this->targetNote = $targetNote;
+        return $this;
+    }
+
+    /**
+     * @return array<int, string|null>
+     */
+    public function getAliases(): array
+    {
+        return $this->aliases;
+    }
+
+    /**
+     * @param array<int, string|null> $aliases
+     */
+    public function setAliases(array $aliases): static
+    {
+        $this->aliases = $aliases;
+
         return $this;
     }
 }
