@@ -2,7 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { tagsApi, type TagListCriteria } from '../api/tags';
 import { getApiErrorMessage } from '@/utils/apiError';
-import type { Tag, Note, PaginatedResponse } from '../types';
+import type { Tag } from '../types';
 
 export const useTagsStore = defineStore('tags', () => {
   const tags = ref<Tag[]>([]);
@@ -107,15 +107,6 @@ export const useTagsStore = defineStore('tags', () => {
     }
   }
 
-  async function getTagNotes(id: string, page = 1, perPage = 20): Promise<PaginatedResponse<Note>> {
-    try {
-      return await tagsApi.getNotes(id, page, perPage);
-    } catch (e: unknown) {
-      error.value = getApiErrorMessage(e, 'Ошибка загрузки заметок тега');
-      throw e;
-    }
-  }
-
   function toggleTagSelection(tagId: string) {
     const index = selectedTags.value.indexOf(tagId);
     if (index === -1) {
@@ -155,7 +146,6 @@ export const useTagsStore = defineStore('tags', () => {
     createTag,
     updateTag,
     deleteTag,
-    getTagNotes,
     toggleTagSelection,
     clearTagSelection,
     getTagById,

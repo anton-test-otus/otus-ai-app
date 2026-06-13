@@ -10,26 +10,9 @@ export const useFoldersStore = defineStore('folders', () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
 
-  const folderTree = computed(() => folders.value);
-
   const selectedFolder = computed(() =>
     selectedFolderId.value ? getFolderById(selectedFolderId.value) : undefined
   );
-
-  const flatFolders = computed(() => {
-    const flat: Folder[] = [];
-    const flatten = (items: Folder[], depth = 0) => {
-      if (!items || !Array.isArray(items)) return;
-      items.forEach(item => {
-        flat.push({ ...item, depth } as Folder & { depth: number });
-        if (item.children && item.children.length > 0) {
-          flatten(item.children, depth + 1);
-        }
-      });
-    };
-    flatten(folders.value || []);
-    return flat;
-  });
 
   let initialized = false;
   let fetchPromise: Promise<void> | null = null;
@@ -153,8 +136,6 @@ export const useFoldersStore = defineStore('folders', () => {
 
   return {
     folders,
-    folderTree,
-    flatFolders,
     selectedFolderId,
     selectedFolder,
     loading,

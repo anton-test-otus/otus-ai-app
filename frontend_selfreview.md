@@ -92,12 +92,12 @@
 | `wikiLinkPreviewPlugins` / `wikiLinkPlugins` | `wikiLinkNode.ts` | export, нет импортов |
 | `flatFolders` | `stores/folders.ts` | export, нет импортов |
 
-- [ ] Удалить `searchNotes` из `notes` store (или подключить, если нужен)
-- [ ] Удалить `getTagNotes` из `tags` store
-- [ ] Удалить `getBacklinks` из `wikilinks` API (endpoint на бэкенде можно оставить)
-- [ ] Удалить неиспользуемые exports из `wikiLinkNode.ts`
-- [ ] Удалить `flatFolders` из `folders` store
-- [ ] Заменить `folderTree` на `folders` в `AppLayout.vue`; убрать alias из store
+- [x] Удалить `searchNotes` из `notes` store (или подключить, если нужен)
+- [x] Удалить `getTagNotes` из `tags` store
+- [x] Удалить `getBacklinks` из `wikilinks` API (endpoint на бэкенде можно оставить)
+- [x] Удалить неиспользуемые exports из `wikiLinkNode.ts`
+- [x] Удалить `flatFolders` из `folders` store
+- [x] Заменить `folderTree` на `folders` в `AppLayout.vue`; убрать alias из store
 
 ---
 

@@ -395,23 +395,6 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
-  async function searchNotes(query: string, page = 1, perPage = 20) {
-    isLoading.value = true
-    error.value = null
-    try {
-      const response = await notesApi.search(query, page, perPage)
-      notes.value = response.data
-      if (response.meta) {
-        pagination.value = response.meta
-      }
-    } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка поиска заметок')
-      throw err
-    } finally {
-      isLoading.value = false
-    }
-  }
-
   function clearCurrentNote() {
     currentNote.value = null
   }
@@ -469,7 +452,6 @@ export const useNotesStore = defineStore('notes', () => {
     moveNoteToFolder,
     toggleFavorite,
     deleteNote,
-    searchNotes,
     clearCurrentNote,
     reset,
   }

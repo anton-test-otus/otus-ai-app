@@ -776,5 +776,22 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/utils/noteGraph.ts`
 - `frontend/src/views/DashboardView.vue`
 
+### Шаг 4: мёртвый код store/API (исправлено)
+
+**Проблема:** неиспользуемые методы и exports засоряли публичный API stores и `wikilinks` API; `folderTree` — лишний alias над `folders`.
+
+**Решение:**
+- Удалены `searchNotes` (`notes` store), `getTagNotes` (`tags` store), `getBacklinks` + `BacklinkNote` (`api/wikilinks.ts`)
+- Удалены неиспользуемые `wikiLinkPreviewPlugins` / `wikiLinkPlugins` из `wikiLinkNode.ts`
+- Удалены `folderTree` / `flatFolders` из `folders` store; в `AppLayout.vue` — `foldersStore.folders`
+
+**Затронутые файлы:**
+- `frontend/src/stores/notes.ts`
+- `frontend/src/stores/tags.ts`
+- `frontend/src/stores/folders.ts`
+- `frontend/src/api/wikilinks.ts`
+- `frontend/src/components/editor/wikiLinkNode.ts`
+- `frontend/src/components/layout/AppLayout.vue`
+
 ---
 

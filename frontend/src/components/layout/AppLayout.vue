@@ -12,7 +12,7 @@
           <FavoritesNavLink />
 
           <FolderTree
-            :folders="foldersStore.folderTree"
+            :folders="foldersStore.folders"
             @select="handleFolderSelect"
             @update="foldersStore.fetchFolders({ force: true })"
           />

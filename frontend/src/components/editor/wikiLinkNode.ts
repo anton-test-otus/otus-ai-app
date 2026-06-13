@@ -381,16 +381,3 @@ export function insertWikiLinkIntoEditor(
   const commands = ctx.get(commandsCtx)
   return commands.call(insertWikiLinkCommand.key, payload)
 }
-
-export const wikiLinkPreviewPlugins = [
-  wikiLinkSchema,
-  remarkWikiLinkPlugin,
-  remarkWikiLinkStringifyPlugin,
-  wikiLinkNodeView,
-]
-
-export const wikiLinkPlugins = [
-  ...wikiLinkPreviewPlugins,
-  insertWikiLinkCommand,
-  updateWikiLinkCommand,
-]

@@ -1,11 +1,5 @@
 import { apiClient } from './client';
 
-export interface BacklinkNote {
-  id: string;
-  title: string;
-  updatedAt: string;
-}
-
 export interface ResolvedWikiLink {
   id: string;
   title: string;
@@ -42,10 +36,6 @@ export interface NoteGraphResponse {
 export type NoteGraphDirection = 'both' | 'outgoing' | 'incoming';
 
 export const wikiLinksApi = {
-  async getBacklinks(noteId: string): Promise<BacklinkNote[]> {
-    return apiClient.get<BacklinkNote[]>(`/notes/${noteId}/backlinks`);
-  },
-
   async getGraph(
     noteId: string,
     depth = 1,
