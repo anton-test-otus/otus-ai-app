@@ -793,5 +793,30 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/components/editor/wikiLinkNode.ts`
 - `frontend/src/components/layout/AppLayout.vue`
 
+### Шаг 5: JWT refresh (отложен)
+
+Фронтенд шаг 5 пропущен до решения на бэкенде. Задача перенесена в [`backend_selfreview.md` — шаг 15](./backend_selfreview.md#шаг-15-jwt-refresh-блокирует-фронтенд-шаг-5). Следующий шаг фронта — **шаг 6** (Hydra parser).
+
+### Шаг 6: единый парсер Hydra collection (исправлено)
+
+**Проблема:** паттерн `(response['hydra:member'] || response['member'] || [])` и извлечение `totalItems` дублировались в 6 файлах тремя разными способами; в `folders.ts` — отдельная ветка для голого массива.
+
+**Решение:**
+- `utils/hydra.ts` — `parseHydraCollection<T>()` с поддержкой `hydra:member` / `member`, `hydra:totalItems` / `totalItems` и голого `T[]`; `??` вместо `||` для корректного `total = 0`
+- Заменены все 8 вхождений в `api/notes.ts` (3), `api/trash.ts`, `api/tags.ts` (2), `api/folders.ts`, `composables/useNoteVersions.ts`
+- `notesApi.filter` (`/notes/search`) не тронут — там кастомный `{ data, meta }`, не Hydra
+
+**Затронутые файлы:**
+- `frontend/src/utils/hydra.ts` (новый)
+- `frontend/src/api/notes.ts`
+- `frontend/src/api/trash.ts`
+- `frontend/src/api/tags.ts`
+- `frontend/src/api/folders.ts`
+- `frontend/src/composables/useNoteVersions.ts`
+
+### Backlog после ревью: регистронезависимый поиск
+
+**Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).
+
 ---
 

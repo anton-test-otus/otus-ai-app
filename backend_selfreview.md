@@ -236,7 +236,7 @@
 **Проблема:**
 
 - `docker/nginx/default.conf` — нет `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Content-Security-Policy` (хотя бы для `/api/docs`)
-- JWT без refresh (согласовано с фронтом, шаг 5 `frontend_selfreview.md`) — зафиксировать в архитектуре
+- JWT без refresh — решение отложено; см. шаг 15 (блокирует фронтенд шаг 5)
 - `framework.session: true` при stateless JWT API — лишнее, но не критично
 - Нет backend smoke-тестов (запланировано в фазе 20)
 
@@ -245,6 +245,23 @@
 - [ ] Добавить базовые security headers в nginx (минимальный набор для demo/prod)
 - [ ] Исправить `api_platform.title` / `version`
 - [ ] Документировать: refresh token не реализован; TTL JWT — из env Lexik
+
+---
+
+## Шаг 15. JWT refresh (блокирует фронтенд шаг 5)
+
+**Приоритет:** medium  
+**Статус:** ⏸ отложен — вернуться после критичных шагов 1–4  
+**Коммит:** `feat(backend): implement JWT refresh` **или** `docs(backend): document no-refresh MVP policy`
+
+**Проблема:** в `ARCHITECTURE.md` описан `POST /api/auth/refresh`, но endpoint **не реализован** (`AuthController` его не содержит; Lexik JWT без refresh-bundle). На фронте — мёртвый код: `refreshToken` в `localStorage`, `authApi.refresh`, на 401 сразу logout без retry ([`frontend_selfreview.md` — шаг 5](./frontend_selfreview.md#шаг-5-jwt-refresh-реализовать-или-убрать)).
+
+**Файлы:** `Controller/AuthController.php`, `config/packages/lexik_jwt_authentication.yaml`, `ARCHITECTURE.md`; на фронте после решения — `stores/auth.ts`, `api/auth.ts`, `api/client.ts`
+
+- [ ] **Вариант A:** реализовать refresh (например `gesdinet/jwt-refresh-token-bundle` или свой endpoint + хранение refresh token); login/register возвращают `refreshToken`; TTL и ротация — в env/документации
+- [ ] **Вариант B:** зафиксировать MVP без refresh — убрать endpoint из `ARCHITECTURE.md` или пометить «не реализовано»; на фронте шаг 5 вариант B (удалить мёртвый код)
+- [ ] Согласовать поведение на 401: единая политика для фронта и бэка
+- [ ] После решения — закрыть фронтенд шаг 5
 
 ---
 
@@ -287,6 +304,27 @@
 8. Шаг 10 — dead code
 9. Шаг 11 — сузить API
 10. Шаг 12–13 — паттерны и конфиг
-11. Шаг 14 — optional
+11. Шаг 15 — JWT refresh (после шагов 1–4; разблокирует фронтенд шаг 5)
+12. Шаг 14 — optional
 
 После выполнения шага — отметить `- [x]` в этом файле и кратко зафиксировать в `REPORT.md`.
+
+---
+
+## Доработки после ревью (backlog)
+
+Задачи вне шагов 1–15; выявлены при smoke или ревью фронта.
+
+### Поиск заметок: регистронезависимый
+
+**Источник:** smoke фронта, шаг 6 (`LinkNoteModal` → `notesApi.search`); также `SearchBar` → `NoteSearchController` → `NoteRepository::search`.
+
+**Проблема:** `NoteRepository::search` использует `n.title LIKE :query` и `n.content LIKE :query` без нормализации регистра. `SearchFilter` (`title` => `partial`) на `Note` для `GET /notes?title=` — case-sensitive в PostgreSQL. При этом `findByTitleCaseInsensitive` уже есть для wiki — поведение поиска в UI должно быть согласованным.
+
+**Предлагаемое решение:**
+- [ ] `NoteRepository::search`: `LOWER(n.title) LIKE LOWER(:query)` (и content); для PostgreSQL можно `ILIKE`, если зафиксировать СУБД
+- [ ] `GET /notes?title=` (после консолидации search API, фронт шаг 7): тот же критерий — кастомный `SearchFilter` или убрать дублирующий путь
+- [ ] Smoke: title `Hello World`, запросы `hello`, `HELLO` — находят заметку в SearchBar и модалке ссылок
+- [ ] При необходимости — PHPUnit на `NoteRepository::search` (фаза 20)
+
+**Связь:** [`frontend_selfreview.md` — доработки после ревью](./frontend_selfreview.md#доработки-после-ревью-backlog)

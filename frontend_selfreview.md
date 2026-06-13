@@ -104,13 +104,14 @@
 ## Шаг 5. JWT refresh: реализовать или убрать
 
 **Приоритет:** medium  
+**Статус:** ⏸ отложен — сначала решение на бэкенде ([`backend_selfreview.md` — шаг 15](./backend_selfreview.md#шаг-15-jwt-refresh-блокирует-фронтенд-шаг-5))  
 **Коммит:** `fix(frontend): jwt refresh flow` **или** `refactor(frontend): remove unused refresh token storage`
 
-**Проблема:** `refreshToken` сохраняется в localStorage при login/register; `authApi.refresh` существует, но на 401 `client.ts` сразу очищает токены и редиректит на `/login` без попытки refresh.
+**Проблема:** `refreshToken` сохраняется в localStorage при login/register; `authApi.refresh` существует, но на 401 `client.ts` сразу очищает токены и редиректит на `/login` без попытки refresh. Endpoint `/api/auth/refresh` описан в `ARCHITECTURE.md`, но **на бэкенде не реализован**; login/register отдают только `token` + `user`.
 
 **Файлы:** `stores/auth.ts`, `api/auth.ts`, `api/client.ts`
 
-- [ ] **Вариант A:** в interceptor на 401 — вызов `authApi.refresh`, обновление token, retry запроса
+- [ ] **Вариант A:** в interceptor на 401 — вызов `authApi.refresh`, обновление token, retry запроса *(требует шаг 15 на бэкенде)*
 - [ ] **Вариант B:** убрать хранение `refreshToken` и метод `refresh`, если refresh не нужен в MVP
 - [ ] Зафиксировать выбор в `ARCHITECTURE.md`
 
@@ -129,9 +130,9 @@
 - `api/folders.ts`
 - `composables/useNoteVersions.ts`
 
-- [ ] Добавить `parseHydraCollection<T>(response): { data: T[], total: number }` в `utils/hydra.ts` или `api/client.ts`
-- [ ] Заменить все вхождения
-- [ ] При необходимости — `parseHydraTotal` для `hydra:totalItems`
+- [x] Добавить `parseHydraCollection<T>(response): { data: T[], total: number }` в `utils/hydra.ts` или `api/client.ts`
+- [x] Заменить все вхождения
+- [x] При необходимости — `parseHydraTotal` для `hydra:totalItems`
 
 ---
 
@@ -288,7 +289,7 @@
 2. Шаг 2 — markdown HTML
 3. Шаг 3 — deps
 4. Шаг 4 — dead exports
-5. Шаг 5 — JWT refresh
+5. ~~Шаг 5 — JWT refresh~~ (отложен → backend шаг 15)
 6. Шаг 6 — Hydra parser
 7. Шаг 7 — search API
 8. Шаг 8 — paginated fetch
@@ -299,3 +300,27 @@
 13. Шаг 14 — optional
 
 После выполнения шага — отметить `- [x]` в этом файле и кратко зафиксировать в `REPORT.md`.
+
+---
+
+## Доработки после ревью (backlog)
+
+Задачи, выявленные при smoke или ревью, но **вне** шагов 1–14. Не блокируют прохождение selfreview; после основных шагов или в фазе 20.
+
+### Поиск заметок: регистронезависимый
+
+**Источник:** smoke шага 6 (`notesApi.search` в `LinkNoteModal`); аналогично затрагивает `SearchBar` → `GET /notes/search`.
+
+**Проблема:** поиск по title (и полнотекстовый в `NoteRepository::search`) **регистрозависимый**. Заметка «Hello World» не находится по запросу `hello`. На бэкенде: `LIKE :query` без `LOWER`/`ILIKE` в `NoteRepository::search`; `SearchFilter` partial по `title` на `GET /notes` — тоже case-sensitive в PostgreSQL.
+
+**Ожидаемое поведение:** поиск без учёта регистра (как уже сделано в `findByTitleCaseInsensitive` для wiki-ссылок).
+
+**Где править:**
+- **Бэкенд (основное):** `NoteRepository::search` — `LOWER(n.title) LIKE LOWER(:query)` (и content, если нужна та же семантика); для `GET /notes?title=` — кастомный filter или репозиторий вместо `SearchFilter partial`
+- **Фронт:** после фикса бэка — smoke `SearchBar` и `LinkNoteModal`; подсветка в `highlightMatch` может остаться case-sensitive (отдельно, low)
+
+**Smoke после фикса:**
+- [ ] Заметка с title `Hello World` — запрос `hello` / `HELLO` находит её в SearchBar и в модалке wiki-ссылки
+- [ ] Полнотекстовый поиск (`q` в content) — тот же регистронезависимый критерий
+
+**Связь:** [`backend_selfreview.md` — доработки после ревью](./backend_selfreview.md#доработки-после-ревью-backlog)

@@ -2,6 +2,7 @@ import { apiClient } from './client'
 import { normalizeNote, normalizeNoteListItem } from '@/utils/note'
 import { sanitizeNoteContent, sanitizeNoteTitle } from '@/utils/sanitizeText'
 import { resolveTagNamesToIris } from '@/utils/tags'
+import { parseHydraCollection } from '@/utils/hydra'
 import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, ApiResponse, HydraCollection } from '@/types'
 
 export interface NoteListCriteria {
@@ -65,9 +66,8 @@ export const notesApi = {
       params['folder.id'] = folderId
     }
     const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
-    
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
-    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    const { data: rawData, total } = parseHydraCollection(response)
+    const data = rawData.map(normalizeNoteListItem)
     
     return {
       data,
@@ -88,8 +88,8 @@ export const notesApi = {
     }
     const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
 
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem)
-    const total = response['hydra:totalItems'] || response['totalItems'] || 0
+    const { data: rawData, total } = parseHydraCollection(response)
+    const data = rawData.map(normalizeNoteListItem)
 
     return {
       data,
@@ -184,9 +184,8 @@ export const notesApi = {
       'title': query,
     }
     const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
-    
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
-    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    const { data: rawData, total } = parseHydraCollection(response)
+    const data = rawData.map(normalizeNoteListItem)
     
     return {
       data,

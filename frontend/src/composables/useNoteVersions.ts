@@ -1,6 +1,7 @@
 import { ref, Ref } from 'vue'
 import { apiClient } from '@/api/client'
 import { getApiErrorMessage } from '@/utils/apiError'
+import { parseHydraCollection } from '@/utils/hydra'
 import type { NoteVersion, HydraCollection, RestoreVersionRequest } from '@/types'
 
 interface UseNoteVersionsReturn {
@@ -27,9 +28,9 @@ export function useNoteVersions(initialNoteId?: string): UseNoteVersionsReturn {
       const response = await apiClient.get<HydraCollection<NoteVersion>>(
         `/notes/${noteId}/versions`
       )
-      
-      // API Platform возвращает hydra:member или member
-      versions.value = (response['hydra:member'] || response.member || [])
+      const { data } = parseHydraCollection(response)
+
+      versions.value = data
         .map(version => ({
           ...version,
           // Normalize field names from snake_case to camelCase

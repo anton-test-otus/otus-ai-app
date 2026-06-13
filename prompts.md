@@ -3585,3 +3585,31 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** задокументировано, почему IDE показывает ложные TS-ошибки без symlink и как это исправить.
 
 ---
+
+## Промпт 181
+
+> Выглядит ок. Давай делать parse hydra
+
+### Выполненные действия:
+
+- Добавлен `frontend/src/utils/hydra.ts` — `parseHydraCollection<T>()` (`hydra:member` / `member`, `hydra:totalItems` / `totalItems`, голый `T[]`)
+- Заменены 8 вхождений в `api/notes.ts`, `api/trash.ts`, `api/tags.ts`, `api/folders.ts`, `composables/useNoteVersions.ts`
+- `vite build` — ok
+- Отмечен шаг 6 в `frontend_selfreview.md`, запись в `REPORT.md`
+
+**Результат:** единый парсер Hydra collection; дублирование убрано из 6 файлов.
+
+---
+
+## Промпт 182
+
+> поиск регистрозависимый, это неправильно. добавь в задачи на доработки после ревью
+
+### Выполненные действия:
+
+- Секция «Доработки после ревью (backlog)» в `frontend_selfreview.md` и `backend_selfreview.md` — задача «Поиск заметок: регистронезависимый»
+- Находка зафиксирована в `for_tests.md` (smoke шаг 6), `REPORT.md`, `PHASES.md` (фаза 18)
+
+**Результат:** баг вынесен из текущих шагов selfreview; фикс запланирован на бэкенд (`NoteRepository::search`, `SearchFilter`).
+
+---

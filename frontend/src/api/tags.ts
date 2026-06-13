@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { parseHydraCollection } from '@/utils/hydra';
 import type { Tag, Note, PaginatedResponse, HydraCollection } from '../types';
 
 export interface TagListCriteria {
@@ -16,7 +17,7 @@ export const tagsApi = {
       params.tags = criteria.tags;
     }
     const response = await apiClient.get<HydraCollection<Tag>>('/tags', { params });
-    return response['hydra:member'] || response['member'] || [];
+    return parseHydraCollection(response).data;
   },
 
   async create(name: string): Promise<Tag> {
@@ -35,9 +36,7 @@ export const tagsApi = {
     const response = await apiClient.get<HydraCollection<Note>>(`/tags/${id}/notes`, { 
       params: { page, itemsPerPage: perPage } 
     });
-    
-    const data = response['hydra:member'] || response['member'] || [];
-    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    const { data, total } = parseHydraCollection(response);
     
     return {
       data,

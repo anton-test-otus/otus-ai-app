@@ -1,5 +1,6 @@
 import { apiClient } from './client';
 import { normalizeNoteListItem } from '@/utils/note';
+import { parseHydraCollection } from '@/utils/hydra';
 import type { Note, NoteListItem, PaginatedResponse, HydraCollection } from '../types';
 
 export const trashApi = {
@@ -7,9 +8,8 @@ export const trashApi = {
     const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes/trash', { 
       params: { page, itemsPerPage: perPage } 
     });
-    
-    const data = (response['hydra:member'] || response['member'] || []).map(normalizeNoteListItem);
-    const total = response['hydra:totalItems'] || response['totalItems'] || 0;
+    const { data: rawData, total } = parseHydraCollection(response);
+    const data = rawData.map(normalizeNoteListItem);
     
     return {
       data,

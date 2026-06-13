@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { parseHydraCollection } from '@/utils/hydra';
 import type { Folder, HydraCollection } from '../types';
 
 function buildFolderPayload(data: {
@@ -26,20 +27,7 @@ function buildFolderPayload(data: {
 export const foldersApi = {
   async getAll(): Promise<Folder[]> {
     const response = await apiClient.get<Folder[] | HydraCollection<Folder>>('/folders/tree');
-    
-    // API Platform может вернуть либо 'hydra:member' либо 'member'
-    if (response && typeof response === 'object') {
-      const hydraResponse = response as HydraCollection<Folder>;
-      if ('hydra:member' in hydraResponse) {
-        return hydraResponse['hydra:member'] || [];
-      }
-      if ('member' in hydraResponse) {
-        return hydraResponse['member'] || [];
-      }
-    }
-    
-    // Если это массив
-    return (response as Folder[]) || [];
+    return parseHydraCollection(response).data;
   },
 
   async create(folderData: { name: string; parentId?: string; icon?: string | null }): Promise<Folder> {

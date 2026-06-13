@@ -52,3 +52,24 @@
 
 ### Автотесты (позже)
 - E2E: markdown с raw HTML в preview — нет исполняемых узлов в DOM.
+
+---
+
+## FE Шаг 6 — parseHydraCollection
+
+**Источник:** `frontend_selfreview.md`, шаг 6
+
+### Smoke
+- [ ] Dashboard — список заметок, infinite scroll
+- [ ] `/favorites` — избранные, подгрузка
+- [ ] Корзина `/trash` — список, восстановление
+- [ ] Сайдбар — теги и дерево папок
+- [ ] История версий — модалка, список версий
+- [ ] Wiki-ссылка → модалка выбора заметки (`notesApi.search`) — результаты по title
+
+**Ожидание:** все списки загружаются без ошибок; пагинация и пустые состояния как до рефакторинга.
+
+**Находка (backlog):** поиск в модалке wiki-ссылок регистрозависимый — см. «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`.
+
+### Автотесты (позже)
+- Unit: `parseHydraCollection` — `hydra:member`, `member`, голый массив, `totalItems = 0`.
