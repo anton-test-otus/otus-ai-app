@@ -151,8 +151,15 @@ otus-ai-app/
 │   │   │   ├── NoteLinkSyncService.php
 │   │   │   ├── NoteGraphService.php
 │   │   │   └── TrashService.php
+│   │   ├── DemoSeed/            # Demo seed (фаза 15)
+│   │   │   ├── DemoUniverseDefinition.php
+│   │   │   ├── DemoNoteDefinition.php
+│   │   │   ├── DemoVersionDefinition.php
+│   │   │   ├── DemoUniverseSeeder.php
+│   │   │   ├── DemoLinkPlaceholderResolver.php
+│   │   │   └── Universe/        # PotterUniverse, WesterosUniverse, WitcherUniverse
 │   │   ├── EventSubscriber/   # Doctrine event subscribers
-│   │   └── Command/           # Консольные команды (очистка корзины)
+│   │   └── Command/           # Консольные команды (очистка корзины, seed, admin)
 │   ├── composer.json
 │   └── .env
 │
@@ -443,7 +450,7 @@ flowchart LR
 | GET | `/api/notes/{id}/versions` | Получение истории версий |
 | POST | `/api/notes/{id}/restore-version/{versionId}` | Восстановление из версии |
 | GET | `/api/notes/{id}/backlinks` | Получение заметок, ссылающихся на эту |
-| GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 2; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
+| GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 1; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
 
 Поля **`linkStats`** (`{ incoming, outgoing }`) и **`versionCount`** добавляются в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer`.
 
@@ -602,6 +609,37 @@ const noteSchema = z.object({
 | Назначение | ежедневная разработка | сдача проекта, демо, staging |
 
 Текущий nginx (`docker/nginx/default.conf`) отдаёт только Symfony `public/`; для demo-режима потребуется конфиг с `try_files` для SPA и проксированием `/api`.
+
+## Консольные команды
+
+| Команда | Назначение |
+|---------|------------|
+| `app:reset-schema` | Удалить схему БД и применить миграции заново |
+| `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
+| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать demo-пользователей |
+| `app:purge-trash` | Удалить заметки из корзины старше 30 дней (cron) |
+
+### Demo seed (`app:seed-demo-data`)
+
+Три изолированных пользователя с контентом на русском:
+
+| Email | Вселенная | Заметок |
+|-------|-----------|---------|
+| `hogwarts@demo.local` | Гарри Поттер | ~40 |
+| `westeros@demo.local` | Игра престолов | ~47 |
+| `witcher@demo.local` | Ведьмак | ~39 |
+
+Пароль для всех: `demo1234`. Роль: `ROLE_USER`. Администратор создаётся отдельно (`app:create-admin`).
+
+**Структура кода:** классы в `backend/src/DemoSeed/`; определения вселенных — `DemoSeed/Universe/*Universe.php`. Wiki-ссылки в контенте задаются плейсхолдерами `{{link:key}}` / `{{link:key|alias}}`, резолвятся в UUID при seed. При правке контента — перегенерация через `python3 backend/tools/build_universes.py` (встроенная проверка на смешение латиницы и кириллицы в одном слове).
+
+**Типичный сценарий dev/demo:**
+
+```bash
+docker compose exec php php bin/console app:reset-schema
+docker compose exec php php bin/console app:seed-demo-data
+docker compose exec php php bin/console app:create-admin
+```
 
 ## Роли пользователей
 

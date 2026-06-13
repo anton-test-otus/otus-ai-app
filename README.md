@@ -175,7 +175,7 @@ otus-ai-app/
 ├── Makefile
 ├── ARCHITECTURE.md             # Архитектура приложения
 ├── PHASES.md                   # План реализации
-├── demoseed.md                 # Спецификация demo seed (фаза 14.4)
+├── demoseed.md                 # Спецификация demo seed (фаза 15)
 ├── REPORT.md                   # Проблемы рефакторинга и их решения
 └── prompts.md                  # История разработки
 ```
@@ -287,6 +287,12 @@ docker exec otus_php bin/console app:reset-schema --no-migrate
 # Создание администратора
 docker exec otus_php bin/console app:create-admin
 
+# Загрузка demo-данных (3 вселенные, пароль demo1234)
+docker exec otus_php bin/console app:seed-demo-data
+
+# Пересоздать demo-данные (удалить существующих demo-пользователей)
+docker exec otus_php bin/console app:seed-demo-data --force
+
 # Список роутов
 docker exec otus_php bin/console debug:router
 
@@ -296,6 +302,24 @@ docker compose down
 # Пересборка контейнеров
 docker compose build --no-cache && docker compose up -d
 ```
+
+## Demo-данные
+
+Для dev/demo и проверки графа связей, тегов и версий:
+
+```bash
+docker compose exec php php bin/console app:seed-demo-data
+```
+
+| Email | Пароль | Вселенная |
+|-------|--------|-----------|
+| `hogwarts@demo.local` | `demo1234` | Гарри Поттер (~40 заметок) |
+| `westeros@demo.local` | `demo1234` | Игра престолов (~47 заметок) |
+| `witcher@demo.local` | `demo1234` | Ведьмак (~39 заметок) |
+
+Флаг `--force` удаляет существующих demo-пользователей и загружает данные заново. Администратор создаётся отдельно: `app:create-admin` (из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env`).
+
+Спецификация: [`demoseed.md`](./demoseed.md).
 
 ## Следующие шаги
 
