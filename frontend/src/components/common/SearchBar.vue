@@ -53,7 +53,7 @@
           @click="openNote(note.id)"
         >
           <div class="flex items-start gap-3">
-            <i class="pi pi-file text-primary-500 mt-1" />
+            <i class="pi pi-file text-primary-500 mt-1 shrink-0" />
             <div class="flex-1 min-w-0">
               <div class="font-medium text-sm truncate" v-html="highlightMatch(note.title)" />
               <div class="text-xs text-surface-500 dark:text-surface-400 mt-1">

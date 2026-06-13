@@ -242,6 +242,60 @@ export const useNotesStore = defineStore('notes', () => {
     }
   }
 
+  function noteMatchesListFilters(
+    note: NoteListItem,
+    folderId?: string | null,
+    tagIds?: string[],
+  ): boolean {
+    if (folderId && note.folderId !== folderId) {
+      return false
+    }
+
+    const activeTags = tagIds ?? []
+    if (activeTags.length === 0) {
+      return true
+    }
+
+    const noteTagIds = new Set(note.tags?.map((tag) => tag.id) ?? [])
+    return activeTags.every((tagId) => noteTagIds.has(tagId))
+  }
+
+  function applyNoteFolderChange(
+    note: Note,
+    options?: { folderId?: string | null; tagIds?: string[] },
+  ) {
+    const item = toNoteListItem(note)
+    const wasInList = notes.value.some((entry) => entry.id === note.id)
+    const matchesFilters = noteMatchesListFilters(
+      item,
+      options?.folderId,
+      options?.tagIds,
+    )
+
+    syncNoteInLists(note)
+
+    if (wasInList && !matchesFilters) {
+      notes.value = notes.value.filter((entry) => entry.id !== note.id)
+      if (pagination.value.total > 0) {
+        pagination.value.total -= 1
+        pagination.value.totalPages = Math.ceil(
+          pagination.value.total / pagination.value.perPage,
+        )
+      }
+    } else if (!wasInList && matchesFilters) {
+      notes.value.unshift(item)
+      pagination.value.total += 1
+      pagination.value.totalPages = Math.ceil(
+        pagination.value.total / pagination.value.perPage,
+      )
+    }
+
+    const favoriteIndex = favoriteNotes.value.findIndex((entry) => entry.id === note.id)
+    if (favoriteIndex !== -1) {
+      favoriteNotes.value[favoriteIndex] = item
+    }
+  }
+
   function syncFavoriteNotes(note: Note) {
     const item = toNoteListItem(note)
 
@@ -280,6 +334,22 @@ export const useNotesStore = defineStore('notes', () => {
       return updated
     } catch (err: unknown) {
       error.value = getApiErrorMessage(err, 'Ошибка обновления избранного')
+      throw err
+    }
+  }
+
+  async function moveNoteToFolder(
+    id: string,
+    folderId: string | null,
+    options?: { folderId?: string | null; tagIds?: string[] },
+  ) {
+    error.value = null
+    try {
+      const note = await notesApi.moveToFolder(id, folderId)
+      applyNoteFolderChange(note, options)
+      return note
+    } catch (err: unknown) {
+      error.value = getApiErrorMessage(err, 'Ошибка перемещения заметки')
       throw err
     }
   }
@@ -396,6 +466,7 @@ export const useNotesStore = defineStore('notes', () => {
     fetchNoteById,
     createNote,
     updateNote,
+    moveNoteToFolder,
     toggleFavorite,
     deleteNote,
     searchNotes,

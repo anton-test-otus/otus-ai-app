@@ -3432,3 +3432,47 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** отдельная фаза зафиксирована в плане; реализация — следующий шаг.
 
 ---
+
+## Промпт 170
+
+> Теперь надо обработать drag-and-drop заметок в другие папки (см. текущую фазу)
+
+### Выполненные действия:
+
+- **API/store:** `notesApi.moveToFolder` (PATCH `folder`), `notesStore.moveNoteToFolder` + `applyNoteFolderChange` (синхронизация списков при фильтре по папке/тегам)
+- **DnD (desktop, `hover: hover`):** `NoteDragHandle`, `useNoteFolderDnD`, `noteDragDrop` store; drop-зоны в `FolderTree` («Все заметки») и `FolderTreeItem`; handle на `NoteCard` и в `SearchBar`
+- **Touch:** кнопка «Переместить в папку» на `NoteCard` + глобальный `MoveNoteToFolderDialog` (`FolderDropdown`)
+- **Стили:** подсветка drop-зоны, grab-курсор, handle по hover карточки
+- Smoke-проверка `PATCH /api/notes/{id}` с `folder` / `null` — OK
+- Обновлены `PHASES.md` (фаза 17 ✅), `ARCHITECTURE.md`
+
+**Результат:** заметки перетаскиваются из списка в дерево папок; на мобильных — диалог перемещения.
+
+---
+
+## Промпт 171
+
+> из-за хэндла внешний вид карточки сильно портится. надо подумать, как его сделать иначе.
+
+### Выполненные действия:
+
+- Handle перенесён из контента/footer в **левый grip-overlay** (`pi-bars`) по hover — без сдвига layout
+- Единый паттерн для `NoteCard`, быстрого и полного поиска (`search-result-row` / `search-result-card-shell`)
+- На touch — без grip, только кнопка «Переместить в папку»
+
+**Результат:** чистая карточка в покое; drag affordance слева при наведении.
+
+---
+
+## Промпт 172
+
+> Давай dnd из поиска вообще уберём.
+
+### Выполненные действия:
+
+- Убран `NoteDragHandle` из `SearchBar` (быстрый и полный поиск)
+- CSS grip только для `note-card-shell`; обновлены `PHASES.md`, `ARCHITECTURE.md`
+
+**Результат:** DnD только с dashboard и избранного.
+
+---

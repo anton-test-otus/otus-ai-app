@@ -223,6 +223,47 @@
       @apply opacity-100;
     }
   }
+
+  .note-card-shell {
+    @apply relative;
+  }
+
+  .note-drag-grip {
+    @apply absolute left-0 right-0 top-0 z-10 flex h-6 items-center px-2
+      cursor-grab text-surface-400 transition-opacity duration-150;
+  }
+
+  .note-drag-grip:active {
+    @apply cursor-grabbing text-primary-500;
+  }
+
+  @media (hover: hover) {
+    .note-drag-grip {
+      @apply opacity-0 pointer-events-none;
+    }
+
+    .note-card-shell:hover .note-drag-grip {
+      @apply opacity-100 pointer-events-auto
+        bg-gradient-to-b from-surface-100/95 to-transparent
+        dark:from-surface-800/95;
+    }
+  }
+
+  .note-card-dragging {
+    @apply opacity-60 ring-2 ring-primary-400 ring-offset-2;
+  }
+
+  .folder-drop-target {
+    @apply transition-colors;
+  }
+
+  .folder-drop-target-active {
+    @apply bg-primary-100 dark:bg-primary-900/40 ring-2 ring-primary-400 ring-inset;
+  }
+
+  .folder-drop-target-active.folder-drop-target-selected {
+    @apply bg-primary-100 dark:bg-primary-900/40;
+  }
 }
 
 /* Note card: actions in footer, no extra gap from content bottom padding */

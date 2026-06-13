@@ -30,6 +30,7 @@
     </div>
 
     <KeyboardShortcutsDialog />
+    <MoveNoteToFolderDialog />
     <Toast />
     <ConfirmDialog />
   </div>
@@ -54,6 +55,7 @@ import { useBreakpoints } from '@/composables/useBreakpoints'
 import { useAppKeyboardShortcuts } from '@/composables/useAppKeyboardShortcuts'
 import { LAYOUT_PANELS_KEY } from '@/composables/useLayoutPanels'
 import KeyboardShortcutsDialog from '@/components/common/KeyboardShortcutsDialog.vue'
+import MoveNoteToFolderDialog from '@/components/notes/MoveNoteToFolderDialog.vue'
 
 const route = useRoute()
 const router = useRouter()

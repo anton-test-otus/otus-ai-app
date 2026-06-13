@@ -55,7 +55,7 @@ flowchart TB
 | Редактор | Milkdown | Markdown WYSIWYG редактор |
 | Утилиты | VueUse | Composables (автосохранение, debounce) |
 | Валидация | VeeValidate + Zod | Валидация форм на фронтенде |
-| Drag & Drop | HTML5 DnD / vue-draggable-plus | Перетаскивание заметок на папки в сайдбаре (фаза 17) |
+| Drag & Drop | HTML5 DnD | Перетаскивание заметок из списка на папки в сайдбаре (desktop); диалог на touch |
 | Граф связей | vis-network | Локальная визуализация wiki-связей в `NoteView` |
 | CSS | Tailwind CSS | Mobile-first утилитарные стили |
 
@@ -241,7 +241,7 @@ otus-ai-app/
 - Максимальная глубина вложенности: 3 уровня (валидация на backend)
 - Папки сортируются по названию (алфавитный порядок); перетаскивание папок **не** используется (фаза 5)
 - Заметки сортируются по дате последнего обновления (updated_at DESC)
-- Смена папки заметки: `FolderSelector` в метаданных (`NoteView`); drag-and-drop из списка в дерево сайдбара — **фаза 17** (ещё не реализовано)
+- Смена папки заметки: `FolderSelector` в метаданных (`NoteView`); drag-and-drop из списка (`NoteCard` на dashboard и избранном) в дерево сайдбара (`FolderTree` / `FolderTreeItem`, пункт «Все заметки» = корень); на touch — диалог «Переместить в папку» (`MoveNoteToFolderDialog`). Общая логика — `useMoveNoteToFolder` + `notesStore.moveNoteToFolder` (PATCH `folder`)
 - Заметки на корневом уровне разрешены (null `folder_id`)
 
 ### 4. История версий

@@ -2,11 +2,18 @@
   <div class="folder-item" :style="rowIndentStyle">
     <div
       class="group folder-content relative flex items-center gap-1 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors min-w-0"
-      :class="{
-        'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isSelected,
-        'border-l-2 border-transparent pl-[6px]': !isSelected,
-      }"
+      :class="[
+        {
+          'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isSelected,
+          'border-l-2 border-transparent pl-[6px]': !isSelected,
+        },
+        dropZoneClass(isSelected),
+      ]"
       @click="handleSelect"
+      @dragover="onDragOver"
+      @dragenter="onDragEnter"
+      @dragleave="onDragLeave"
+      @drop="onDrop"
     >
       <span class="w-4 shrink-0 flex items-center justify-center">
         <i
@@ -179,6 +186,7 @@ import Message from 'primevue/message';
 import { MODAL_WIDTH } from '@/constants/modal';
 import { resolveFolderTreeIcon, MAX_FOLDER_TREE_DEPTH } from '@/utils/folderIcon';
 import { useAppToast } from '@/composables/useAppToast';
+import { useNoteFolderDropZone } from '@/composables/useNoteFolderDnD';
 import FolderIconPicker from './FolderIconPicker.vue';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
@@ -200,6 +208,13 @@ const emit = defineEmits<{
 
 const foldersStore = useFoldersStore();
 const { showError } = useAppToast();
+const {
+  onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
+  dropZoneClass,
+} = useNoteFolderDropZone(props.folder.id);
 const isExpanded = ref(true);
 const showCreateDialog = ref(false);
 const showEditDialog = ref(false);

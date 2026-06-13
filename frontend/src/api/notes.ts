@@ -130,6 +130,15 @@ export const notesApi = {
     return normalizeNote(note)
   },
 
+  async moveToFolder(id: string, folderId: string | null): Promise<Note> {
+    const payload: Record<string, unknown> = {
+      folder: folderId ? `/api/folders/${folderId}` : null,
+    }
+
+    const note = await apiClient.patch<Note>(`/notes/${id}`, payload)
+    return normalizeNote(note)
+  },
+
   async update(id: string, data: UpdateNoteRequest): Promise<Note> {
     // Преобразуем folderId в IRI для API Platform
     const payload: any = {

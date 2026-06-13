@@ -26,11 +26,18 @@
     <div v-else class="space-y-0.5">
       <div
         class="folder-row group flex items-center gap-2 list-row-padding rounded cursor-pointer hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-        :class="{
-          'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isAllNotesActive,
-          'border-l-2 border-transparent pl-[6px]': !isAllNotesActive,
-        }"
+        :class="[
+          {
+            'bg-primary-50 dark:bg-primary-900/20 border-l-2 border-primary-500 pl-[6px]': isAllNotesActive,
+            'border-l-2 border-transparent pl-[6px]': !isAllNotesActive,
+          },
+          dropZoneClass(isAllNotesActive),
+        ]"
         @click="selectAllNotes"
+        @dragover="onDragOver"
+        @dragenter="onDragEnter"
+        @dragleave="onDragLeave"
+        @drop="onDrop"
       >
         <i class="pi pi-inbox w-4 shrink-0 text-sm text-surface-500" />
         <span class="flex-1 text-sm">Все заметки</span>
@@ -98,9 +105,10 @@ import FolderDropdown from '@/components/common/FolderDropdown.vue';
 import { useAppToast } from '@/composables/useAppToast';
 import { MODAL_WIDTH } from '@/constants/modal';
 import { findFolderDepthInTree } from '@/utils/folderPath'
-import { MAX_FOLDER_TREE_DEPTH, resolveFolderTreeIcon } from '@/utils/folderIcon'
+import { MAX_FOLDER_TREE_DEPTH } from '@/utils/folderIcon'
 import FolderTreeItem from './FolderTreeItem.vue';
 import FolderIconPicker from './FolderIconPicker.vue';
+import { useNoteFolderDropZone } from '@/composables/useNoteFolderDnD';
 import { useFoldersStore } from '../../stores/folders';
 import type { Folder } from '../../types';
 
@@ -118,6 +126,13 @@ const emit = defineEmits<{
 const foldersStore = useFoldersStore();
 const route = useRoute();
 const { showError } = useAppToast();
+const {
+  onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
+  dropZoneClass,
+} = useNoteFolderDropZone(null);
 const showCreateDialog = ref(false);
 const newFolderName = ref('');
 const newFolderParentId = ref<string | null>(null);
