@@ -877,5 +877,19 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** smoke подтверждён пользователем (2026-06-13).
 
+### BE Шаг 4: защита админки от self-delete / self-demote (исправлено)
+
+**Проблема:** `AdminController` позволял админу деактивировать/удалить себя и снять `ROLE_ADMIN` с последнего администратора без проверок.
+
+**Решение:**
+- `assertNotSelf` — `disable` и `delete` над своей учётной записью → **400**
+- `assertNotLastAdmin` + `UserRepository::countAdmins()` — demote последнего админа → **409**
+
+**Затронутые файлы:**
+- `backend/src/Controller/AdminController.php`
+- `backend/src/Repository/UserRepository.php`
+
+**Проверка:** smoke подтверждён пользователем (2026-06-13).
+
 ---
 

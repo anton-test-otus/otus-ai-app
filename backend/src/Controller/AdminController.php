@@ -3,11 +3,14 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -16,7 +19,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class AdminController extends AbstractController
 {
     public function __construct(
-        private EntityManagerInterface $entityManager
+        private EntityManagerInterface $entityManager,
+        private UserRepository $userRepository,
     ) {
     }
 
@@ -112,6 +116,8 @@ class AdminController extends AbstractController
     #[Route('/users/{id}/disable', name: 'api_admin_users_disable', methods: ['PATCH'])]
     public function disableUser(User $user): JsonResponse
     {
+        $this->assertNotSelf($user);
+
         $user->setIsActive(false);
         $this->entityManager->flush();
 
@@ -127,6 +133,8 @@ class AdminController extends AbstractController
     #[Route('/users/{id}', name: 'api_admin_users_delete', methods: ['DELETE'])]
     public function deleteUser(User $user): JsonResponse
     {
+        $this->assertNotSelf($user);
+
         $this->entityManager->remove($user);
         $this->entityManager->flush();
 
@@ -171,6 +179,8 @@ class AdminController extends AbstractController
             ], Response::HTTP_OK);
         }
 
+        $this->assertNotLastAdmin($user);
+
         $roles = array_filter($roles, fn($role) => $role !== 'ROLE_ADMIN');
         $user->setRoles(array_values($roles));
         $this->entityManager->flush();
@@ -183,5 +193,32 @@ class AdminController extends AbstractController
                 'roles' => $user->getRoles(),
             ]
         ]);
+    }
+
+    private function assertNotSelf(User $target): void
+    {
+        $current = $this->getUser();
+        if (!$current instanceof User) {
+            return;
+        }
+
+        $targetId = $target->getId();
+        $currentId = $current->getId();
+        if ($targetId === null || $currentId === null || !$targetId->equals($currentId)) {
+            return;
+        }
+
+        throw new BadRequestHttpException('Нельзя выполнить это действие над собственной учётной записью');
+    }
+
+    private function assertNotLastAdmin(User $target): void
+    {
+        if (!in_array('ROLE_ADMIN', $target->getRoles(), true)) {
+            return;
+        }
+
+        if ($this->userRepository->countAdmins() <= 1) {
+            throw new ConflictHttpException('Нельзя снять роль последнего администратора');
+        }
     }
 }

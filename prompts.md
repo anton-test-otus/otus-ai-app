@@ -3715,3 +3715,16 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** шаг 3 бэкенд self-review завершён.
 
 ---
+
+## Промпт 190
+
+> опиши проблему / давай / ok
+
+### Выполненные действия:
+
+- BE self-review **шаг 4:** guards в `AdminController` (self disable/delete → 400, last admin demote → 409), `UserRepository::countAdmins()`
+- Smoke подтверждён; чеклисты в `backend_selfreview.md`, `for_tests.md`; запись в `REPORT.md`
+
+**Результат:** шаг 4 бэкенд self-review завершён.
+
+---

@@ -164,3 +164,21 @@
 
 ### Автотесты (фаза 20+)
 - Restore overwrite/create_version/copy — mock или fixture: content меняется → `syncFromContent` вызван для правильной заметки.
+
+---
+
+## BE Шаг 4 — защита админки от self-delete / self-demote
+
+**Источник:** `backend_selfreview.md`, шаг 4
+
+### Smoke (ручная проверка)
+- [x] Единственный админ: `PATCH /api/admin/users/{ownId}/disable` → **400**, аккаунт остаётся активным
+- [x] Единственный админ: `DELETE /api/admin/users/{ownId}` → **400**, аккаунт не удалён
+- [x] Единственный админ: `PATCH /api/admin/users/{ownId}/demote` (через API) → **409**, `ROLE_ADMIN` сохранена
+- [x] Два админа: demote **другого** → **200**, у цели снята роль; demote последнего оставшегося → **409**
+- [x] Обычные операции над **другими** пользователями (disable/delete/promote/demote) — без регрессии
+
+**Ожидание:** понятное сообщение в теле ответа; нельзя случайно заблокировать или лишить админки единственного администратора.
+
+### Автотесты (фаза 20+)
+- Admin guards: self disable/delete → 400; last admin demote → 409.

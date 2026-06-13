@@ -87,4 +87,13 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             'storageSize' => $storageSize,
         ];
     }
+
+    public function countAdmins(): int
+    {
+        $conn = $this->getEntityManager()->getConnection();
+
+        return (int) $conn->fetchOne(
+            "SELECT COUNT(*) FROM users WHERE roles::jsonb @> '[\"ROLE_ADMIN\"]'::jsonb"
+        );
+    }
 }
