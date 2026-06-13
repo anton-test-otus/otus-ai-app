@@ -30,9 +30,9 @@
 
 **Файлы:** `frontend/src/components/common/SearchBar.vue` (строки 58, 95, 100, 340–345)
 
-- [ ] Добавить `escapeHtml()` в `utils/` (или рядом с `highlightMatch`)
-- [ ] В `highlightMatch`: сначала `escapeHtml(text)`, затем обёртка совпадений в `<mark>`
-- [ ] Либо отказаться от `v-html`: разбить текст на сегменты и рендерить `<mark>` в шаблоне
+- [x] Добавить `escapeHtml()` в `utils/` (или рядом с `highlightMatch`)
+- [x] В `highlightMatch`: сначала `escapeHtml(text)`, затем обёртка совпадений в `<mark>`
+- [x] Либо отказаться от `v-html`: разбить текст на сегменты и рендерить `<mark>` в шаблоне
 - [ ] Smoke: заметка с `<script>` / `<img onerror=...>` в title — в результатах поиска отображается как текст
 
 ---

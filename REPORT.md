@@ -725,5 +725,19 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Краткая сводка:** 1 critical (XSS в `SearchBar`), 23 medium, 13 low. Исправления — отдельными коммитами по шагам из `frontend_selfreview.md`; после каждого шага — отметка в чеклисте и запись в этом файле.
 
+### Шаг 1: XSS в SearchBar (исправлено)
+
+**Проблема:** `highlightMatch` оборачивал совпадения в `<mark>` без экранирования HTML в `note.title` / `contentPreview`; `v-html` выполнял произвольную разметку.
+
+**Решение:**
+- `utils/escapeHtml.ts` — экранирование `& < > " '`
+- `utils/highlightMatch.ts` — сначала `escapeHtml(text)`, затем подсветка совпадений
+- `SearchBar.vue` — импорт общей утилиты вместо локальной `highlightMatch`
+
+**Затронутые файлы:**
+- `frontend/src/utils/escapeHtml.ts` (новый)
+- `frontend/src/utils/highlightMatch.ts` (новый)
+- `frontend/src/components/common/SearchBar.vue`
+
 ---
 

@@ -55,7 +55,7 @@
           <div class="flex items-start gap-3">
             <i class="pi pi-file text-primary-500 mt-1 shrink-0" />
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-sm truncate" v-html="highlightMatch(note.title)" />
+              <div class="font-medium text-sm truncate" v-html="highlightSearchMatch(note.title, searchQuery)" />
               <div class="text-xs text-surface-500 dark:text-surface-400 mt-1">
                 {{ formatDate(note.updatedAt) }}
               </div>
@@ -92,12 +92,12 @@
             @click="openNote(note.id)"
           >
             <template #title>
-              <div class="text-lg" v-html="highlightMatch(note.title)" />
+              <div class="text-lg" v-html="highlightSearchMatch(note.title, searchQuery)" />
             </template>
             <template #content>
               <div
                 class="text-sm text-surface-600 dark:text-surface-400 line-clamp-3"
-                v-html="highlightMatch(note.contentPreview)"
+                v-html="highlightSearchMatch(note.contentPreview, searchQuery)"
               />
               <div class="flex flex-wrap items-center gap-x-4 gap-y-2 mt-3 text-xs text-surface-500 dark:text-surface-400">
                 <span><i class="pi pi-calendar mr-1" />{{ formatDate(note.updatedAt) }}</span>
@@ -153,6 +153,7 @@ import { useInfiniteList } from '@/composables/useInfiniteList';
 import { useAppToast } from '@/composables/useAppToast';
 import { searchApi } from '../../api/search';
 import type { NoteListItem } from '../../types';
+import { highlightMatch as highlightSearchMatch } from '@/utils/highlightMatch';
 
 const router = useRouter();
 const { showError } = useAppToast();
@@ -336,17 +337,6 @@ function focusInput() {
 }
 
 defineExpose({ focusInput })
-
-function highlightMatch(text: string): string {
-  if (!searchQuery.value) return text;
-  
-  const regex = new RegExp(`(${escapeRegex(searchQuery.value)})`, 'gi');
-  return text.replace(regex, '<mark class="bg-yellow-200 dark:bg-yellow-700">$1</mark>');
-}
-
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
