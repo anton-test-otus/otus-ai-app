@@ -141,6 +141,7 @@ import { clipboard } from '@milkdown/plugin-clipboard'
 import { replaceAll, getMarkdown } from '@milkdown/utils'
 import { TextSelection } from '@milkdown/prose/state'
 import { wikiLinkInputPlugin, registerWikiLinkBracketCallback } from './wikiLinkInputPlugin'
+import { remarkStripHtmlPlugin } from './remarkStripHtml'
 import {
   insertWikiLinkIntoEditor,
   updateWikiLinkInEditor,
@@ -282,6 +283,7 @@ onMounted(async () => {
       })
       .use(commonmark)
       .use(gfm)
+      .use(remarkStripHtmlPlugin)
       .use(history)
       .use(listener)
       .use(clipboard)

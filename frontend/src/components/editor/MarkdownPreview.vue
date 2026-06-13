@@ -18,6 +18,7 @@ import {
   wikiLinkNodeView,
   wikiLinkSchema,
 } from './wikiLinkNode';
+import { remarkStripHtmlPlugin } from './remarkStripHtml';
 
 interface Props {
   content: string;
@@ -77,6 +78,7 @@ onMounted(async () => {
       })
       .use(commonmark)
       .use(gfm)
+      .use(remarkStripHtmlPlugin)
       .use(wikiLinkSchema)
       .use(remarkWikiLinkPlugin)
       .use(remarkWikiLinkStringifyPlugin)

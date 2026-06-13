@@ -1,4 +1,4 @@
-/** Нормализует текст заметки: nbsp, zero-width и прочие нечитаемые символы. */
+/** Нормализация текста заметки (nbsp, zero-width, control chars). Не защита от XSS. */
 export function sanitizeNoteText(text: string): string {
   return text
     .replace(/\u00a0/g, ' ')

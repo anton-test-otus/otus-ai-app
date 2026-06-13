@@ -739,5 +739,20 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/utils/highlightMatch.ts` (новый)
 - `frontend/src/components/common/SearchBar.vue`
 
+### Шаг 2: raw HTML в markdown preview (исправлено)
+
+**Проблема:** Milkdown (commonmark + gfm) пропускал raw HTML-блоки в DOM preview/editor без санитизации.
+
+**Решение:**
+- `remarkStripHtml.ts` — remark-плагин: mdast-узлы `html` → plain `text`
+- Плагин подключён в `MarkdownPreview.vue` и `MarkdownEditor.vue` (печать через `NotePrintView` → `MarkdownPreview`)
+- В комментарии к `sanitizeNoteText` зафиксировано: нормализация, не XSS defense
+
+**Затронутые файлы:**
+- `frontend/src/components/editor/remarkStripHtml.ts` (новый)
+- `frontend/src/components/editor/MarkdownPreview.vue`
+- `frontend/src/components/editor/MarkdownEditor.vue`
+- `frontend/src/utils/sanitizeText.ts`
+
 ---
 

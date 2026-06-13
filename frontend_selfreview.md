@@ -48,9 +48,9 @@
 
 **Файлы:** `MarkdownPreview.vue`, `MarkdownEditor.vue`, `NotePrintView.vue`, `utils/sanitizeText.ts`
 
-- [ ] Выбрать подход: remark-плагин (отключить HTML-узлы) или DOMPurify перед рендером
-- [ ] Применить единообразно в preview, editor view и print
-- [ ] Переименовать или задокументировать `sanitizeNoteText` / `sanitizeNoteContent` как **нормализацию**, не XSS defense
+- [x] Выбрать подход: remark-плагин (отключить HTML-узлы) или DOMPurify перед рендером
+- [x] Применить единообразно в preview, editor view и print
+- [x] Переименовать или задокументировать `sanitizeNoteText` / `sanitizeNoteContent` как **нормализацию**, не XSS defense
 - [ ] Smoke: markdown с `<script>`, `<img onerror=...>` — не выполняется в preview
 
 ---
