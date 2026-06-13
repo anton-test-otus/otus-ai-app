@@ -208,7 +208,7 @@ otus-ai-app/
 │   └── php/
 │       └── Dockerfile
 ├── docker-compose.yml          # PostgreSQL, PHP-FPM, Nginx
-├── docker-compose.prod.yml     # (фаза 16) demo/prod без node-сервиса
+├── docker-compose.prod.yml     # (фаза 19) demo/prod без node-сервиса
 ├── ARCHITECTURE.md
 ├── demoseed.md                 # Спецификация demo seed (фаза 15)
 ├── REPORT.md                   # Проблемы рефакторинга и их решения
@@ -598,7 +598,7 @@ const noteSchema = z.object({
 
 ## Варианты развёртывания (Docker)
 
-> Реализация — **фаза 16**. Ниже целевая схема.
+> Реализация — **фаза 19**. Ниже целевая схема.
 
 | | Разработка | Демо / продакшен |
 |---|------------|------------------|
