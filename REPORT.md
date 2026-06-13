@@ -850,5 +850,21 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).
 
+### BE Шаг 2: валидация связей при записи (исправлено)
+
+**Проблема:** при `POST`/`PUT`/`PATCH` заметки клиент мог указать IRI чужой папки или тегов; при смене `parent` у папки — IRI чужой или удалённой папки. `NoteProcessor` / `FolderProcessor` проверяли только владельца самой сущности.
+
+**Решение:**
+- `OwnedRelationAssert` — проверка `folder`, `tags`, `parent` на `user_id`; для parent — также `deletedAt IS NULL`
+- Ответ **422** с русскоязычным сообщением (`UnprocessableEntityHttpException`)
+- Вызов перед persist в `NoteProcessor` и `FolderProcessor`
+
+**Затронутые файлы:**
+- `backend/src/Security/OwnedRelationAssert.php` (новый)
+- `backend/src/State/NoteProcessor.php`
+- `backend/src/State/FolderProcessor.php`
+
+**Проверка:** код-ревью подтверждено; ручной smoke не выполнялся — сценарии в [`future_autotests.md`](./future_autotests.md) («BE owned relations»).
+
 ---
 

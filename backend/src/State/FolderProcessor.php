@@ -6,6 +6,7 @@ use ApiPlatform\Doctrine\Common\State\PersistProcessor;
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Folder;
+use App\Security\OwnedRelationAssert;
 use App\Security\ResourceOwnershipAssert;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -32,6 +33,10 @@ class FolderProcessor implements ProcessorInterface
             $data->setUser($user);
         } else {
             ResourceOwnershipAssert::assertOwnedBy($data->getUser(), $user);
+        }
+
+        if (in_array($operation->getMethod(), ['POST', 'PUT', 'PATCH'], true)) {
+            OwnedRelationAssert::assertParentFolder($data->getParent(), $user);
         }
 
         // Soft delete для DELETE операций

@@ -50,11 +50,11 @@
 
 **Файлы:** `State/NoteProcessor.php`, `State/FolderProcessor.php`
 
-- [ ] Перед persist: `folder === null || folder->getUser() === $user`
-- [ ] Для каждого тега в коллекции: `tag->getUser() === $user`
-- [ ] Для папки: `parent === null || parent->getUser() === $user`; parent не soft-deleted
-- [ ] Ошибка: `422` с понятным сообщением, не silent ignore
-- [ ] Smoke: попытка привязать заметку к чужой папке — отказ
+- [x] Перед persist: `folder === null || folder->getUser() === $user`
+- [x] Для каждого тега в коллекции: `tag->getUser() === $user`
+- [x] Для папки: `parent === null || parent->getUser() === $user`; parent не soft-deleted
+- [x] Ошибка: `422` с понятным сообщением, не silent ignore
+- [ ] Smoke: попытка привязать заметку к чужой папке — отказ *(отложено: [`future_autotests.md`](./future_autotests.md) — BE owned relations)*
 
 ---
 

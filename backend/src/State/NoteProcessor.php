@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\NoteSnapshot;
 use App\Entity\Note;
+use App\Security\OwnedRelationAssert;
 use App\Security\ResourceOwnershipAssert;
 use App\Service\NoteLinkSyncService;
 use App\Service\NoteTextSanitizer;
@@ -59,6 +60,11 @@ class NoteProcessor implements ProcessorInterface
         }
 
         if (in_array($operation->getMethod(), ['POST', 'PUT', 'PATCH'], true)) {
+            OwnedRelationAssert::assertFolder($data->getFolder(), $user);
+            foreach ($data->getTags() as $tag) {
+                OwnedRelationAssert::assertTagOwner($tag->getUser(), $user);
+            }
+
             $this->noteTextSanitizer->sanitizeNote($data);
         }
 

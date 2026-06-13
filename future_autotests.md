@@ -94,3 +94,52 @@ docker compose exec php composer require --dev symfony/test-pack phpunit/phpunit
 
 - Проверять, что в БД после «чужих» PUT/DELETE данные B **не изменились** (`assertSame` title/content или refresh entity).
 - Collection `GET /api/notes` под A не должен содержать `noteB.id` — отдельный кейс или assert в том же классе.
+
+---
+
+## BE owned relations при записи (folder, tags, parent)
+
+**Источник:** `backend_selfreview.md`, шаг 2  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `OwnedRelationAssert`, `NoteProcessor`, `FolderProcessor`
+
+### Зачем автотест вместо ручного smoke
+
+Нужны два пользователя с разными folder/tag UUID; в PHPUnit — fixture + JWT, без ручного копирования IRI.
+
+### Подготовка (fixtures)
+
+Те же `userA`, `userB`, JWT, что в «BE IDOR»; дополнительно:
+
+- `folderA`, `folderB` — по одной активной папке у каждого
+- `tagA`, `tagB`
+- `noteA` — активная заметка user A (для PATCH)
+- `folderB_deleted` — папка B в корзине (`deletedAt` set) — для кейса parent
+
+### Кейсы — user A пишет в чужие связи
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `POST /api/notes` + token A, body с `"folder": "/api/folders/{folderB.id}"` | **422**, сообщение про папку |
+| 2 | `PATCH /api/notes/{noteA.id}` + token A, `"tags": ["/api/tags/{tagB.id}"]` | **422**, сообщение про тег |
+| 3 | `POST /api/folders` + token A, `"parent": "/api/folders/{folderB.id}"` | **422**, сообщение про родительскую папку |
+| 4 | `POST /api/folders` + token A, `"parent": "/api/folders/{folderB_deleted.id}"` | **422**, «Родительская папка удалена» |
+
+### Кейсы — регрессия (свои связи)
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 5 | `POST /api/notes` + token A, `"folder": "/api/folders/{folderA.id}"`, свои tags | **201** |
+| 6 | `POST /api/folders` + token A, `"parent": "/api/folders/{folderA.id}"` (дочерняя) | **201** |
+| 7 | `PATCH /api/notes/{noteA.id}` + token A, только `isFavorite` | **200**, без регрессии |
+
+### Инварианты
+
+- После отклонённого запроса в БД **нет** привязки note→folderB или note→tagB.
+- HTTP **422**, не 403 и не 500.
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/OwnedRelationValidationTest.php`
+- переиспользовать fixtures из `ResourceOwnershipTest` / `UserFactory`

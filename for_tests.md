@@ -127,3 +127,23 @@
 ### Автотесты (фаза 20+)
 
 Сценарий с **двумя пользователями и чужими UUID** — в [`future_autotests.md`](./future_autotests.md) («BE IDOR — item-операции только для владельца»). Ручная регистрация A/B не требуется.
+
+---
+
+## BE Шаг 2 — валидация связей folder / tags / parent
+
+**Источник:** `backend_selfreview.md`, шаг 2  
+**Ручной smoke:** не выполнялся — сценарии в [`future_autotests.md`](./future_autotests.md) («BE owned relations»).
+
+### Smoke (ручная проверка)
+- [ ] Под пользователем A: `POST`/`PATCH` своей заметки с `folder` = IRI папки пользователя B → **422**, заметка не привязана к чужой папке
+- [ ] Под A: `POST`/`PATCH` заметки с `tags`, содержащим IRI тега B → **422**
+- [ ] Под A: `POST`/`PATCH` папки с `parent` = IRI папки B → **422**
+- [ ] Под A: `parent` = IRI своей папки из корзины (`deletedAt`) → **422** «Родительская папка удалена»
+- [ ] Свои folder/tags/parent и CRUD без изменений payload → без регрессии
+
+**Ожидание:** понятное сообщение в теле ответа (422), не silent ignore и не 500.
+
+### Автотесты (фаза 20+)
+
+См. [`future_autotests.md`](./future_autotests.md) — «BE owned relations при записи».
