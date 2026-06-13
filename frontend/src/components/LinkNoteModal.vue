@@ -52,7 +52,7 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import ProgressSpinner from 'primevue/progressspinner';
 import { MODAL_WIDTH } from '@/constants/modal';
-import { notesApi } from '@/api/notes';
+import { searchApi } from '@/api/search';
 import type { NoteListItem } from '@/types';
 
 export interface SelectedWikiLinkNote {
@@ -102,7 +102,11 @@ const onSearchInput = () => {
 
     searching.value = true;
     try {
-      const response = await notesApi.search(searchQuery.value, 1, 10);
+      const response = await searchApi.searchByTitle({
+        q: searchQuery.value,
+        page: 1,
+        perPage: 10,
+      });
       searchResults.value = response.data.filter((note) => note.id !== props.excludeNoteId);
     } catch (error) {
       console.error('Search failed:', error);

@@ -814,6 +814,22 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/api/folders.ts`
 - `frontend/src/composables/useNoteVersions.ts`
 
+### Шаг 7: единый API поиска заметок (исправлено)
+
+**Проблема:** модалка wiki-ссылок после промежуточного рефакторинга использовала полнотекстовый `searchApi.search` (`title + content`); для выбора целевой заметки нужен поиск **только по title**.
+
+**Решение:**
+- `searchApi.searchByTitle()` → `GET /notes?title=...` (API Platform `SearchFilter partial`)
+- `LinkNoteModal.vue` переведён на `searchByTitle`
+- `SearchBar` — без изменений, полнотекст через `searchApi.search` → `/notes/search?q=...`
+- `notesApi.filter` (dashboard) — без изменений
+
+**Затронутые файлы:**
+- `frontend/src/api/search.ts`
+- `frontend/src/components/LinkNoteModal.vue`
+
+**Smoke:** подтверждён пользователем (2026-06-13).
+
 ### Backlog после ревью: регистронезависимый поиск
 
 **Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).

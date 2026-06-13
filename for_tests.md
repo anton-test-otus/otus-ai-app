@@ -65,7 +65,7 @@
 - [ ] Корзина `/trash` — список, восстановление
 - [ ] Сайдбар — теги и дерево папок
 - [ ] История версий — модалка, список версий
-- [ ] Wiki-ссылка → модалка выбора заметки (`notesApi.search`) — результаты по title
+- [ ] Wiki-ссылка → модалка выбора заметки — результаты по title (см. FE шаг 7)
 
 **Ожидание:** все списки загружаются без ошибок; пагинация и пустые состояния как до рефакторинга.
 
@@ -73,3 +73,23 @@
 
 ### Автотесты (позже)
 - Unit: `parseHydraCollection` — `hydra:member`, `member`, голый массив, `totalItems = 0`.
+
+---
+
+## FE Шаг 7 — единый API поиска заметок
+
+**Источник:** `frontend_selfreview.md`, шаг 7
+
+### Smoke
+- [x] **SearchBar** — полнотекст по title и content (`GET /notes/search?q=…`)
+- [x] **Wiki-ссылка** (`Ctrl+Alt+W` или кнопка) → модалка — только по **title** (`GET /notes?title=…` через `searchApi.searchByTitle`)
+- [x] В модалке: слово есть только в content заметки — **не** находится; то же слово в title — находится
+- [x] В модалке: исключение текущей заметки (`excludeNoteId`) работает
+- [x] Dashboard с фильтром тегов — `notesApi.filter` → `/notes/search` без `q` (без регрессии)
+
+**Ожидание:** SearchBar — `searchApi.search`; wiki-модалка — `searchApi.searchByTitle`; `GET /notes?title=` только из модалки.
+
+**Находка (backlog):** регистронезависимый поиск — см. «Доработки после ревью» в selfreview-файлах.
+
+### Автотесты (позже)
+- Unit: мок `searchApi` в тесте `LinkNoteModal` (фаза 20).

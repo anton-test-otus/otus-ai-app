@@ -176,25 +176,4 @@ export const notesApi = {
   async delete(id: string): Promise<void> {
     await apiClient.delete(`/notes/${id}`)
   },
-
-  async search(query: string, page = 1, perPage = 20): Promise<ApiResponse<NoteListItem[]>> {
-    const params = { 
-      page, 
-      itemsPerPage: perPage,
-      'title': query,
-    }
-    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', { params })
-    const { data: rawData, total } = parseHydraCollection(response)
-    const data = rawData.map(normalizeNoteListItem)
-    
-    return {
-      data,
-      meta: {
-        currentPage: page,
-        perPage,
-        total,
-        totalPages: Math.ceil(total / perPage),
-      },
-    }
-  },
 }

@@ -3613,3 +3613,18 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** баг вынесен из текущих шагов selfreview; фикс запланирован на бэкенд (`NoteRepository::search`, `SearchFilter`).
 
 ---
+
+## Промпт 183
+
+> вариант А устраивает
+
+### Выполненные действия:
+
+- Обсуждение шага 7: wiki-модалка должна искать только по title, SearchBar — полнотекст
+- `searchApi.searchByTitle()` → `GET /notes?title=...`; `LinkNoteModal` переведён с `search` на `searchByTitle`
+- Обновлены `frontend_selfreview.md`, `for_tests.md`, `REPORT.md`
+- `npm run build` — ok
+
+**Результат:** явная семантика поиска — полнотекст в SearchBar, title-only в модалке wiki-ссылок; smoke шага 7 — вручную.
+
+---

@@ -141,17 +141,18 @@
 **Приоритет:** medium  
 **Коммит:** `refactor(frontend): consolidate note search API`
 
-**Проблема:** два пути поиска с разным поведением:
+**Проблема:** разрозненные вызовы без явной семантики; модалка wiki-ссылок должна искать **только по title**, SearchBar — полнотекст.
 
-| API | Endpoint | Используется |
-|-----|----------|--------------|
-| `searchApi.search` | `/notes/search?q=...` | `SearchBar.vue` |
-| `notesApi.search` | `/notes?title=...` | `LinkNoteModal.vue` |
-| `notesApi.filter` | `/notes/search` + folder/tags | Dashboard (фильтр тегов) |
+| Метод | Endpoint | Семантика | UI |
+|-------|----------|-----------|-----|
+| `searchApi.search` | `/notes/search?q=...` | title + content | `SearchBar.vue` |
+| `searchApi.searchByTitle` | `/notes?title=...` | title only | `LinkNoteModal.vue` |
+| `notesApi.filter` | `/notes/search` без `q` | folder/tags | Dashboard |
 
-- [ ] Перевести `LinkNoteModal.vue` на `searchApi.search`
-- [ ] Удалить `notesApi.search` (если больше не нужен)
-- [ ] Убедиться, что UX модалки wiki-ссылок не пострадал (полнотекст vs title-only)
+- [x] Добавить `searchApi.searchByTitle` → `GET /notes?title=...`
+- [x] `LinkNoteModal.vue` — `searchByTitle`, не полнотекстовый `search`
+- [x] Удалён мёртвый `notesApi.search` (если был)
+- [x] Smoke: модалка не находит по слову только из content; SearchBar — находит
 
 ---
 

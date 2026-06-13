@@ -1,6 +1,7 @@
 import { apiClient } from './client';
 import { normalizeNoteListItem } from '@/utils/note';
-import type { NoteListItem, PaginatedResponse } from '../types';
+import { parseHydraCollection } from '@/utils/hydra';
+import type { HydraCollection, NoteListItem, PaginatedResponse } from '../types';
 
 export interface SearchCriteria {
   q: string;
@@ -40,6 +41,37 @@ export const searchApi = {
     return {
       ...response,
       data: (response.data || []).map(normalizeNoteListItem),
+    };
+  },
+
+  /** Title-only search (wiki link picker). Full-text search uses {@link search}. */
+  async searchByTitle(criteria: {
+    q: string;
+    page?: number;
+    perPage?: number;
+  }): Promise<PaginatedResponse<NoteListItem>> {
+    const page = criteria.page ?? 1;
+    const perPage = criteria.perPage ?? 20;
+
+    const response = await apiClient.get<HydraCollection<NoteListItem>>('/notes', {
+      params: {
+        title: criteria.q,
+        page,
+        itemsPerPage: perPage,
+      },
+    });
+
+    const { data: rawData, total } = parseHydraCollection(response);
+    const data = rawData.map(normalizeNoteListItem);
+
+    return {
+      data,
+      meta: {
+        currentPage: page,
+        perPage,
+        total,
+        totalPages: Math.ceil(total / perPage),
+      },
     };
   },
 };
