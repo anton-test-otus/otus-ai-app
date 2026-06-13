@@ -3628,3 +3628,76 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** явная семантика поиска — полнотекст в SearchBar, title-only в модалке wiki-ссылок; smoke шага 7 — вручную.
 
 ---
+
+## Промпт 184
+
+> Следующий 8-й шаг ревью фронта
+
+### Выполненные действия:
+
+- Шаг 8 self-review: дедупликация `fetchNotes` / `fetchFavorites` в `stores/notes.ts`
+- Общий `fetchPaginatedList()` — in-flight dedup, append, pagination meta, error handling, criteriaKey для notes
+- `fetchNotes` / `fetchFavorites` — тонкие обёртки; публичный API store без изменений для views
+- `npm run build` — ok
+- Обновлены `frontend_selfreview.md`, `for_tests.md`, `REPORT.md`
+
+**Результат:** ~90 строк дублирования сведены в один helper; smoke infinite scroll — в `for_tests.md` (шаг 8).
+
+---
+
+## Промпт 185
+
+> Вторая страница подгружается даже без скролла вниз.
+
+### Выполненные действия:
+
+- Причина: sentinel infinite scroll попадал в viewport сразу после первой загрузки (`IntersectionObserver` + `rootMargin: 200px`)
+- `useInfiniteList.ts`: подгрузка только после прокрутки scroll-root (`scrollTop > 0`); сброс флага при перемонтировании sentinel (смена папки/тегов)
+- Обновлены `REPORT.md`, `for_tests.md`
+- `npm run build` — ok
+
+**Результат:** вторая страница не грузится без скролла; после прокрутки вниз — подгрузка работает как раньше.
+
+---
+
+## Промпт 186
+
+> теперь скролл не вызывает подгрузку
+
+### Выполненные действия:
+
+- Причина: sentinel уже в viewport после 1-й страницы — `IntersectionObserver` не срабатывает повторно; флаг `userHasScrolled` без проверки на scroll не помогал
+- `useInfiniteList.ts`: `tryLoadMore()` — проверка sentinel у нижней границы viewport; вызов на `scroll` и из IO; `scrollArmed` сбрасывается при перемонтировании sentinel
+- `npm run build` — ok
+
+**Результат:** без скролла подгрузки нет; после прокрутки — следующая страница грузится.
+
+---
+
+## Промпт 187
+
+> не помогло
+
+### Выполненные действия:
+
+- Причина: скролл шёл по `window`, а listener и IO были привязаны к `<main>` (flex без `min-h-0` — main не был scroll-контейнером)
+- `useInfiniteList.ts`: IO относительно viewport; scroll listener на `window` + на scrollable `<main>`
+- `AppLayout.vue`: `h-[100dvh] overflow-hidden`, `min-h-0` на flex-цепочке — скролл в `<main>`
+- `npm run build` — ok
+
+**Результат:** подгрузка должна срабатывать при прокрутке списка вниз.
+
+---
+
+## Промпт 188
+
+> теперь работает
+
+### Выполненные действия:
+
+- Smoke шага 8 подтверждён: infinite scroll на dashboard и `/favorites`
+- Отмечены чеклисты в `frontend_selfreview.md`, `for_tests.md`; обновлён `REPORT.md`
+
+**Результат:** шаг 8 self-review фронта завершён; готов к коммиту.
+
+---

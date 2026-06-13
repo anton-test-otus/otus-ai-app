@@ -4,7 +4,108 @@ import { notesApi } from '@/api/notes'
 import { useTrashStore } from '@/stores/trash'
 import { toNoteListItem } from '@/utils/note'
 import { getApiErrorMessage } from '@/utils/apiError'
-import type { Note, NoteListItem, CreateNoteRequest, UpdateNoteRequest, PaginationMeta } from '@/types'
+import type {
+  Note,
+  NoteListItem,
+  CreateNoteRequest,
+  UpdateNoteRequest,
+  PaginationMeta,
+  ApiResponse,
+} from '@/types'
+
+interface PaginatedListRefs {
+  items: { value: NoteListItem[] }
+  pagination: { value: PaginationMeta }
+  isLoading: { value: boolean }
+  isLoadingMore: { value: boolean }
+  error: { value: string | null }
+  hasMore: { value: boolean }
+}
+
+interface PaginatedListInFlight {
+  fetchPromise: Promise<void> | null
+  loadMorePromise: Promise<void> | null
+  criteriaKey: string | null
+}
+
+interface FetchPaginatedListOptions {
+  page: number
+  perPage: number
+  append: boolean
+  criteriaKey?: string
+  fetchFn: (page: number, perPage: number) => Promise<ApiResponse<NoteListItem[]>>
+  errorMessage: string
+}
+
+async function fetchPaginatedList(
+  refs: PaginatedListRefs,
+  inFlight: PaginatedListInFlight,
+  options: FetchPaginatedListOptions,
+): Promise<void> {
+  const { page, perPage, append, criteriaKey, fetchFn, errorMessage } = options
+
+  if (append) {
+    if (refs.isLoadingMore.value || refs.isLoading.value || !refs.hasMore.value) {
+      return
+    }
+    if (criteriaKey !== undefined && inFlight.criteriaKey !== criteriaKey) {
+      return
+    }
+    if (inFlight.loadMorePromise) {
+      return inFlight.loadMorePromise
+    }
+    refs.isLoadingMore.value = true
+  } else {
+    if (inFlight.fetchPromise) {
+      return inFlight.fetchPromise
+    }
+    refs.isLoading.value = true
+    refs.error.value = null
+    refs.items.value = []
+    if (criteriaKey !== undefined) {
+      inFlight.criteriaKey = criteriaKey
+    }
+  }
+
+  const promise = (async () => {
+    try {
+      const response = await fetchFn(page, perPage)
+
+      if (append) {
+        const existingIds = new Set(refs.items.value.map((n) => n.id))
+        const newItems = response.data.filter((n) => !existingIds.has(n.id))
+        refs.items.value = [...refs.items.value, ...newItems]
+      } else {
+        refs.items.value = response.data
+      }
+
+      if (response.meta) {
+        refs.pagination.value = response.meta
+      }
+    } catch (err: unknown) {
+      if (!append) {
+        refs.error.value = getApiErrorMessage(err, errorMessage)
+      }
+      throw err
+    } finally {
+      if (append) {
+        refs.isLoadingMore.value = false
+        inFlight.loadMorePromise = null
+      } else {
+        refs.isLoading.value = false
+        inFlight.fetchPromise = null
+      }
+    }
+  })()
+
+  if (append) {
+    inFlight.loadMorePromise = promise
+  } else {
+    inFlight.fetchPromise = promise
+  }
+
+  return promise
+}
 
 export const useNotesStore = defineStore('notes', () => {
   const notes = ref<NoteListItem[]>([])
@@ -37,11 +138,34 @@ export const useNotesStore = defineStore('notes', () => {
     () => favoritesPagination.value.currentPage < favoritesPagination.value.totalPages,
   )
 
-  let listCriteriaKey: string | null = null
-  let fetchNotesPromise: Promise<void> | null = null
-  let loadMorePromise: Promise<void> | null = null
-  let fetchFavoritesPromise: Promise<void> | null = null
-  let loadMoreFavoritesPromise: Promise<void> | null = null
+  const notesInFlight: PaginatedListInFlight = {
+    fetchPromise: null,
+    loadMorePromise: null,
+    criteriaKey: null,
+  }
+  const favoritesInFlight: PaginatedListInFlight = {
+    fetchPromise: null,
+    loadMorePromise: null,
+    criteriaKey: null,
+  }
+
+  const notesListRefs: PaginatedListRefs = {
+    items: notes,
+    pagination,
+    isLoading,
+    isLoadingMore,
+    error,
+    hasMore,
+  }
+
+  const favoritesListRefs: PaginatedListRefs = {
+    items: favoriteNotes,
+    pagination: favoritesPagination,
+    isLoading: isLoadingFavorites,
+    isLoadingMore: isLoadingMoreFavorites,
+    error: favoritesError,
+    hasMore: favoritesHasMore,
+  }
 
   function buildListCriteriaKey(folderId?: string | null, tagIds?: string[]) {
     return JSON.stringify({
@@ -55,63 +179,13 @@ export const useNotesStore = defineStore('notes', () => {
     perPage = favoritesPagination.value.perPage,
     options?: { append?: boolean },
   ) {
-    const append = options?.append ?? false
-
-    if (append) {
-      if (isLoadingMoreFavorites.value || isLoadingFavorites.value || !favoritesHasMore.value) {
-        return
-      }
-      if (loadMoreFavoritesPromise) {
-        return loadMoreFavoritesPromise
-      }
-      isLoadingMoreFavorites.value = true
-    } else {
-      if (fetchFavoritesPromise) {
-        return fetchFavoritesPromise
-      }
-      isLoadingFavorites.value = true
-      favoritesError.value = null
-      favoriteNotes.value = []
-    }
-
-    const promise = (async () => {
-      try {
-        const response = await notesApi.getFavorites(page, perPage)
-
-        if (append) {
-          const existingIds = new Set(favoriteNotes.value.map((n) => n.id))
-          const newItems = response.data.filter((n) => !existingIds.has(n.id))
-          favoriteNotes.value = [...favoriteNotes.value, ...newItems]
-        } else {
-          favoriteNotes.value = response.data
-        }
-
-        if (response.meta) {
-          favoritesPagination.value = response.meta
-        }
-      } catch (err: unknown) {
-        if (!append) {
-          favoritesError.value = getApiErrorMessage(err, 'Ошибка загрузки избранного')
-        }
-        throw err
-      } finally {
-        if (append) {
-          isLoadingMoreFavorites.value = false
-          loadMoreFavoritesPromise = null
-        } else {
-          isLoadingFavorites.value = false
-          fetchFavoritesPromise = null
-        }
-      }
-    })()
-
-    if (append) {
-      loadMoreFavoritesPromise = promise
-    } else {
-      fetchFavoritesPromise = promise
-    }
-
-    return promise
+    return fetchPaginatedList(favoritesListRefs, favoritesInFlight, {
+      page,
+      perPage,
+      append: options?.append ?? false,
+      fetchFn: (p, pp) => notesApi.getFavorites(p, pp),
+      errorMessage: 'Ошибка загрузки избранного',
+    })
   }
 
   async function loadMoreFavorites() {
@@ -126,68 +200,14 @@ export const useNotesStore = defineStore('notes', () => {
     tagIds?: string[],
     options?: { append?: boolean },
   ) {
-    const append = options?.append ?? false
-    const criteriaKey = buildListCriteriaKey(folderId, tagIds)
-
-    if (append) {
-      if (isLoadingMore.value || isLoading.value || !hasMore.value) {
-        return
-      }
-      if (listCriteriaKey !== criteriaKey) {
-        return
-      }
-      if (loadMorePromise) {
-        return loadMorePromise
-      }
-      isLoadingMore.value = true
-    } else {
-      if (fetchNotesPromise) {
-        return fetchNotesPromise
-      }
-      isLoading.value = true
-      error.value = null
-      notes.value = []
-      listCriteriaKey = criteriaKey
-    }
-
-    const promise = (async () => {
-      try {
-        const response = await notesApi.getAll(page, perPage, folderId, tagIds)
-
-        if (append) {
-          const existingIds = new Set(notes.value.map((n) => n.id))
-          const newItems = response.data.filter((n) => !existingIds.has(n.id))
-          notes.value = [...notes.value, ...newItems]
-        } else {
-          notes.value = response.data
-        }
-
-        if (response.meta) {
-          pagination.value = response.meta
-        }
-      } catch (err: unknown) {
-        if (!append) {
-          error.value = getApiErrorMessage(err, 'Ошибка загрузки заметок')
-        }
-        throw err
-      } finally {
-        if (append) {
-          isLoadingMore.value = false
-          loadMorePromise = null
-        } else {
-          isLoading.value = false
-          fetchNotesPromise = null
-        }
-      }
-    })()
-
-    if (append) {
-      loadMorePromise = promise
-    } else {
-      fetchNotesPromise = promise
-    }
-
-    return promise
+    return fetchPaginatedList(notesListRefs, notesInFlight, {
+      page,
+      perPage,
+      append: options?.append ?? false,
+      criteriaKey: buildListCriteriaKey(folderId, tagIds),
+      fetchFn: (p, pp) => notesApi.getAll(p, pp, folderId, tagIds),
+      errorMessage: 'Ошибка загрузки заметок',
+    })
   }
 
   async function loadMoreNotes(folderId?: string | null, tagIds?: string[]) {
@@ -421,11 +441,12 @@ export const useNotesStore = defineStore('notes', () => {
       total: 0,
       totalPages: 0,
     }
-    listCriteriaKey = null
-    fetchNotesPromise = null
-    loadMorePromise = null
-    fetchFavoritesPromise = null
-    loadMoreFavoritesPromise = null
+    notesInFlight.fetchPromise = null
+    notesInFlight.loadMorePromise = null
+    notesInFlight.criteriaKey = null
+    favoritesInFlight.fetchPromise = null
+    favoritesInFlight.loadMorePromise = null
+    favoritesInFlight.criteriaKey = null
   }
 
   return {

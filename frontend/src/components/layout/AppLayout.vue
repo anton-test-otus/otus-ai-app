@@ -1,8 +1,8 @@
 <template>
-  <div class="min-h-screen flex flex-col pt-16">
+  <div class="h-[100dvh] flex flex-col pt-16 overflow-hidden">
     <AppNavbar />
 
-    <div class="flex-1 flex min-w-0">
+    <div class="flex-1 flex min-w-0 min-h-0">
       <!-- Sidebar with folders and tags -->
       <AppSidebar
         v-if="authStore.isAuthenticated && showSidebar"
@@ -24,7 +24,7 @@
       </AppSidebar>
 
       <!-- Main content -->
-      <main class="flex-1 min-w-0 overflow-y-auto app-ground">
+      <main class="flex-1 min-w-0 min-h-0 overflow-y-auto app-ground">
         <RouterView />
       </main>
     </div>

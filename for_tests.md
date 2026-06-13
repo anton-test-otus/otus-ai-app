@@ -93,3 +93,21 @@
 
 ### Автотесты (позже)
 - Unit: мок `searchApi` в тесте `LinkNoteModal` (фаза 20).
+
+---
+
+## FE Шаг 8 — дедупликация paginated fetch
+
+**Источник:** `frontend_selfreview.md`, шаг 8
+
+### Smoke
+- [x] **Dashboard** — первая загрузка списка заметок; смена папки / тегов сбрасывает список и грузит заново
+- [x] **Dashboard** — прокрутка вниз подгружает следующую страницу (infinite scroll); **без скролла** вторая страница не грузится
+- [x] **Dashboard** — быстрая смена папки во время load more не смешивает результаты (criteriaKey)
+- [x] **`/favorites`** — первая загрузка избранного; infinite scroll подгружает следующую порцию
+- [x] **`/favorites`** — ошибка при load more показывает toast, список уже загруженных остаётся
+
+**Ожидание:** поведение как до рефакторинга; публичный API store (`fetchNotes`, `fetchFavorites`, `loadMore*`) без изменений для views.
+
+### Автотесты (позже)
+- Unit: `fetchPaginatedList` — dedup in-flight, append merge, criteriaKey guard (фаза 20).

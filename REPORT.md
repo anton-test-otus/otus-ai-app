@@ -830,6 +830,22 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Smoke:** подтверждён пользователем (2026-06-13).
 
+### Шаг 8: дедупликация paginated fetch в notes store (исправлено)
+
+**Проблема:** `fetchNotes` и `fetchFavorites` (~90% идентичны): in-flight promise, append, pagination meta, error handling.
+
+**Решение:**
+- Вынесен общий `fetchPaginatedList()` в `stores/notes.ts` с параметрами: refs списка, in-flight state, `fetchFn`, `append`, `criteriaKey`, `errorMessage`
+- `fetchNotes` / `fetchFavorites` — тонкие обёртки; `loadMoreNotes` / `loadMoreFavorites` без изменений сигнатур
+- Отдельные `notesInFlight` / `favoritesInFlight` для dedup и criteriaKey (только notes)
+
+**Затронутые файлы:**
+- `frontend/src/stores/notes.ts`
+- `frontend/src/composables/useInfiniteList.ts` — автоподгрузка без скролла (smoke)
+- `frontend/src/components/layout/AppLayout.vue` — `min-h-0` / `100dvh` чтобы скролл был в `<main>`, не в `window`
+
+**Smoke:** подтверждён пользователем (2026-06-13). Infinite scroll: viewport IO + scroll listeners; layout `min-h-0` в `AppLayout`.
+
 ### Backlog после ревью: регистронезависимый поиск
 
 **Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).

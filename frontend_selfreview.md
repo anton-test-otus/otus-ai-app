@@ -165,9 +165,9 @@
 
 **Файл:** `frontend/src/stores/notes.ts`
 
-- [ ] Вынести внутренний `fetchPaginatedList(config)` с параметрами: fetchFn, append, criteriaKey, target refs
-- [ ] `fetchNotes` / `fetchFavorites` — тонкие обёртки
-- [ ] Проверить infinite scroll на dashboard и `/favorites`
+- [x] Вынести внутренний `fetchPaginatedList(config)` с параметрами: fetchFn, append, criteriaKey, target refs
+- [x] `fetchNotes` / `fetchFavorites` — тонкие обёртки
+- [x] Проверить infinite scroll на dashboard и `/favorites`
 
 ---
 
