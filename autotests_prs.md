@@ -4,7 +4,7 @@
 Детальные спецификации кейсов — в [`future_autotests.md`](./future_autotests.md).  
 Ручной smoke — в [`for_tests.md`](./for_tests.md).
 
-**Статус:** план; код тестов ещё не реализован.
+**Статус:** реализовано (ветки `test/*`, см. таблицу прогресса).
 
 ---
 
@@ -458,16 +458,16 @@ docker compose exec node npm test
 
 | PR | Название | Статус |
 |----|----------|--------|
-| PR0 | Test infrastructure | ⬜ |
-| PR1 | Security: IDOR + XSS | ⬜ |
-| PR2 | Auth: JWT refresh | ⬜ |
-| PR3 | BE API validation & surface | ⬜ |
-| PR4 | BE restore & admin guards | ⬜ |
-| PR5 | FE Pinia store + Hydra | ⬜ |
-| PR6 | FE utils & LinkNoteModal | ⬜ |
-| PR7 | BE batch & read metadata | ⬜ |
-| PR8 | Case-insensitive search | ⬜ |
-| PR9 | BE misc (graph, trash, create) | ⬜ |
-| PR10 | FE draft + BE low-priority | ⬜ |
+| PR0 | Test infrastructure | ✅ `test/infra-phpunit-vitest` |
+| PR1 | Security: IDOR + XSS | ✅ `test/be-idor-fe-xss` |
+| PR2 | Auth: JWT refresh | ✅ `test/auth-jwt-refresh` |
+| PR3 | BE API validation & surface | ✅ `test/be-owned-relations-narrow-api` |
+| PR4 | BE restore & admin guards | ✅ `test/be-restore-admin` |
+| PR5 | FE Pinia store + Hydra | ✅ `test/fe-notes-store-hydra` |
+| PR6 | FE utils & LinkNoteModal | ✅ `test/fe-utils-link-modal` |
+| PR7 | BE batch & read metadata | ✅ `test/be-batch-preview-metadata` |
+| PR8 | Case-insensitive search | ✅ `test/search-case-insensitive` |
+| PR9 | BE misc (graph, trash, create) | ✅ `test/be-graph-trash-create` |
+| PR10 | FE draft + BE low-priority | ✅ `test/fe-draft-be-low-priority` |
 
 Заменить ⬜ на ✅ после merge соответствующего PR.
