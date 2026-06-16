@@ -15,6 +15,63 @@ class HttpError extends Error {
   }
 }
 
+let refreshPromise: Promise<boolean> | null = null
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (refreshPromise) {
+    return refreshPromise
+  }
+
+  refreshPromise = (async () => {
+    const storedRefreshToken = localStorage.getItem('refreshToken')
+    if (!storedRefreshToken) {
+      return false
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refreshToken: storedRefreshToken }),
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      const data = await response.json()
+      localStorage.setItem('token', data.token)
+      if (data.refreshToken) {
+        localStorage.setItem('refreshToken', data.refreshToken)
+      } else {
+        localStorage.removeItem('refreshToken')
+      }
+
+      if (data.user) {
+        const { useAuthStore } = await import('@/stores/auth')
+        useAuthStore().applyAuthResponse(data)
+      }
+
+      return true
+    } catch {
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+
+  return refreshPromise
+}
+
+function clearSessionAndRedirect(): void {
+  localStorage.removeItem('token')
+  localStorage.removeItem('refreshToken')
+  window.location.href = '/login'
+}
+
 class ApiClient {
   private baseURL: string
   private defaultHeaders: HeadersInit
@@ -22,17 +79,17 @@ class ApiClient {
   constructor(baseURL: string) {
     this.baseURL = baseURL
     this.defaultHeaders = {
-      'Accept': 'application/ld+json',
+      Accept: 'application/ld+json',
     }
   }
 
   private async request<T>(
     endpoint: string,
-    config: RequestConfig = {}
+    config: RequestConfig = {},
+    retriedAfterRefresh = false
   ): Promise<T> {
     const { params, headers, ...restConfig } = config
 
-    // Build URL with query params
     let url = `${this.baseURL}${endpoint}`
     if (params) {
       const searchParams = new URLSearchParams()
@@ -56,7 +113,6 @@ class ApiClient {
       }
     }
 
-    // Merge headers
     const mergedHeaders = new Headers(this.defaultHeaders)
     if (headers) {
       const headersToMerge = new Headers(headers)
@@ -65,22 +121,29 @@ class ApiClient {
       })
     }
 
-    // Add JWT token from localStorage
     const token = localStorage.getItem('token')
     if (token) {
       mergedHeaders.set('Authorization', `Bearer ${token}`)
     }
 
-    // Make request
     const response = await fetch(url, {
       ...restConfig,
       headers: mergedHeaders,
     })
 
-    const isAuthAttempt = endpoint === '/auth/login' || endpoint === '/auth/register'
+    const isAuthAttempt =
+      endpoint === '/auth/login' ||
+      endpoint === '/auth/register' ||
+      endpoint === '/auth/refresh'
 
-    // Handle 401 Unauthorized
     if (response.status === 401) {
+      if (!isAuthAttempt && !retriedAfterRefresh) {
+        const refreshed = await refreshAccessToken()
+        if (refreshed) {
+          return this.request<T>(endpoint, config, true)
+        }
+      }
+
       let errorData
       try {
         errorData = await response.json()
@@ -88,16 +151,13 @@ class ApiClient {
         errorData = { message: response.statusText }
       }
 
-      if (!isAuthAttempt) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('refreshToken')
-        window.location.href = '/login'
+      if (!isAuthAttempt || endpoint === '/auth/refresh') {
+        clearSessionAndRedirect()
       }
 
       throw new HttpError(401, 'Unauthorized', errorData)
     }
 
-    // Check if response is ok
     if (!response.ok) {
       let errorData
       try {
@@ -108,7 +168,6 @@ class ApiClient {
       throw new HttpError(response.status, response.statusText, errorData)
     }
 
-    // Parse JSON response only if there is content
     if (response.status === 204 || response.headers.get('content-length') === '0') {
       return undefined as T
     }

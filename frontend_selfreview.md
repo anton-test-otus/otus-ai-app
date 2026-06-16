@@ -104,16 +104,16 @@
 ## Шаг 5. JWT refresh: реализовать или убрать
 
 **Приоритет:** medium  
-**Статус:** ⏸ отложен — сначала решение на бэкенде ([`backend_selfreview.md` — шаг 15](./backend_selfreview.md#шаг-15-jwt-refresh-блокирует-фронтенд-шаг-5))  
-**Коммит:** `fix(frontend): jwt refresh flow` **или** `refactor(frontend): remove unused refresh token storage`
+**Коммит:** `fix(frontend): jwt refresh flow`
 
-**Проблема:** `refreshToken` сохраняется в localStorage при login/register; `authApi.refresh` существует, но на 401 `client.ts` сразу очищает токены и редиректит на `/login` без попытки refresh. Endpoint `/api/auth/refresh` описан в `ARCHITECTURE.md`, но **на бэкенде не реализован**; login/register отдают только `token` + `user`.
+**Проблема:** `refreshToken` сохраняется в localStorage при login/register; `authApi.refresh` существует, но на 401 `client.ts` сразу очищает токены и редиректит на `/login` без попытки refresh.
 
 **Файлы:** `stores/auth.ts`, `api/auth.ts`, `api/client.ts`
 
-- [ ] **Вариант A:** в interceptor на 401 — вызов `authApi.refresh`, обновление token, retry запроса *(требует шаг 15 на бэкенде)*
+- [x] **Вариант A:** в interceptor на 401 — вызов `authApi.refresh`, обновление token, retry запроса *(требует шаг 15 на бэкенде)*
 - [ ] **Вариант B:** убрать хранение `refreshToken` и метод `refresh`, если refresh не нужен в MVP
-- [ ] Зафиксировать выбор в `ARCHITECTURE.md`
+- [x] Зафиксировать выбор в `ARCHITECTURE.md`
+- [x] Smoke: см. [`for_tests.md`](./for_tests.md) — FE шаг 5
 
 ---
 

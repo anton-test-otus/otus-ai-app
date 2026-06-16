@@ -250,17 +250,17 @@
 ## Шаг 15. JWT refresh (блокирует фронтенд шаг 5)
 
 **Приоритет:** medium  
-**Статус:** ⏸ отложен — вернуться после критичных шагов 1–4  
-**Коммит:** `feat(backend): implement JWT refresh` **или** `docs(backend): document no-refresh MVP policy`
+**Коммит:** `feat(backend): implement JWT refresh`
 
-**Проблема:** в `ARCHITECTURE.md` описан `POST /api/auth/refresh`, но endpoint **не реализован** (`AuthController` его не содержит; Lexik JWT без refresh-bundle). На фронте — мёртвый код: `refreshToken` в `localStorage`, `authApi.refresh`, на 401 сразу logout без retry ([`frontend_selfreview.md` — шаг 5](./frontend_selfreview.md#шаг-5-jwt-refresh-реализовать-или-убрать)).
+**Проблема:** в `ARCHITECTURE.md` описан `POST /api/auth/refresh`, но endpoint **не был реализован**; на фронте — мёртвый код refresh до шага 5.
 
-**Файлы:** `Controller/AuthController.php`, `config/packages/lexik_jwt_authentication.yaml`, `ARCHITECTURE.md`; на фронте после решения — `stores/auth.ts`, `api/auth.ts`, `api/client.ts`
+**Файлы:** `Controller/AuthController.php`, `config/packages/gesdinet_jwt_refresh_token.yaml`, `ARCHITECTURE.md`; фронт — `stores/auth.ts`, `api/client.ts`
 
 - [x] **Вариант A:** реализовать refresh (например `gesdinet/jwt-refresh-token-bundle` или свой endpoint + хранение refresh token); login/register возвращают `refreshToken`; TTL и ротация — в env/документации
 - [ ] **Вариант B:** зафиксировать MVP без refresh — убрать endpoint из `ARCHITECTURE.md` или пометить «не реализовано»; на фронте шаг 5 вариант B (удалить мёртвый код)
 - [x] Согласовать поведение на 401: единая политика для фронта и бэка
-- [ ] После решения — закрыть фронтенд шаг 5
+- [x] После решения — закрыть фронтенд шаг 5
+- [x] Smoke: см. [`for_tests.md`](./for_tests.md) — BE шаг 15, FE шаг 5
 
 ---
 

@@ -384,12 +384,26 @@
 **Источник:** `backend_selfreview.md`, шаг 15
 
 ### Smoke (ручная проверка)
-- [ ] `POST /api/auth/register` или `POST /api/auth/login` — в ответе есть `token`, `refreshToken`, `user`
-- [ ] `POST /api/auth/refresh` с телом `{ "refreshToken": "<из login>" }` — **200**, новые `token` и `refreshToken`, поле `user`
-- [ ] Повторный `POST /api/auth/refresh` со **старым** refresh token — **401** (single-use ротация)
-- [ ] `POST /api/auth/refresh` с невалидным refresh token — **401**
-- [ ] Access token с истёкшим TTL + валидный refresh — refresh выдаёт новый access (проверка после фронт шаг 5)
+- [x] `POST /api/auth/register` или `POST /api/auth/login` — в ответе есть `token`, `refreshToken`, `user`
+- [x] `POST /api/auth/refresh` с телом `{ "refreshToken": "<из login>" }` — **200**, новые `token` и `refreshToken`, поле `user`
+- [x] Повторный `POST /api/auth/refresh` со **старым** refresh token — **401** (single-use ротация)
+- [x] `POST /api/auth/refresh` с невалидным refresh token — **401**
+- [x] Access token с истёкшим TTL + валидный refresh — refresh выдаёт новый access (проверка после фронт шаг 5)
 
 **Ожидание:** refresh через `gesdinet/jwt-refresh-token-bundle`; TTL access — `JWT_TOKEN_TTL`, refresh — `JWT_REFRESH_TOKEN_TTL`; ротация refresh при каждом использовании.
+
+---
+
+## FE Шаг 5 — JWT refresh flow
+
+**Источник:** `frontend_selfreview.md`, шаг 5
+
+### Smoke (ручная проверка)
+- [x] Login → в DevTools Application есть `token` и `refreshToken`
+- [x] Подменить `token` в localStorage на невалидный, оставить `refreshToken` → обновить страницу — сессия восстанавливается без редиректа на `/login`
+- [x] Удалить `refreshToken`, оставить битый `token` → редирект на `/login`
+- [x] Несколько параллельных запросов с истёкшим access — один refresh, все retry успешны (Network tab)
+
+**Ожидание:** interceptor в `client.ts` на 401 вызывает `/auth/refresh`, обновляет токены, повторяет запрос; при неудачном refresh — logout.
 
 ---

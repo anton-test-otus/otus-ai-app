@@ -793,9 +793,15 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/components/editor/wikiLinkNode.ts`
 - `frontend/src/components/layout/AppLayout.vue`
 
-### Шаг 5: JWT refresh (отложен)
+### Шаг 5: JWT refresh (исправлено)
 
-Фронтенд шаг 5 пропущен до решения на бэкенде. Задача перенесена в [`backend_selfreview.md` — шаг 15](./backend_selfreview.md#шаг-15-jwt-refresh-блокирует-фронтенд-шаг-5). Следующий шаг фронта — **шаг 6** (Hydra parser).
+**Проблема:** на 401 клиент сразу logout без попытки refresh, хотя `refreshToken` уже сохранялся.
+
+**Решение:** в `api/client.ts` — singleton refresh через `fetch /auth/refresh` (без рекурсии через `apiClient`); обновление localStorage + `applyAuthResponse` в Pinia; один retry исходного запроса; при неудаче — redirect `/login`. Экспорт `applyAuthResponse` из `stores/auth.ts`.
+
+**Затронутые файлы:**
+- `frontend/src/api/client.ts`
+- `frontend/src/stores/auth.ts`
 
 ### Шаг 6: единый парсер Hydra collection (исправлено)
 

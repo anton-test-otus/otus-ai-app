@@ -3728,3 +3728,19 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** шаг 4 бэкенд self-review завершён.
 
 ---
+
+## Промпт 191
+
+> Продолжаем с само-ревью, имплементация JWT refresh токена на фронте и бэкэнде
+
+### Выполненные действия:
+
+- Обсуждение вариантов A/B; выбран **вариант A** (gesdinet, TTL 30 дней, `single_use` + `ttl_update`)
+- BE **шаг 15:** `gesdinet/jwt-refresh-token-bundle`, `POST /api/auth/refresh`, refresh token в login/register, миграция `refresh_tokens`
+- FE **шаг 5:** interceptor в `client.ts` — 401 → refresh → retry; экспорт `applyAuthResponse` из auth store
+- Программный smoke: `scripts/smoke-be-step15-jwt-refresh.sh` (13/13)
+- Ручной smoke BE/FE подтверждён пользователем; чеклисты в `for_tests.md`, `backend_selfreview.md`, `frontend_selfreview.md`
+
+**Результат:** JWT refresh end-to-end готов к коммитам (`feat(backend): implement JWT refresh`, `fix(frontend): jwt refresh flow`).
+
+---
