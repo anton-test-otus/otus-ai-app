@@ -321,9 +321,9 @@
 **Проблема:** `NoteRepository::search` использует `n.title LIKE :query` и `n.content LIKE :query` без нормализации регистра. `SearchFilter` (`title` => `partial`) на `Note` для `GET /notes?title=` — case-sensitive в PostgreSQL. При этом `findByTitleCaseInsensitive` уже есть для wiki — поведение поиска в UI должно быть согласованным.
 
 **Предлагаемое решение:**
-- [ ] `NoteRepository::search`: `LOWER(n.title) LIKE LOWER(:query)` (и content); для PostgreSQL можно `ILIKE`, если зафиксировать СУБД
-- [ ] `GET /notes?title=` (после консолидации search API, фронт шаг 7): тот же критерий — кастомный `SearchFilter` или убрать дублирующий путь
-- [ ] Smoke: title `Hello World`, запросы `hello`, `HELLO` — находят заметку в SearchBar и модалке ссылок
-- [ ] При необходимости — PHPUnit на `NoteRepository::search` (фаза 20)
+- [x] `NoteRepository::search`: `LOWER(n.title) LIKE LOWER(:query)` (и content); для PostgreSQL можно `ILIKE`, если зафиксировать СУБД
+- [x] `GET /notes?title=` (после консолидации search API, фронт шаг 7): тот же критерий — кастомный `SearchFilter` или убрать дублирующий путь
+- [x] Smoke: title `Hello World`, запросы `hello`, `HELLO` — находят заметку в SearchBar и модалке ссылок
+- [ ] При необходимости — PHPUnit на `NoteRepository::search` (фаза 20) — см. [`future_autotests.md`](./future_autotests.md) («BE/FE регистронезависимый поиск заметок»)
 
 **Связь:** [`frontend_selfreview.md` — доработки после ревью](./frontend_selfreview.md#доработки-после-ревью-backlog)

@@ -3744,3 +3744,18 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** JWT refresh end-to-end готов к коммитам (`feat(backend): implement JWT refresh`, `fix(frontend): jwt refresh flow`).
 
 ---
+
+## Промпт 192
+
+> Теперь надо доработать регистронезависимый поиск (как для заголовков, так и для содержимого)
+
+### Выполненные действия:
+
+- `NoteRepository::search` — `LOWER(n.title/content) LIKE :query` с `strtolower` в параметре
+- `Note` entity — `SearchFilter`: `partial` → `ipartial` для `title` и `content` (`GET /notes?title=` в модалке wiki-ссылок)
+- Smoke-сценарии в `for_tests.md`; чеклисты в selfreview-файлах отмечены после подтверждения пользователя
+- Коммит не создан (по запросу пользователя)
+
+**Результат:** регистронезависимый поиск в SearchBar и модалке wiki-ссылок; подсветка в `highlightMatch` уже была case-insensitive.
+
+---

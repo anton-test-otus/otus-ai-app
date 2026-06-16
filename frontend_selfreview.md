@@ -322,7 +322,7 @@
 - **Фронт:** после фикса бэка — smoke `SearchBar` и `LinkNoteModal`; подсветка в `highlightMatch` может остаться case-sensitive (отдельно, low)
 
 **Smoke после фикса:**
-- [ ] Заметка с title `Hello World` — запрос `hello` / `HELLO` находит её в SearchBar и в модалке wiki-ссылки
-- [ ] Полнотекстовый поиск (`q` в content) — тот же регистронезависимый критерий
+- [x] Заметка с title `Hello World` — запрос `hello` / `HELLO` находит её в SearchBar и в модалке wiki-ссылки
+- [x] Полнотекстовый поиск (`q` в content) — тот же регистронезависимый критерий
 
 **Связь:** [`backend_selfreview.md` — доработки после ревью](./backend_selfreview.md#доработки-после-ревью-backlog)

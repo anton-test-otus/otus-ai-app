@@ -83,7 +83,7 @@ use Symfony\Component\Uid\Uuid;
     paginationItemsPerPage: 20,
     order: ['updatedAt' => 'DESC'],
 )]
-#[ApiFilter(SearchFilter::class, properties: ['title' => 'partial', 'content' => 'partial', 'folder.id' => 'exact'])]
+#[ApiFilter(SearchFilter::class, properties: ['title' => 'ipartial', 'content' => 'ipartial', 'folder.id' => 'exact'])]
 #[ApiFilter(BooleanFilter::class, properties: ['isFavorite'])]
 #[ApiFilter(OrderFilter::class, properties: ['updatedAt' => 'DESC', 'createdAt' => 'DESC', 'title' => 'ASC'])]
 class Note

@@ -800,36 +800,70 @@ JWT для каждого admin.
 
 ---
 
-## BE/FE регистронезависимый поиск (backlog)
+## BE/FE регистронезависимый поиск заметок
 
-**Источник:** «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`  
-**Тип:** API functional + unit (FE highlight опционально)  
-**Приоритет:** medium (backlog, вне шагов 1–15)
+**Источник:** «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`; ручной smoke — [`for_tests.md`](./for_tests.md) («Backlog — регистронезависимый поиск заметок»)  
+**Тип:** API functional + unit (BE); unit (FE highlight)  
+**Приоритет:** medium  
+**Связь:** `NoteRepository::search`, `NoteSearchController`, `SearchFilter` `ipartial` на `Note`, `SearchBar.vue`, `LinkNoteModal.vue`, `highlightMatch.ts`
+
+**Реализация:** `LOWER(n.title/content) LIKE` в `NoteRepository::search`; `GET /notes?title=` — `ipartial` в Api Platform. Smoke пройден; автотесты — фаза 20.
 
 ### BE — подготовка
 
-- Заметка title `Hello World`, content без слова hello.
+1. Пользователь `user` + JWT.
+2. Заметки:
+   - `noteTitle` — title `Hello World`, content без слова `hello` (например `body text`)
+   - `noteContent` — title `Other`, content `hello world` (слово только в content)
+   - `noteTest` — title `Test Note` (для вариантов `test` / `TEST` / `TeSt`)
 
-### BE кейсы
+### BE кейсы — `GET /api/notes/search` (SearchBar, title + content)
 
 | # | Запрос | Ожидание |
 |---|--------|----------|
-| 1 | `GET /api/notes/search?q=hello` | note найдена |
-| 2 | `GET /api/notes/search?q=HELLO` | note найдена |
-| 3 | `GET /api/notes?title=hello` | note найдена (LinkNoteModal path) |
-| 4 | Unit `NoteRepository::search` | `LOWER`/`ILIKE` в SQL |
+| 1 | `GET /api/notes/search?q=hello` | `noteTitle` и `noteContent` в `data[]` |
+| 2 | `GET /api/notes/search?q=HELLO` | то же, что #1 (регистр запроса не важен) |
+| 3 | `GET /api/notes/search?q=HeLLo` | то же |
+| 4 | `GET /api/notes/search?q=hello` | `noteTitle` найдена по title, `noteContent` — по content |
 
-### FE кейсы (после BE)
+### BE кейсы — `GET /api/notes?title=` (LinkNoteModal, только title)
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 5 | `GET /api/notes?title=hello` | `noteTitle` в коллекции; `noteContent` **не** в коллекции |
+| 6 | `GET /api/notes?title=HELLO` | то же, что #5 |
+| 7 | `GET /api/notes?title=test` | `noteTest` найдена |
+| 8 | `GET /api/notes?title=TEST` | `noteTest` найдена (регистр не важен) |
+| 9 | `GET /api/notes?title=TeSt` | `noteTest` найдена |
+
+### BE unit — `NoteRepository::search`
+
+| # | Arrange | Assert |
+|---|---------|--------|
+| 10 | criteria `query = 'HELLO'` | DQL/SQL содержит `LOWER(n.title)` и `LOWER(n.content)`; параметр `%hello%` |
+| 11 | criteria `query = 'hello'` | возвращает заметки с совпадением в title или content без учёта регистра |
+
+### FE unit — `highlightMatch` (опционально)
+
+| # | Вход | Assert |
+|---|------|--------|
+| 12 | text `Hello World`, query `hello` | `<mark>` вокруг `Hello` (флаг `i` в regex) |
+| 13 | text `Hello`, query `HELLO` | подсветка совпадения |
+
+### FE component (опционально, Vitest + mock API)
 
 | # | UI | Ожидание |
 |---|-----|----------|
-| 5 | SearchBar query `hello` | находит «Hello World» |
-| 6 | LinkNoteModal query `hello` | находит по title |
+| 14 | SearchBar, query `hello` | отображает `Hello World` |
+| 15 | LinkNoteModal, query `hello` | вызван `searchApi.searchByTitle`; заметка с title `Hello World` в списке |
+| 16 | LinkNoteModal, слово только в content | заметка **не** в результатах |
 
 ### Файлы (предположительно)
 
 - `backend/tests/Functional/NoteSearchCaseInsensitiveTest.php`
 - `backend/tests/Unit/Repository/NoteRepositorySearchTest.php`
+- `frontend/src/utils/__tests__/highlightMatch.test.ts`
+- `frontend/src/components/.../__tests__/LinkNoteModal.search.test.ts` (опционально)
 
 ---
 
@@ -859,7 +893,7 @@ JWT для каждого admin.
 | FE 8 | FE fetchPaginatedList |
 | FE 9 | FE shared utils |
 | FE 10 | FE notes store loading/error |
-| Backlog | BE/FE case-insensitive search |
+| Backlog | BE/FE регистронезависимый поиск заметок |
 
 **Не покрываем тестами (по selfreview):** BE 10 (dead code), FE 3–4 (deps/chore), FE 11–14 (refactor follow-up). BE 14 и FE черновик — см. секции выше (реализация в фазе 20).
 

@@ -74,7 +74,7 @@
 
 **Ожидание:** все списки загружаются без ошибок; пагинация и пустые состояния как до рефакторинга.
 
-**Находка (backlog):** поиск в модалке wiki-ссылок регистрозависимый — см. «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`.
+**Находка (backlog):** поиск в модалке wiki-ссылок регистрозависимый — **исправлено** (см. «Backlog — регистронезависимый поиск» в `for_tests.md`).
 
 ### Автотесты (фаза 20+)
 
@@ -95,11 +95,25 @@
 
 **Ожидание:** SearchBar — `searchApi.search`; wiki-модалка — `searchApi.searchByTitle`; `GET /notes?title=` только из модалки.
 
-**Находка (backlog):** регистронезависимый поиск — см. «Доработки после ревью» в selfreview-файлах.
+**Находка (backlog):** регистронезависимый поиск — **исправлено** (см. «Backlog — регистронезависимый поиск заметок» ниже).
+
+---
+
+## Backlog — регистронезависимый поиск заметок
+
+**Источник:** `frontend_selfreview.md` / `backend_selfreview.md` — «Доработки после ревью»
+
+### Smoke
+- [x] Заметка с title `Hello World` и content без этого слова — запрос `hello` / `HELLO` в **SearchBar** находит заметку
+- [x] То же в **модалке wiki-ссылки** (`searchByTitle`) — находит по `hello` / `HELLO`
+- [x] Слово только в **content** (не в title) — SearchBar находит по `hello`; модалка wiki-ссылки — **не** находит
+- [x] Подсветка совпадений в SearchBar — case-insensitive (`highlightMatch` с флагом `i`)
+
+**Ожидание:** `NoteRepository::search` — `LOWER(title/content) LIKE`; `GET /notes?title=` — `SearchFilter` `ipartial`.
 
 ### Автотесты (фаза 20+)
 
-Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE LinkNoteModal — searchByTitle».
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE/FE регистронезависимый поиск заметок»; также «FE LinkNoteModal — searchByTitle».
 
 ---
 

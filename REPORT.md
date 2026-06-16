@@ -886,9 +886,15 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Smoke:** проверка через автотесты фазы 20 — спецификация в [`future_autotests.md`](./future_autotests.md) («FE notes store — изоляция list/detail loading и error»); ручной smoke опционален ([`for_tests.md`](./for_tests.md)).
 
-### Backlog после ревью: регистронезависимый поиск
+### Backlog после ревью: регистронезависимый поиск (исправлено)
 
-**Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).
+**Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`).
+
+**Решение:**
+- `NoteRepository::search` — `LOWER(n.title/content) LIKE :query` с `strtolower` в параметре (как в `UserRepository::searchUsers`)
+- `Note` entity — `SearchFilter` для `title` и `content`: `partial` → `ipartial` (`GET /notes?title=` для модалки wiki-ссылок)
+
+**Smoke:** [`for_tests.md`](./for_tests.md) — «Backlog — регистронезависимый поиск заметок».
 
 ### BE Шаг 1: IDOR / ownership на item-операциях (исправлено)
 

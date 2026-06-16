@@ -30,8 +30,8 @@ class NoteRepository extends ServiceEntityRepository
             ->setParameter('user', $user);
 
         if (!empty($criteria['query'])) {
-            $qb->andWhere('(n.title LIKE :query OR n.content LIKE :query)')
-                ->setParameter('query', '%' . $criteria['query'] . '%');
+            $qb->andWhere('(LOWER(n.title) LIKE :query OR LOWER(n.content) LIKE :query)')
+                ->setParameter('query', '%' . strtolower($criteria['query']) . '%');
         }
 
         if (!empty($criteria['folderId'])) {
