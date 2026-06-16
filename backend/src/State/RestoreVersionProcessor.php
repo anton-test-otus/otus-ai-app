@@ -10,6 +10,7 @@ use App\Repository\NoteRepository;
 use App\Service\NoteLinkSyncService;
 use App\Service\NoteVersionService;
 use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -45,7 +46,7 @@ class RestoreVersionProcessor implements ProcessorInterface
             throw new AccessDeniedHttpException('You do not have access to this note');
         }
 
-        $restoreMode = $context['request_data']['mode'] ?? 'overwrite';
+        $restoreMode = $this->resolveRestoreMode($context);
 
         switch ($restoreMode) {
             case 'create_version':
@@ -67,5 +68,24 @@ class RestoreVersionProcessor implements ProcessorInterface
         $this->noteLinkSyncService->syncFromContent($note);
 
         return $note;
+    }
+
+    /**
+     * @param array<string, mixed> $context
+     */
+    private function resolveRestoreMode(array $context): string
+    {
+        $request = $context['request'] ?? null;
+        if (!$request instanceof Request) {
+            return 'overwrite';
+        }
+
+        try {
+            $mode = $request->getPayload()->get('mode', 'overwrite');
+        } catch (\JsonException) {
+            return 'overwrite';
+        }
+
+        return is_string($mode) ? $mode : 'overwrite';
     }
 }

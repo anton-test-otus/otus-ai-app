@@ -35,6 +35,9 @@ use Symfony\Component\Uid\Uuid;
                 'noteId' => new Link(fromClass: Note::class, toProperty: 'note'),
                 'id' => new Link(fromClass: NoteVersion::class),
             ],
+            deserialize: false,
+            output: Note::class,
+            normalizationContext: ['groups' => ['note:read']],
             processor: RestoreVersionProcessor::class,
             name: 'restore_version'
         ),
