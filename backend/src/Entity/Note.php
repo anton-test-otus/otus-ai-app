@@ -111,7 +111,7 @@ class Note
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
-    #[Assert\NotBlank(message: 'Содержимое не может быть пустым', groups: ['note:update'])]
+    #[Assert\NotBlank(message: 'Содержимое не может быть пустым', groups: ['note:create', 'note:update'])]
     #[Groups(['note:read', 'note:write'])]
     private ?string $content = null;
 

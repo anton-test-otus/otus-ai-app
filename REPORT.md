@@ -1080,3 +1080,31 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## BE Шаг 14: мелкие улучшения (low)
+
+### Trash retention в env
+
+**Проблема:** `CleanupTrashCommand` хардкодил `-30 days`.
+
+**Решение:** параметр `TRASH_RETENTION_DAYS` (default 30) в `app.yaml`; команда через DI; в `ARCHITECTURE.md` исправлено имя `app:cleanup-trash`.
+
+**Затронутые файлы:** `CleanupTrashCommand.php`, `config/packages/app.yaml`, `config/services.yaml`, `.env.example`, `.env`, `ARCHITECTURE.md`
+
+### Batch-загрузка связей для графа
+
+**Проблема:** `NoteGraphService::buildSubgraph` вызывал `findLinksForNode` в цикле BFS и повторно для каждого узла в `hasUnvisitedNeighbors` — до ~2×N SQL на запрос графа.
+
+**Решение:** `NoteLinkRepository::findLinksForNodes` — один SQL на batch UUID (`IN (...)`); BFS по уровням (до `depth` batch-запросов) + один финальный batch по всем узлам subgraph для рёбер и `frontierNodeIds`. Итого O(depth)+1 SQL вместо O(nodes).
+
+**Затронутые файлы:** `NoteLinkRepository.php`, `NoteGraphService.php`, `ARCHITECTURE.md`
+
+### POST /notes: обязательный content
+
+**Проблема:** группа `note:create` не требовала `content`; фронт и так не шлёт пустое тело, но API допускал пустые заметки.
+
+**Решение:** `Assert\NotBlank` для `content` в группах `note:create` и `note:update`.
+
+**Затронутые файлы:** `Entity/Note.php`, `ARCHITECTURE.md`
+
+---
+

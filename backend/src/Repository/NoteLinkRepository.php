@@ -99,64 +99,110 @@ class NoteLinkRepository extends ServiceEntityRepository
      */
     public function findLinksForNode(string $noteId, string $direction, User $user): array
     {
-        $links = [];
-
-        if ($direction === 'both' || $direction === 'outgoing') {
-            $links = array_merge($links, $this->findOutgoingLinksFromSource($noteId, $user));
-        }
-
-        if ($direction === 'both' || $direction === 'incoming') {
-            $links = array_merge($links, $this->findIncomingLinksToTarget($noteId, $user));
-        }
-
-        return $links;
+        return $this->findLinksForNodes([$noteId], $direction, $user)[$noteId] ?? [];
     }
 
     /**
-     * @return NoteLink[]
+     * @param list<string> $noteIds
+     *
+     * @return array<string, list<NoteLink>>
      */
-    private function findOutgoingLinksFromSource(string $sourceId, User $user): array
+    public function findLinksForNodes(array $noteIds, string $direction, User $user): array
     {
-        if (!Uuid::isValid($sourceId)) {
+        $noteIds = $this->filterValidNoteIds($noteIds);
+        if ($noteIds === []) {
             return [];
         }
 
-        return $this->createQueryBuilder('nl')
+        $uuids = array_map(static fn (string $id): Uuid => Uuid::fromString($id), $noteIds);
+        $indexed = array_fill_keys($noteIds, []);
+
+        $qb = $this->createQueryBuilder('nl')
             ->innerJoin('nl.sourceNote', 'sn')
             ->innerJoin('nl.targetNote', 'tn')
             ->addSelect('sn', 'tn')
-            ->where('sn.id = :noteId')
             ->andWhere('sn.user = :user')
             ->andWhere('tn.user = :user')
             ->andWhere('sn.deletedAt IS NULL')
             ->andWhere('tn.deletedAt IS NULL')
-            ->setParameter('noteId', Uuid::fromString($sourceId))
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
+            ->setParameter('user', $user);
+
+        if ($direction === 'outgoing') {
+            $links = (clone $qb)
+                ->andWhere('sn.id IN (:noteIds)')
+                ->setParameter('noteIds', $uuids)
+                ->getQuery()
+                ->getResult();
+        } elseif ($direction === 'incoming') {
+            $links = (clone $qb)
+                ->andWhere('tn.id IN (:noteIds)')
+                ->setParameter('noteIds', $uuids)
+                ->getQuery()
+                ->getResult();
+        } else {
+            $links = (clone $qb)
+                ->andWhere('sn.id IN (:noteIds) OR tn.id IN (:noteIds)')
+                ->setParameter('noteIds', $uuids)
+                ->getQuery()
+                ->getResult();
+        }
+
+        return $this->indexLinksByNodeIds($noteIds, $links, $direction);
     }
 
     /**
-     * @return NoteLink[]
+     * @param list<string> $noteIds
+     *
+     * @return list<string>
      */
-    private function findIncomingLinksToTarget(string $targetId, User $user): array
+    private function filterValidNoteIds(array $noteIds): array
     {
-        if (!Uuid::isValid($targetId)) {
-            return [];
+        $valid = [];
+        foreach ($noteIds as $noteId) {
+            if (!\is_string($noteId) || !Uuid::isValid($noteId)) {
+                continue;
+            }
+            $valid[$noteId] = $noteId;
         }
 
-        return $this->createQueryBuilder('nl')
-            ->innerJoin('nl.sourceNote', 'sn')
-            ->innerJoin('nl.targetNote', 'tn')
-            ->addSelect('sn', 'tn')
-            ->where('tn.id = :noteId')
-            ->andWhere('sn.user = :user')
-            ->andWhere('tn.user = :user')
-            ->andWhere('sn.deletedAt IS NULL')
-            ->andWhere('tn.deletedAt IS NULL')
-            ->setParameter('noteId', Uuid::fromString($targetId))
-            ->setParameter('user', $user)
-            ->getQuery()
-            ->getResult();
+        return array_values($valid);
+    }
+
+    /**
+     * @param list<string> $noteIds
+     * @param list<NoteLink> $links
+     *
+     * @return array<string, list<NoteLink>>
+     */
+    private function indexLinksByNodeIds(array $noteIds, array $links, string $direction): array
+    {
+        $indexed = array_fill_keys($noteIds, []);
+        $noteIdSet = array_fill_keys($noteIds, true);
+
+        foreach ($links as $link) {
+            $sourceId = (string) $link->getSourceNote()?->getId();
+            $targetId = (string) $link->getTargetNote()?->getId();
+            $linkId = (string) $link->getId();
+
+            if (
+                ($direction === 'both' || $direction === 'outgoing')
+                && isset($noteIdSet[$sourceId])
+            ) {
+                $indexed[$sourceId][$linkId] = $link;
+            }
+
+            if (
+                ($direction === 'both' || $direction === 'incoming')
+                && isset($noteIdSet[$targetId])
+            ) {
+                $indexed[$targetId][$linkId] = $link;
+            }
+        }
+
+        foreach ($indexed as $nodeId => $linksById) {
+            $indexed[$nodeId] = array_values($linksById);
+        }
+
+        return $indexed;
     }
 }

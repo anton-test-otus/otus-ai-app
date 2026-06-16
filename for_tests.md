@@ -439,3 +439,22 @@
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE JWT refresh interceptor».
 
 ---
+
+## BE Шаг 14 — мелкие улучшения (low)
+
+**Источник:** `backend_selfreview.md`, шаг 14
+
+### Smoke (ручная проверка)
+- [ ] `GET /api/notes/{id}/graph?depth=2` — **200**, nodes/edges/truncated как раньше; в Symfony profiler — batch `findLinksForNodes` (не N× `findLinksForNode` на узел)
+- [ ] `POST /api/notes` с `{ "title": "Test" }` без `content` — **422** «Содержимое не может быть пустым»
+- [ ] `POST /api/notes` с `{ "title": "Test", "content": "hello" }` — **201**
+- [ ] Фронт: новая заметка, ввод текста, autosave — один POST, без регрессии
+- [ ] `php bin/console app:cleanup-trash` — сообщение с `TRASH_RETENTION_DAYS` (default 30)
+
+**Ожидание:** граф и создание заметок без регрессии; пустой content на POST отклоняется.
+
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE мелкие улучшения — trash, graph batch, content on create (шаг 14)» и «FE черновик — POST только с непустым content (шаг 14)».
+
+---

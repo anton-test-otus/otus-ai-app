@@ -564,6 +564,85 @@ JWT для каждого admin.
 
 ---
 
+## BE мелкие улучшения — trash, graph batch, content on create (шаг 14)
+
+**Источник:** `backend_selfreview.md`, шаг 14; smoke — [`for_tests.md`](./for_tests.md) «BE Шаг 14»  
+**Тип:** API functional + unit (graph) + integration (console)  
+**Приоритет:** low  
+**Связь:** `CleanupTrashCommand`, `NoteGraphService`, `NoteLinkRepository::findLinksForNodes`, `Note` validation `note:create`
+
+### Подготовка (fixtures)
+
+1. **Test database** — как в «BE IDOR» (`APP_ENV=test`, `dbname_suffix: _test`).
+2. **Пользователь** — `userA` + JWT (login или `JWTTokenManagerInterface::create`).
+3. **Граф (кейсы graph):**
+   - `noteRoot`, `noteLinked`, `noteFar` — активные заметки user A;
+   - `noteLink1`: source `noteRoot` → target `noteLinked`;
+   - `noteLink2`: source `noteLinked` → target `noteFar` (цепочка для `depth=2`).
+4. **Корзина (кейс cleanup):**
+   - `noteTrashedOld` — `deletedAt` = now − (`TRASH_RETENTION_DAYS` + 1) days;
+   - `noteTrashedRecent` — `deletedAt` = now − 1 day.
+
+### Кейсы — API graph (регрессия + batch)
+
+| # | Запрос / действие | Ожидание |
+|---|-------------------|----------|
+| 1 | `GET /api/notes/{noteRoot.id}/graph?depth=2&direction=both` + token A | **200**; JSON: `nodes`, `edges`, `truncated`, `frontierNodeIds`; в `nodes` есть id root, linked, far (или subset при truncation) |
+| 2 | То же | в `edges` есть ребро root→linked и linked→far |
+| 3 | Unit/integration: `NoteGraphService::buildSubgraph` с mock/spy `NoteLinkRepository` | `findLinksForNodes` вызван **не более `depth + 1` раз** (batch по уровням BFS + финальный batch), **не** N× `findLinksForNode` на узел |
+
+### Кейсы — POST /notes, обязательный content
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 4 | `POST /api/notes` `{ "title": "Test" }` (без `content`) + token A | **422**; сообщение «Содержимое не может быть пустым» |
+| 5 | `POST /api/notes` `{ "title": "Test", "content": "" }` + token A | **422** (пустая строка) |
+| 6 | `POST /api/notes` `{ "title": "Test", "content": "hello" }` + token A | **201**; в ответе `id`, `title`, `content` |
+
+### Кейсы — cleanup trash (console)
+
+| # | Действие | Ожидание |
+|---|----------|--------|
+| 7 | `app:cleanup-trash` (KernelTestCase, default `TRASH_RETENTION_DAYS=30`) | exit **0**; в output «30 day(s)» (или значение из env); `noteTrashedOld` удалена из БД |
+| 8 | После cleanup | `noteTrashedRecent` **осталась** в БД (`deletedAt IS NOT NULL`) |
+
+### Зависимости
+
+- PHPUnit + `symfony/test-pack` (см. «BE IDOR»); прогон: `docker compose exec php php bin/phpunit`.
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/NoteGraphApiTest.php` — кейсы 1–2
+- `backend/tests/Functional/NoteCreateValidationTest.php` — кейсы 4–6
+- `backend/tests/Integration/Command/CleanupTrashCommandTest.php` — кейсы 7–8
+- `backend/tests/Unit/Service/NoteGraphServiceBatchTest.php` — кейс 3
+- `backend/tests/Functional/ApiTestCase.php` — общий JWT + fixtures (если ещё нет)
+
+---
+
+## FE черновик — POST только с непустым content (шаг 14)
+
+**Источник:** `backend_selfreview.md`, шаг 14; smoke — [`for_tests.md`](./for_tests.md) «BE Шаг 14» (пункт «Фронт: новая заметка…»)  
+**Тип:** unit / component (Vitest)  
+**Приоритет:** low  
+**Связь:** `NoteView.vue`, `hasNoteBody`, `useCreateNote`, `notesStore.createNote`
+
+### Кейсы
+
+| # | Сценарий | Assert |
+|---|----------|--------|
+| 1 | `hasNoteBody('')` / `hasNoteBody('   ')` | `false` |
+| 2 | `hasNoteBody('hello')` | `true` |
+| 3 | `saveNoteIfChanged` / `persistDraftNote` при пустом content | `notesApi.create` **не вызван** |
+| 4 | После ввода текста и autosave | ровно **один** `POST /notes` с непустым `content`; затем `router.replace` на `/note/:id` |
+
+### Файлы (предположительно)
+
+- `frontend/src/utils/__tests__/note.test.ts` — кейсы 1–2
+- `frontend/src/views/__tests__/NoteView.draft.test.ts` — кейсы 3–4
+
+---
+
 ## FE XSS — escapeHtml и highlightMatch
 
 **Источник:** `frontend_selfreview.md`, шаг 1  
@@ -770,6 +849,7 @@ JWT для каждого admin.
 | BE 11 | BE сузить API |
 | BE 12 | BE PATCH sync и settings |
 | BE 13 | BE security headers |
+| BE 14 | BE мелкие улучшения (trash, graph batch, content on create); FE черновик POST |
 | BE 15 | BE JWT refresh |
 | FE 1 | FE XSS escapeHtml |
 | FE 2 | FE sanitize markdown |
@@ -781,5 +861,5 @@ JWT для каждого admin.
 | FE 10 | FE notes store loading/error |
 | Backlog | BE/FE case-insensitive search |
 
-**Не покрываем тестами (по selfreview):** BE 10 (dead code), BE 14 (optional), FE 3–4 (deps/chore), FE 11–14 (refactor follow-up).
+**Не покрываем тестами (по selfreview):** BE 10 (dead code), FE 3–4 (deps/chore), FE 11–14 (refactor follow-up). BE 14 и FE черновик — см. секции выше (реализация в фазе 20).
 

@@ -11,12 +11,13 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:cleanup-trash',
-    description: 'Permanently delete notes from trash older than 30 days'
+    description: 'Permanently delete notes from trash older than configured retention period'
 )]
 class CleanupTrashCommand extends Command
 {
     public function __construct(
-        private Connection $connection
+        private Connection $connection,
+        private int $trashRetentionDays,
     ) {
         parent::__construct();
     }
@@ -25,7 +26,7 @@ class CleanupTrashCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $cutoffDate = (new \DateTimeImmutable())->modify('-30 days');
+        $cutoffDate = (new \DateTimeImmutable())->modify(sprintf('-%d days', $this->trashRetentionDays));
 
         $sql = <<<SQL
 DELETE FROM notes 
@@ -38,8 +39,9 @@ SQL;
         ]);
 
         $io->success(sprintf(
-            'Cleanup completed. Permanently deleted %d note(s) older than %s.',
+            'Cleanup completed. Permanently deleted %d note(s) older than %d day(s) (before %s).',
             $deletedCount,
+            $this->trashRetentionDays,
             $cutoffDate->format('Y-m-d')
         ));
 

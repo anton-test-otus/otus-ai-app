@@ -37,6 +37,10 @@ services:
             $defaultAutosaveDelaySeconds: '%user_settings.default_autosave_delay_seconds%'
             $defaultVersionConsolidationWindowMinutes: '%user_settings.default_version_consolidation_window_minutes%'
 
+    App\Command\CleanupTrashCommand:
+        bind:
+            $trashRetentionDays: '%app.trash_retention_days%'
+
     App\Serializer\NoteListCollectionNormalizer:
         tags:
             - { name: serializer.normalizer, priority: 128 }

@@ -34,53 +34,64 @@ final class NoteGraphService
         /** @var array<string, Note> $visitedNotes */
         $visitedNotes = [$rootId => $root];
 
-        /** @var array<string, array{id: string, source: string, target: string, aliases: array<int, string|null>}> $edgesById */
-        $edgesById = [];
-
-        /** @var list<array{0: string, 1: int}> $queue */
-        $queue = [[$rootId, 0]];
-        $queueIndex = 0;
+        /** @var list<string> $currentLevelIds */
+        $currentLevelIds = [$rootId];
+        $currentDepth = 0;
 
         $truncated = false;
-        /** @var array<string, true> $frontierSet */
-        $frontierSet = [];
 
-        while ($queueIndex < count($queue)) {
-            [$currentId, $currentDepth] = $queue[$queueIndex++];
+        while ($currentLevelIds !== [] && $currentDepth < $depth) {
+            $batchLinks = $this->noteLinkRepository->findLinksForNodes($currentLevelIds, $direction, $user);
 
-            if ($currentDepth >= $depth) {
-                continue;
+            /** @var list<string> $nextLevelIds */
+            $nextLevelIds = [];
+            /** @var array<string, true> $nextLevelSet */
+            $nextLevelSet = [];
+
+            foreach ($currentLevelIds as $currentId) {
+                foreach ($batchLinks[$currentId] ?? [] as $link) {
+                    $neighbor = $this->resolveNeighbor($link, $currentId);
+                    if ($neighbor === null) {
+                        continue;
+                    }
+
+                    $neighborId = (string) $neighbor->getId();
+                    if (isset($visitedNotes[$neighborId])) {
+                        continue;
+                    }
+
+                    if (\count($visitedNotes) >= self::MAX_NODES) {
+                        $truncated = true;
+                        continue;
+                    }
+
+                    $visitedNotes[$neighborId] = $neighbor;
+                    if (!isset($nextLevelSet[$neighborId])) {
+                        $nextLevelSet[$neighborId] = true;
+                        $nextLevelIds[] = $neighborId;
+                    }
+                }
             }
 
-            $links = $this->noteLinkRepository->findLinksForNode($currentId, $direction, $user);
-
-            foreach ($links as $link) {
-                $neighbor = $this->resolveNeighbor($link, $currentId);
-                if ($neighbor === null) {
-                    continue;
-                }
-
-                $neighborId = (string) $neighbor->getId();
-                $this->addEdge($edgesById, $link);
-
-                if (isset($visitedNotes[$neighborId])) {
-                    continue;
-                }
-
-                if (\count($visitedNotes) >= self::MAX_NODES) {
-                    $truncated = true;
-                    continue;
-                }
-
-                $visitedNotes[$neighborId] = $neighbor;
-                $queue[] = [$neighborId, $currentDepth + 1];
-            }
+            $currentLevelIds = $nextLevelIds;
+            ++$currentDepth;
         }
 
         $visitedIds = array_keys($visitedNotes);
+        $linksByNodeId = $this->noteLinkRepository->findLinksForNodes($visitedIds, $direction, $user);
 
-        foreach ($visitedNotes as $nodeId => $note) {
-            if ($this->hasUnvisitedNeighbors($nodeId, $visitedIds, $direction, $user)) {
+        /** @var array<string, array{id: string, source: string, target: string, aliases: array<int, string|null>}> $edgesById */
+        $edgesById = [];
+        foreach ($linksByNodeId as $links) {
+            foreach ($links as $link) {
+                $this->addEdge($edgesById, $link);
+            }
+        }
+
+        /** @var array<string, true> $frontierSet */
+        $frontierSet = [];
+        foreach ($visitedIds as $nodeId) {
+            if ($this->hasUnvisitedNeighbors($nodeId, $visitedIds, $linksByNodeId[$nodeId] ?? [])) {
                 $truncated = true;
                 $frontierSet[$nodeId] = true;
             }
@@ -143,11 +154,10 @@ final class NoteGraphService
 
     /**
      * @param list<string> $visitedIds
+     * @param list<NoteLink> $links
      */
-    private function hasUnvisitedNeighbors(string $nodeId, array $visitedIds, string $direction, User $user): bool
+    private function hasUnvisitedNeighbors(string $nodeId, array $visitedIds, array $links): bool
     {
-        $links = $this->noteLinkRepository->findLinksForNode($nodeId, $direction, $user);
-
         foreach ($links as $link) {
             $neighbor = $this->resolveNeighbor($link, $nodeId);
             if ($neighbor === null) {

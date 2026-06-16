@@ -245,7 +245,7 @@ otus-ai-app/
 - `[[uuid]]` в preview показывает актуальный заголовок целевой заметки; `[[uuid|alias]]` — заданный alias
 - В редакторе UUID не отображается: atom-узел `wiki_link` с NodeView; alias редактируется по клику или через кнопку wiki-ссылки (`Ctrl+Alt+W`) — диалог «Редактировать ссылку на заметку»
 - Сервис `WikiLinkParser` извлекает UUID и alias; `NoteLinkSyncService` сохраняет `NoteLink` (одна строка на пару source→target, массив `aliases` — порядок вхождений в markdown, `null` = без alias) при **POST** и при **PUT/PATCH**, если изменился `content` (PATCH только `isFavorite` / `folder` / `tags` — sync не вызывается)
-- `NoteGraphService` — BFS subgraph для `GET /api/notes/{id}/graph` (depth, direction, max 120 узлов, `frontierNodeIds` при обрезке)
+- `NoteGraphService` — BFS subgraph для `GET /api/notes/{id}/graph` (depth, direction, max 120 узлов, `frontierNodeIds` при обрезке). Связи загружаются batch-запросами `NoteLinkRepository::findLinksForNodes`: BFS по уровням (до `depth` SQL) + один batch по всем узлам subgraph для рёбер и frontier (вместо N запросов на узел)
 - Двунаправленность: панель обратных ссылок показывает все заметки, ссылающиеся на текущую
 
 ### 3. Иерархические папки и перемещение заметок
@@ -370,7 +370,7 @@ flowchart LR
 
 **Жизненный цикл сохранения:**
 
-1. **Черновик** — пользователь вводит текст → debounced autosave → один `POST /notes` → `syncSavedSnapshot()` → `router.replace` на `/note/:id`.
+1. **Черновик** — пользователь вводит текст → debounced autosave → один `POST /notes` (с непустым `content`, как на фронте `hasNoteBody`) → `syncSavedSnapshot()` → `router.replace` на `/note/:id`.
 2. **Существующая заметка** — `isDraft = false`, `currentNote.id` есть → autosave → `PUT /notes/{id}`.
 3. Параметр `autosaveDelaySeconds` из `auth.user.settings` (fallback — env/defaults) задаёт debounce в `useUserSettings` → `useAutosave`.
 4. Окно версионирования (`versionConsolidationWindowMinutes`) на фронте **не участвует** в сохранении — только на бэкенде при **`PUT`** (создание записи в `note_versions`). **`PATCH`** — частичное обновление метаданных (избранное, папка, теги) **без** новой версии; autosave редактора использует **`PUT`** с полным телом заметки.
@@ -636,7 +636,7 @@ const noteSchema = z.object({
 | `app:reset-schema` | Удалить схему БД и применить миграции заново |
 | `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
 | `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать demo-пользователей |
-| `app:purge-trash` | Удалить заметки из корзины старше 30 дней (cron) |
+| `app:cleanup-trash` | Удалить заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно) |
 
 ### Demo seed (`app:seed-demo-data`)
 

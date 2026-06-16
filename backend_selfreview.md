@@ -269,10 +269,10 @@
 **Приоритет:** low  
 **Коммит:** по желанию
 
-- [ ] `CleanupTrashCommand` — вынести `30 days` в env/parameter
-- [ ] `NoteGraphService::hasUnvisitedNeighbors` — кэш результатов `findLinksForNode` в рамках одного `buildSubgraph` (убрать повторные запросы)
-- [ ] `NoteProcessor` на `POST` — группа валидации `note:create` не требует `content`; согласовать с «черновиком» на фронте (пустой content допустим?)
-- [ ] `symfony/maker-bundle` — только dev (уже в `require-dev` ✓)
+- [x] `CleanupTrashCommand` — вынести `30 days` в env/parameter (`TRASH_RETENTION_DAYS`)
+- [x] `NoteGraphService::hasUnvisitedNeighbors` — batch `findLinksForNodes`: BFS по уровням + один batch для всех узлов subgraph (edges + frontier)
+- [x] `NoteProcessor` на `POST` — `NotBlank` для `content` в группе `note:create` (как на фронте: `hasNoteBody`)
+- [x] `symfony/maker-bundle` — только dev (уже в `require-dev` ✓)
 
 ---
 
