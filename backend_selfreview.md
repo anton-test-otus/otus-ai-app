@@ -220,10 +220,10 @@
 | `api_platform.title` | `Hello API Platform` | название приложения |
 | `PATCH` заметки | всегда вызывает `noteLinkSync` | skip sync, если менялись только `isFavorite` / `folder` |
 
-- [ ] Вынести `assertOwnedBy(User $owner, User $current): void` в `Security/` или trait для processors
-- [ ] Общие константы допустимых значений settings
-- [ ] Обновить `ARCHITECTURE.md` (PUT vs PATCH, ownership model)
-- [ ] Условный `syncFromContent` в `NoteProcessor` при PATCH без изменения `content`
+- [x] Вынести `assertOwnedBy(User $owner, User $current): void` в `Security/` или trait для processors *(уже: `ResourceOwnershipAssert`, шаг 1)*
+- [x] Общие константы допустимых значений settings — `UserSettingOptions`
+- [x] Обновить `ARCHITECTURE.md` (PUT vs PATCH, ownership model)
+- [x] Условный `syncFromContent` в `NoteProcessor` при PATCH без изменения `content`
 
 ---
 
@@ -241,9 +241,9 @@
 
 **Файлы:** `docker/nginx/default.conf`, `config/packages/api_platform.yaml`, `ARCHITECTURE.md`
 
-- [ ] Добавить базовые security headers в nginx (минимальный набор для demo/prod)
-- [ ] Исправить `api_platform.title` / `version`
-- [ ] Документировать: refresh token не реализован; TTL JWT — из env Lexik
+- [x] Добавить базовые security headers в nginx (минимальный набор для demo/prod)
+- [x] Исправить `api_platform.title` / `version`
+- [x] Документировать: refresh token не реализован; TTL JWT — из env Lexik (`JWT_TOKEN_TTL`)
 
 ---
 

@@ -351,3 +351,30 @@
 - Route list: нет `note_links` CRUD, `backlinks`, global `note_versions` collection; item `GET /api/note_versions/{id}` сохранён
 
 ---
+
+## BE Шаг 12 — паттерны и PATCH sync
+
+**Источник:** `backend_selfreview.md`, шаг 12
+
+### Smoke (ручная проверка)
+- [ ] `PATCH /api/notes/{id}` только `isFavorite: true` — **200**; в Symfony profiler нет лишних запросов к `note_links` (sync не вызван)
+- [ ] `PATCH /api/notes/{id}` только `folder` — **200**; `note_links` без изменений, если `content` тот же
+- [ ] `PUT /api/notes/{id}` с изменением `content` (wiki-ссылки) — `linkStats` / граф обновлены
+- [ ] `PATCH /api/auth/settings` с недопустимым `autosaveDelaySeconds` (например `7`) — **422**
+
+**Ожидание:** sync wiki-ссылок только при изменении `content`; допустимые settings из `UserSettingOptions`.
+
+---
+
+## BE Шаг 13 — security headers и JWT metadata
+
+**Источник:** `backend_selfreview.md`, шаг 13
+
+### Smoke (ручная проверка)
+- [ ] `curl -I http://localhost:8080/api/auth/me` (с JWT или без) — в ответе есть `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`
+- [ ] `/api/docs` — title «Персональная база знаний API», не «Hello API Platform»
+- [ ] В `ARCHITECTURE.md` / `.env.example` — `JWT_TOKEN_TTL`, refresh помечен как не реализован
+
+**Ожидание:** базовые security headers на API; документация и OpenAPI metadata согласованы с MVP JWT.
+
+---

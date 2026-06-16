@@ -68,6 +68,7 @@ class NoteProcessor implements ProcessorInterface
             $this->noteTextSanitizer->sanitizeNote($data);
         }
 
+        $previousNote = null;
         $previousState = null;
         $newState = null;
         $previousNoteUpdatedAt = null;
@@ -80,6 +81,12 @@ class NoteProcessor implements ProcessorInterface
             $previousState = NoteSnapshot::fromNote($previousNote);
             $newState = NoteSnapshot::fromNote($data);
             $previousNoteUpdatedAt = $previousNote->getUpdatedAt();
+        } elseif (
+            in_array($operation->getMethod(), ['PUT', 'PATCH'], true)
+            && isset($context['previous_data'])
+            && $context['previous_data'] instanceof Note
+        ) {
+            $previousNote = $context['previous_data'];
         }
 
         $note = $this->persistProcessor->process($data, $operation, $uriVariables, $context);
@@ -102,10 +109,27 @@ class NoteProcessor implements ProcessorInterface
             );
         }
 
-        if (in_array($operation->getMethod(), ['POST', 'PUT', 'PATCH'], true)) {
+        if ($this->shouldSyncNoteLinks($operation->getMethod(), $note, $previousNote)) {
             $this->noteLinkSyncService->syncFromContent($note);
         }
 
         return $note;
+    }
+
+    private function shouldSyncNoteLinks(string $method, Note $note, ?Note $previousNote): bool
+    {
+        if ($method === 'POST') {
+            return true;
+        }
+
+        if (!in_array($method, ['PUT', 'PATCH'], true)) {
+            return false;
+        }
+
+        if (null === $previousNote) {
+            return true;
+        }
+
+        return $previousNote->getContent() !== $note->getContent();
     }
 }

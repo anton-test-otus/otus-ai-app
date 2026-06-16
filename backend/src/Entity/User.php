@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\Settings\UserSettingOptions;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -51,11 +52,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(nullable: true)]
-    #[Assert\Choice(choices: [5, 10, 15, 30, 60])]
+    #[Assert\Choice(choices: UserSettingOptions::ALLOWED_AUTOSAVE_DELAY_SECONDS)]
     private ?int $autosaveDelaySeconds = null;
 
     #[ORM\Column(nullable: true)]
-    #[Assert\Choice(choices: [1, 2, 3, 4, 5, 10, 15, 30, 60])]
+    #[Assert\Choice(choices: UserSettingOptions::ALLOWED_VERSION_CONSOLIDATION_WINDOW_MINUTES)]
     private ?int $versionConsolidationWindowMinutes = null;
 
     #[ORM\OneToMany(targetEntity: Note::class, mappedBy: 'user', orphanRemoval: true)]

@@ -43,6 +43,18 @@ flowchart TB
 | Документация API | Swagger UI (через API Platform) | Интерактивная документация API |
 | База данных | PostgreSQL 16 | Основное хранилище данных |
 
+### Безопасность и изоляция данных
+
+| Механизм | Назначение |
+|----------|------------|
+| Lexik JWT | Access token; TTL — `JWT_TOKEN_TTL` (сек., default 3600). **Refresh token не реализован** в MVP — см. шаг 15 self-review |
+| `UserOwnedResourceItemQueryExtension` | Item GET/PUT/PATCH/DELETE для `Note`, `Folder`, `Tag`, `NoteVersion`: фильтр `user = currentUser`; чужой UUID → **404** (не 403). Для `Note`/`Folder` на GET — также `deletedAt IS NULL` |
+| `ResourceOwnershipAssert` | Проверка владельца в processors на update/delete существующих сущностей |
+| `OwnedRelationAssert` | На запись: `folder`, `parent`, `tags` принадлежат текущему пользователю → иначе **422** |
+| nginx | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` на ответах API |
+
+Допустимые значения пользовательских настроек (`autosaveDelaySeconds`, `versionConsolidationWindowMinutes`) — константы `UserSettingOptions`, используются в `User`, `UpdateUserSettingsDto` и `UserSettingsResolver`.
+
 ### Фронтенд (Vue 3)
 
 | Компонент | Технология | Назначение |
@@ -231,7 +243,7 @@ otus-ai-app/
 - UUID вставляется только через UI: кнопка тулбара, `Ctrl+Alt+W` или ввод `[[` → модалка выбора заметки
 - `[[uuid]]` в preview показывает актуальный заголовок целевой заметки; `[[uuid|alias]]` — заданный alias
 - В редакторе UUID не отображается: atom-узел `wiki_link` с NodeView; alias редактируется по клику или через кнопку wiki-ссылки (`Ctrl+Alt+W`) — диалог «Редактировать ссылку на заметку»
-- Сервис `WikiLinkParser` извлекает UUID и alias; `NoteLinkSyncService` сохраняет `NoteLink` (одна строка на пару source→target, массив `aliases` — порядок вхождений в markdown, `null` = без alias) при POST/PUT/PATCH
+- Сервис `WikiLinkParser` извлекает UUID и alias; `NoteLinkSyncService` сохраняет `NoteLink` (одна строка на пару source→target, массив `aliases` — порядок вхождений в markdown, `null` = без alias) при **POST** и при **PUT/PATCH**, если изменился `content` (PATCH только `isFavorite` / `folder` / `tags` — sync не вызывается)
 - `NoteGraphService` — BFS subgraph для `GET /api/notes/{id}/graph` (depth, direction, max 120 узлов, `frontierNodeIds` при обрезке)
 - Двунаправленность: панель обратных ссылок показывает все заметки, ссылающиеся на текущую
 
@@ -360,7 +372,7 @@ flowchart LR
 1. **Черновик** — пользователь вводит текст → debounced autosave → один `POST /notes` → `syncSavedSnapshot()` → `router.replace` на `/note/:id`.
 2. **Существующая заметка** — `isDraft = false`, `currentNote.id` есть → autosave → `PUT /notes/{id}`.
 3. Параметр `autosaveDelaySeconds` из `auth.user.settings` (fallback — env/defaults) задаёт debounce в `useUserSettings` → `useAutosave`.
-4. Окно версионирования (`versionConsolidationWindowMinutes`) на фронте **не участвует** в сохранении — только на бэкенде при `PUT` (создание записи в `note_versions`).
+4. Окно версионирования (`versionConsolidationWindowMinutes`) на фронте **не участвует** в сохранении — только на бэкенде при **`PUT`** (создание записи в `note_versions`). **`PATCH`** — частичное обновление метаданных (избранное, папка, теги) **без** новой версии; autosave редактора использует **`PUT`** с полным телом заметки.
 
 **Нормализация текста:** `sanitizeNoteText` (`utils/sanitizeText.ts`) убирает nbsp, zero-width и control chars из `title`/`content` при вводе заголовка и перед autosave в `NoteView`; те же правила в `notesApi.create` / `update`. На бэкенде — `NoteTextSanitizer` в `NoteProcessor` при `POST`/`PUT`/`PATCH`.
 
@@ -428,11 +440,13 @@ flowchart LR
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
 | POST | `/api/auth/register` | Регистрация пользователя |
-| POST | `/api/auth/login` | Получение JWT токена |
-| POST | `/api/auth/refresh` | Обновление JWT токена |
+| POST | `/api/auth/login` | Получение JWT access token |
+| POST | `/api/auth/refresh` | **Не реализовано в MVP** (зарезервировано; см. self-review шаг 15) |
 | GET | `/api/auth/me` | Получение текущего пользователя (включая `settings` и `defaults`) |
 | PATCH | `/api/auth/settings` | Обновление настроек текущего пользователя |
 | POST | `/api/auth/change-password` | Смена пароля (текущий + новый; мин. 6 символов; новый ≠ текущий) |
+
+**JWT (MVP):** один access token из login/register; срок жизни — `JWT_TOKEN_TTL` (Lexik `token_ttl`, default 3600 с). После истечения — повторный login. Refresh token и endpoint `/api/auth/refresh` не реализованы.
 
 ### Заметки
 
@@ -444,7 +458,8 @@ flowchart LR
 | GET | `/api/notes/search` | Поиск и фильтрация (`note:list`; пагинация; параметры: `q`, `folderId`, `tags[]` — логика **И**, `isFavorite`, `dateFrom`, `dateTo`) |
 | POST | `/api/notes` | Создание заметки |
 | GET | `/api/notes/{id}` | Получение заметки с содержимым (`note:read`) |
-| PUT | `/api/notes/{id}` | Обновление заметки |
+| PUT | `/api/notes/{id}` | Полное обновление заметки; создаёт версию при значимых изменениях |
+| PATCH | `/api/notes/{id}` | Частичное обновление (`isFavorite`, `folder`, `tags`, …); версия **не** создаётся; wiki-ссылки синхронизируются только если изменился `content` |
 | DELETE | `/api/notes/{id}` | Мягкое удаление (перемещение в корзину) |
 | PUT | `/api/notes/{id}/move` | Перемещение в папку / изменение порядка |
 | GET | `/api/notes/{id}/versions` | Получение истории версий |

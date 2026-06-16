@@ -1004,3 +1004,34 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+### BE Шаг 12: паттерны ownership, settings, PATCH sync (исправлено)
+
+**Проблема:** дублирование допустимых значений настроек в `User` и `UpdateUserSettingsDto`; `NoteProcessor` всегда вызывал `syncFromContent` на PATCH; в документации не было явного описания ownership и различия PUT/PATCH.
+
+**Решение:** класс `UserSettingOptions` с едиными константами; `shouldSyncNoteLinks()` в `NoteProcessor` — sync только при POST или при изменении `content`; раздел «Безопасность и изоляция данных» и уточнения PUT/PATCH в `ARCHITECTURE.md`. Ownership assert уже в `ResourceOwnershipAssert` (шаг 1).
+
+**Затронутые файлы:**
+- `backend/src/Settings/UserSettingOptions.php`
+- `backend/src/Entity/User.php`
+- `backend/src/Dto/UpdateUserSettingsDto.php`
+- `backend/src/State/NoteProcessor.php`
+- `ARCHITECTURE.md`
+
+---
+
+### BE Шаг 13: security headers и метаданные API (исправлено)
+
+**Проблема:** nginx без базовых security headers; `api_platform.title` = «Hello API Platform»; JWT TTL и отсутствие refresh не задокументированы в env/архитектуре.
+
+**Решение:** заголовки `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` в `docker/nginx/default.conf`; title API Platform — «Персональная база знаний API»; `JWT_TOKEN_TTL` в `.env.example` и Lexik `token_ttl`; в `ARCHITECTURE.md` — MVP без refresh, описание TTL.
+
+**Затронутые файлы:**
+- `docker/nginx/default.conf`
+- `backend/config/packages/api_platform.yaml`
+- `backend/config/packages/lexik_jwt_authentication.yaml`
+- `backend/config/services.yaml`
+- `backend/.env.example`
+- `ARCHITECTURE.md`
+
+---
+
