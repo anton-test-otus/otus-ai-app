@@ -55,3 +55,7 @@ export function pluralizeMinutes(count: number): string {
 export function pluralizeSeconds(count: number): string {
   return pluralizeRuQuantified(count, SECOND_FORMS)
 }
+
+export function pluralizeNotes(count: number): string {
+  return pluralizeRu(count, 'заметка', 'заметки', 'заметок')
+}

@@ -4,6 +4,7 @@ import { notesApi } from '@/api/notes'
 import { useTrashStore } from '@/stores/trash'
 import { toNoteListItem } from '@/utils/note'
 import { getApiErrorMessage } from '@/utils/apiError'
+import { buildFilterCriteriaKey } from '@/utils/filters'
 import type {
   Note,
   NoteListItem,
@@ -167,13 +168,6 @@ export const useNotesStore = defineStore('notes', () => {
     hasMore: favoritesHasMore,
   }
 
-  function buildListCriteriaKey(folderId?: string | null, tagIds?: string[]) {
-    return JSON.stringify({
-      folderId: folderId ?? null,
-      tags: [...(tagIds ?? [])].sort(),
-    })
-  }
-
   async function fetchFavorites(
     page = 1,
     perPage = favoritesPagination.value.perPage,
@@ -204,7 +198,7 @@ export const useNotesStore = defineStore('notes', () => {
       page,
       perPage,
       append: options?.append ?? false,
-      criteriaKey: buildListCriteriaKey(folderId, tagIds),
+      criteriaKey: buildFilterCriteriaKey(folderId, tagIds),
       fetchFn: (p, pp) => notesApi.getAll(p, pp, folderId, tagIds),
       errorMessage: 'Ошибка загрузки заметок',
     })

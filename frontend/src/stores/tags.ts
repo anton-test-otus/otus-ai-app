@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref } from 'vue';
 import { tagsApi, type TagListCriteria } from '../api/tags';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { buildFilterCriteriaKey } from '@/utils/filters';
 import type { Tag } from '../types';
 
 export const useTagsStore = defineStore('tags', () => {
@@ -13,15 +14,8 @@ export const useTagsStore = defineStore('tags', () => {
   let loadedCriteriaKey: string | null = null;
   let fetchPromise: Promise<void> | null = null;
 
-  function buildCriteriaKey(criteria?: TagListCriteria): string {
-    return JSON.stringify({
-      folderId: criteria?.folderId ?? null,
-      tags: [...(criteria?.tags ?? [])].sort(),
-    });
-  }
-
   async function fetchTags(criteria?: TagListCriteria, options?: { force?: boolean }) {
-    const criteriaKey = buildCriteriaKey(criteria);
+    const criteriaKey = buildFilterCriteriaKey(criteria?.folderId, criteria?.tags);
 
     if (!options?.force && loadedCriteriaKey === criteriaKey) {
       return;

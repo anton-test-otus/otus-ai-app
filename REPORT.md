@@ -846,6 +846,24 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Smoke:** подтверждён пользователем (2026-06-13). Infinite scroll: viewport IO + scroll listeners; layout `min-h-0` в `AppLayout`.
 
+### Шаг 9: общие утилиты — фильтры, дерево папок, даты (исправлено)
+
+**Проблема:** дублирование `buildListCriteriaKey` / `buildCriteriaKey`, рекурсивного поиска папки, `formatDate` + `pluralizeNotes` в views, блока сохранения token в `login`/`register`.
+
+**Решение:**
+- `utils/filters.ts` — `buildFilterCriteriaKey()`; используется в `notes` и `tags` stores
+- `utils/folders.ts` — `findFolderInTree`, `flattenFolderTree`; store и `useFolderDropdownOptions`
+- `utils/date.ts` — `formatCardDate()` (опция `relativeLabels: 'sentence'` для корзины); `utils/pluralize.ts` — `pluralizeNotes()`
+- `stores/auth.ts` — private `applyAuthResponse()`
+
+**Затронутые файлы:**
+- `frontend/src/utils/filters.ts`, `folders.ts`, `date.ts`, `pluralize.ts`
+- `frontend/src/stores/notes.ts`, `tags.ts`, `folders.ts`, `auth.ts`
+- `frontend/src/composables/useFolderDropdownOptions.ts`
+- `frontend/src/views/DashboardView.vue`, `FavoritesView.vue`, `TrashView.vue`
+
+**Smoke:** см. [`for_tests.md`](./for_tests.md) — FE шаг 9.
+
 ### Backlog после ревью: регистронезависимый поиск
 
 **Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).

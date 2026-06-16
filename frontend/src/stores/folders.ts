@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { foldersApi } from '../api/folders';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { findFolderInTree } from '@/utils/folders';
 import type { Folder } from '../types';
 
 export const useFoldersStore = defineStore('folders', () => {
@@ -103,18 +104,7 @@ export const useFoldersStore = defineStore('folders', () => {
   }
 
   function getFolderById(id: string): Folder | undefined {
-    const find = (items: Folder[]): Folder | undefined => {
-      if (!items || !Array.isArray(items)) return undefined;
-      for (const item of items) {
-        if (item.id === id) return item;
-        if (item.children) {
-          const found = find(item.children);
-          if (found) return found;
-        }
-      }
-      return undefined;
-    };
-    return find(folders.value || []);
+    return findFolderInTree(folders.value, id);
   }
 
   function selectFolder(id: string) {

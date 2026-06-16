@@ -54,3 +54,22 @@ export function formatDateTime(dateString: string): string {
     minute: '2-digit',
   })
 }
+
+export interface FormatCardDateOptions {
+  /** «сегодня» в середине фразы vs «Сегодня» в карточке */
+  relativeLabels?: 'title' | 'sentence'
+}
+
+/** Короткая дата для карточек заметок: Сегодня / Вчера / N дн. назад / locale. */
+export function formatCardDate(dateString: string, options?: FormatCardDateOptions): string {
+  const date = new Date(dateString)
+  const now = new Date()
+  const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
+  const sentence = options?.relativeLabels === 'sentence'
+
+  if (days === 0) return sentence ? 'сегодня' : 'Сегодня'
+  if (days === 1) return sentence ? 'вчера' : 'Вчера'
+  if (days < 7) return `${days} дн. назад`
+
+  return date.toLocaleDateString('ru-RU')
+}

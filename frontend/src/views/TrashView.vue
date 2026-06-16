@@ -76,7 +76,7 @@
                   </span>
                   <span class="flex items-center gap-1">
                     <i class="pi pi-clock"></i>
-                    Удалена {{ formatDate(note.deletedAt ?? note.updatedAt) }}
+                    Удалена {{ formatTrashDate(note.deletedAt ?? note.updatedAt) }}
                   </span>
                 </div>
               </div>
@@ -154,6 +154,7 @@ import LoadingState from '@/components/common/LoadingState.vue';
 import ErrorState from '@/components/common/ErrorState.vue';
 import { useAppToast } from '@/composables/useAppToast';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { formatCardDate } from '@/utils/date';
 import { trashApi } from '../api/trash';
 import { useTrashStore } from '@/stores/trash';
 import { MODAL_WIDTH } from '@/constants/modal';
@@ -278,20 +279,7 @@ function onPageChange(event: any) {
   loadTrash(event.page + 1);
 }
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return 'сегодня';
-  } else if (diffDays === 1) {
-    return 'вчера';
-  } else if (diffDays < 7) {
-    return `${diffDays} дн. назад`;
-  } else {
-    return date.toLocaleDateString('ru-RU');
-  }
+function formatTrashDate(dateString: string): string {
+  return formatCardDate(dateString, { relativeLabels: 'sentence' });
 }
 </script>

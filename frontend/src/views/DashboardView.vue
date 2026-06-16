@@ -38,7 +38,7 @@
             :key="note.id"
             :note="note"
             :show-folder="!foldersStore.selectedFolderId"
-            :format-date="formatDate"
+            :format-date="formatCardDate"
             @open="openNote"
             @edit="openNoteInEditMode"
             @delete="confirmDelete"
@@ -75,6 +75,8 @@ import { useFoldersStore } from '@/stores/folders'
 import { useTagsStore } from '@/stores/tags'
 import { useFavoriteToggle } from '@/composables/useFavoriteToggle'
 import { useCreateNote } from '@/composables/useCreateNote'
+import { formatCardDate } from '@/utils/date'
+import { pluralizeNotes } from '@/utils/pluralize'
 import type { NoteListItem } from '@/types'
 
 const router = useRouter()
@@ -203,28 +205,6 @@ function confirmDelete(note: NoteListItem) {
       }
     },
   })
-}
-
-function pluralizeNotes(count: number): string {
-  const mod10 = count % 10
-  const mod100 = count % 100
-
-  if (mod10 === 1 && mod100 !== 11) return 'заметка'
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return 'заметки'
-  return 'заметок'
-}
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-
-  if (days === 0) return 'Сегодня'
-  if (days === 1) return 'Вчера'
-  if (days < 7) return `${days} дн. назад`
-
-  return date.toLocaleDateString('ru-RU')
 }
 
 </script>

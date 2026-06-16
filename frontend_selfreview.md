@@ -183,10 +183,10 @@
 - `formatDate` + `pluralizeNotes` — копии в `DashboardView`, `FavoritesView`, `TrashView`; в utils уже есть `formatRelativeDate`, `pluralizeRu`
 - `auth.ts`: одинаковый блок сохранения token/localStorage в `login` и `register`
 
-- [ ] `utils/filters.ts` — `buildFilterCriteriaKey(folderId?, tagIds?)`
-- [ ] `utils/folders.ts` — `flattenFolderTree`, `findFolderInTree` (использовать в dropdown и store)
-- [ ] `utils/date.ts` — `formatCardDate()`; `utils/pluralize.ts` — `pluralizeNotes()`; заменить копии в views
-- [ ] `auth.ts` — private `applyAuthResponse(response)`
+- [x] `utils/filters.ts` — `buildFilterCriteriaKey(folderId?, tagIds?)`
+- [x] `utils/folders.ts` — `flattenFolderTree`, `findFolderInTree` (использовать в dropdown и store)
+- [x] `utils/date.ts` — `formatCardDate()`; `utils/pluralize.ts` — `pluralizeNotes()`; заменить копии в views
+- [x] `auth.ts` — private `applyAuthResponse(response)`
 
 ---
 

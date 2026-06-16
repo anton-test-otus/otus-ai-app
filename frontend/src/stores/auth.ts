@@ -5,6 +5,7 @@ import { getApiErrorMessage } from '@/utils/apiError'
 import { resetUserStores } from '@/stores/resetUserStores'
 import type {
   User,
+  AuthResponse,
   LoginRequest,
   RegisterRequest,
   UpdateUserSettingsRequest,
@@ -21,19 +22,23 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const isAdmin = computed(() => user.value?.roles?.includes('ROLE_ADMIN') || false)
 
+  function applyAuthResponse(response: AuthResponse) {
+    token.value = response.token
+    refreshToken.value = response.refreshToken || null
+    user.value = response.user
+
+    localStorage.setItem('token', response.token)
+    if (response.refreshToken) {
+      localStorage.setItem('refreshToken', response.refreshToken)
+    }
+  }
+
   async function login(credentials: LoginRequest) {
     isLoading.value = true
     error.value = null
     try {
       const response = await authApi.login(credentials)
-      token.value = response.token
-      refreshToken.value = response.refreshToken || null
-      user.value = response.user
-
-      localStorage.setItem('token', response.token)
-      if (response.refreshToken) {
-        localStorage.setItem('refreshToken', response.refreshToken)
-      }
+      applyAuthResponse(response)
 
       return true
     } catch (err: unknown) {
@@ -49,14 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
     try {
       const response = await authApi.register(credentials)
-      token.value = response.token
-      refreshToken.value = response.refreshToken || null
-      user.value = response.user
-
-      localStorage.setItem('token', response.token)
-      if (response.refreshToken) {
-        localStorage.setItem('refreshToken', response.refreshToken)
-      }
+      applyAuthResponse(response)
 
       return true
     } catch (err: unknown) {

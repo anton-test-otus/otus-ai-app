@@ -1,5 +1,6 @@
 import { computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { MAX_FOLDER_TREE_DEPTH, resolveFolderTreeIcon } from '@/utils/folderIcon'
+import { flattenFolderTree } from '@/utils/folders'
 import type { Folder } from '@/types'
 
 export interface FolderDropdownOption {
@@ -17,26 +18,18 @@ export function useFolderDropdownOptions(
     const items = toValue(folders) || []
     const result: FolderDropdownOption[] = []
 
-    const flatten = (list: Folder[], depth = 0) => {
-      for (const item of list) {
-        const canSelect = !options?.onlySelectableParents || depth < MAX_FOLDER_TREE_DEPTH
+    for (const { folder, depth } of flattenFolderTree(items)) {
+      const canSelect = !options?.onlySelectableParents || depth < MAX_FOLDER_TREE_DEPTH
 
-        if (canSelect) {
-          result.push({
-            label: item.name,
-            value: item.id,
-            iconClass: resolveFolderTreeIcon(item.icon, depth),
-            depth,
-          })
-        }
-
-        if (item.children?.length) {
-          flatten(item.children, depth + 1)
-        }
+      if (canSelect) {
+        result.push({
+          label: folder.name,
+          value: folder.id,
+          iconClass: resolveFolderTreeIcon(folder.icon, depth),
+          depth,
+        })
       }
     }
-
-    flatten(items)
     return result
   })
 
