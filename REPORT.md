@@ -862,7 +862,23 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `frontend/src/composables/useFolderDropdownOptions.ts`
 - `frontend/src/views/DashboardView.vue`, `FavoritesView.vue`, `TrashView.vue`
 
-**Smoke:** см. [`for_tests.md`](./for_tests.md) — FE шаг 9.
+**Smoke:** подтверждён пользователем (2026-06-16).
+
+### Шаг 10: разделение loading/error в notes store (исправлено)
+
+**Проблема:** общие `isLoading` / `error` для list fetch, detail fetch, create, delete и мутаций — ошибка загрузки заметки могла «утекать» на dashboard.
+
+**Решение:**
+- `isLoadingList` + `listError` — список dashboard (`fetchNotes`)
+- `isLoadingDetail` + `detailError` — `fetchNoteById`, `createNote`, `deleteNote`
+- `toggleFavorite`, `moveNoteToFolder`, `updateNote` — без записи в store error (toast/composable/autosave)
+- `DashboardView` / `NoteView` — новые поля
+
+**Затронутые файлы:**
+- `frontend/src/stores/notes.ts`
+- `frontend/src/views/DashboardView.vue`, `NoteView.vue`
+
+**Smoke:** проверка через автотесты фазы 20 — спецификация в [`future_autotests.md`](./future_autotests.md) («FE notes store — изоляция list/detail loading и error»); ручной smoke опционален ([`for_tests.md`](./for_tests.md)).
 
 ### Backlog после ревью: регистронезависимый поиск
 

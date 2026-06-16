@@ -143,3 +143,73 @@ docker compose exec php composer require --dev symfony/test-pack phpunit/phpunit
 
 - `backend/tests/Functional/OwnedRelationValidationTest.php`
 - переиспользовать fixtures из `ResourceOwnershipTest` / `UserFactory`
+
+---
+
+## FE notes store — изоляция list/detail loading и error
+
+**Источник:** `frontend_selfreview.md`, шаг 10  
+**Тип:** unit (Vitest + Pinia)  
+**Приоритет:** medium  
+**Связь:** `stores/notes.ts`, `DashboardView.vue`, `NoteView.vue`
+
+### Зачем автотест вместо ручного smoke
+
+Сценарии с ошибками API (list vs detail vs mutation) проще воспроизвести через mock `notesApi`, чем имитировать сеть в UI. Проверяется инвариант store, а не вёрстка.
+
+### Подготовка (arrange)
+
+1. **Vitest** — `vitest`, `happy-dom` (или `jsdom`); скрипт `npm test` в `frontend/package.json`.
+2. **Pinia** — `setActivePinia(createPinia())` в `beforeEach`; `useNotesStore().reset()` между кейсами.
+3. **Mock `@/api/notes`** — `vi.mock` с `getAll`, `getById`, `create`, `update`, `delete`, `toggleFavorite`, `moveToFolder`, `getFavorites`.
+4. **Mock `@/stores/trash`** — `useTrashStore().fetchCount` → resolved stub (для `deleteNote`).
+5. **Fixtures** — минимальные объекты:
+   - `listItem`: `NoteListItem` с `id`, `title`, `folderId: null`, `isFavorite: false`, даты ISO
+   - `note`: `Note` с тем же `id`, `content: 'body'`
+   - успешный list response: `{ data: [listItem], meta: { currentPage: 1, perPage: 20, total: 1, totalPages: 1 } }`
+
+### Кейсы — list vs detail error
+
+| # | Действие | Arrange | Assert store |
+|---|----------|---------|--------------|
+| 1 | `fetchNotes()` reject | `getAll` → `reject(new Error('list fail'))` | `listError` не null; `detailError` null; `isLoadingList` false |
+| 2 | `fetchNoteById(id)` reject | `getById` → reject | `detailError` не null; `listError` null; `isLoadingDetail` false |
+| 3 | Изоляция после list error | сначала кейс 1, затем `getById` → resolve `note` | после успешного detail: `detailError` null, `currentNote` set; **`listError` по-прежнему не null** (list не сбрасывается detail-fetch) |
+| 4 | `createNote()` reject | `create` → reject | `detailError` не null; `listError` null |
+| 5 | `deleteNote(id)` reject | `delete` → reject | `detailError` не null; `listError` null; `isLoadingDetail` false |
+
+### Кейсы — мутации не пишут в listError
+
+| # | Действие | Arrange | Assert |
+|---|----------|---------|--------|
+| 6 | `updateNote` reject | store с `currentNote`; `update` → reject | throw; `listError` и `detailError` null |
+| 7 | `toggleFavorite` reject | `toggleFavorite` → reject | throw; `listError`, `detailError`, `favoritesError` null |
+| 8 | `moveNoteToFolder` reject | `moveToFolder` → reject | throw; `listError`, `detailError` null |
+
+### Кейсы — успешные операции (регрессия state)
+
+| # | Действие | Assert |
+|---|----------|--------|
+| 9 | `fetchNotes()` resolve | `notes.length === 1`, `listError` null, `isLoadingList` false |
+| 10 | `fetchNoteById()` resolve | `currentNote` set, `detailError` null |
+| 11 | `createNote()` resolve | `currentNote` set, note в `notes[0]`, `detailError` null |
+| 12 | `deleteNote()` resolve | note убрана из `notes`, `currentNote` null при совпадении id |
+
+### Зависимости (установить в фазе 20)
+
+```bash
+docker compose exec node npm install -D vitest happy-dom
+```
+
+### Файлы (предположительно)
+
+- `frontend/vitest.config.ts` — alias `@`, `environment: 'happy-dom'`
+- `frontend/src/stores/__tests__/notes.store.test.ts`
+- `frontend/src/stores/__tests__/fixtures/notes.ts` — shared mocks
+
+### Примечания
+
+- Ошибки мутаций в UI показываются через `useAppToast` / `useAutosave` — **не** через store; unit-тест store не покрывает toast, только отсутствие записи в `listError`/`detailError`.
+- `fetchPaginatedList` для favorites использует `favoritesError` — отдельный кейс опционально (не входит в шаг 10, но тот же паттерн).
+- После реализации тестов — отметить smoke FE шаг 10 в [`for_tests.md`](./for_tests.md) как покрытый автотестами.
+

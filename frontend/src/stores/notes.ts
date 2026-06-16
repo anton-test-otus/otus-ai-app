@@ -112,11 +112,13 @@ export const useNotesStore = defineStore('notes', () => {
   const notes = ref<NoteListItem[]>([])
   const favoriteNotes = ref<NoteListItem[]>([])
   const currentNote = ref<Note | null>(null)
-  const isLoading = ref(false)
+  const isLoadingList = ref(false)
   const isLoadingMore = ref(false)
+  const isLoadingDetail = ref(false)
   const isLoadingFavorites = ref(false)
   const isLoadingMoreFavorites = ref(false)
-  const error = ref<string | null>(null)
+  const listError = ref<string | null>(null)
+  const detailError = ref<string | null>(null)
   const favoritesError = ref<string | null>(null)
   const pagination = ref<PaginationMeta>({
     currentPage: 1,
@@ -153,9 +155,9 @@ export const useNotesStore = defineStore('notes', () => {
   const notesListRefs: PaginatedListRefs = {
     items: notes,
     pagination,
-    isLoading,
+    isLoading: isLoadingList,
     isLoadingMore,
-    error,
+    error: listError,
     hasMore,
   }
 
@@ -216,32 +218,32 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   async function fetchNoteById(id: string) {
-    isLoading.value = true
-    error.value = null
+    isLoadingDetail.value = true
+    detailError.value = null
     try {
       currentNote.value = await notesApi.getById(id)
       return currentNote.value
     } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка загрузки заметки')
+      detailError.value = getApiErrorMessage(err, 'Ошибка загрузки заметки')
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingDetail.value = false
     }
   }
 
   async function createNote(data: CreateNoteRequest) {
-    isLoading.value = true
-    error.value = null
+    isLoadingDetail.value = true
+    detailError.value = null
     try {
       const note = await notesApi.create(data)
       notes.value.unshift(toNoteListItem(note))
       currentNote.value = note
       return note
     } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка создания заметки')
+      detailError.value = getApiErrorMessage(err, 'Ошибка создания заметки')
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingDetail.value = false
     }
   }
 
@@ -340,16 +342,10 @@ export const useNotesStore = defineStore('notes', () => {
   }
 
   async function toggleFavorite(note: NoteListItem | Note) {
-    error.value = null
-    try {
-      const updated = await notesApi.toggleFavorite(note.id, !note.isFavorite)
-      syncNoteInLists(updated)
-      syncFavoriteNotes(updated)
-      return updated
-    } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка обновления избранного')
-      throw err
-    }
+    const updated = await notesApi.toggleFavorite(note.id, !note.isFavorite)
+    syncNoteInLists(updated)
+    syncFavoriteNotes(updated)
+    return updated
   }
 
   async function moveNoteToFolder(
@@ -357,35 +353,23 @@ export const useNotesStore = defineStore('notes', () => {
     folderId: string | null,
     options?: { folderId?: string | null; tagIds?: string[] },
   ) {
-    error.value = null
-    try {
-      const note = await notesApi.moveToFolder(id, folderId)
-      applyNoteFolderChange(note, options)
-      return note
-    } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка перемещения заметки')
-      throw err
-    }
+    const note = await notesApi.moveToFolder(id, folderId)
+    applyNoteFolderChange(note, options)
+    return note
   }
 
   async function updateNote(id: string, data: UpdateNoteRequest) {
-    error.value = null
-    try {
-      const note = await notesApi.update(id, data)
-      syncNoteInLists(note)
-      if ('isFavorite' in data) {
-        syncFavoriteNotes(note)
-      }
-      return note
-    } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка обновления заметки')
-      throw err
+    const note = await notesApi.update(id, data)
+    syncNoteInLists(note)
+    if ('isFavorite' in data) {
+      syncFavoriteNotes(note)
     }
+    return note
   }
 
   async function deleteNote(id: string) {
-    isLoading.value = true
-    error.value = null
+    isLoadingDetail.value = true
+    detailError.value = null
     try {
       await notesApi.delete(id)
       notes.value = notes.value.filter((n) => n.id !== id)
@@ -402,10 +386,10 @@ export const useNotesStore = defineStore('notes', () => {
       }
       await useTrashStore().fetchCount()
     } catch (err: unknown) {
-      error.value = getApiErrorMessage(err, 'Ошибка удаления заметки')
+      detailError.value = getApiErrorMessage(err, 'Ошибка удаления заметки')
       throw err
     } finally {
-      isLoading.value = false
+      isLoadingDetail.value = false
     }
   }
 
@@ -417,11 +401,13 @@ export const useNotesStore = defineStore('notes', () => {
     notes.value = []
     favoriteNotes.value = []
     currentNote.value = null
-    isLoading.value = false
+    isLoadingList.value = false
     isLoadingMore.value = false
+    isLoadingDetail.value = false
     isLoadingFavorites.value = false
     isLoadingMoreFavorites.value = false
-    error.value = null
+    listError.value = null
+    detailError.value = null
     favoritesError.value = null
     pagination.value = {
       currentPage: 1,
@@ -447,13 +433,15 @@ export const useNotesStore = defineStore('notes', () => {
     notes,
     favoriteNotes,
     currentNote,
-    isLoading,
+    isLoadingList,
     isLoadingMore,
+    isLoadingDetail,
     isLoadingFavorites,
     isLoadingMoreFavorites,
     hasMore,
     favoritesHasMore,
-    error,
+    listError,
+    detailError,
     favoritesError,
     pagination,
     favoritesPagination,

@@ -197,10 +197,11 @@
 
 **Проблема:** god store `notes.ts` (476 строк). Общие `isLoading` / `error` для list fetch, detail fetch, create, delete, search — ошибка загрузки заметки может «утекать» на dashboard.
 
-- [ ] Ввести `isLoadingList` / `isLoadingDetail` (или аналог)
-- [ ] Ввести `listError` / `detailError`
-- [ ] Мутации (`toggleFavorite`, `moveNoteToFolder`, `updateNote`) — только toast, без записи в list `error`
-- [ ] Обновить views, читающие `notesStore.error` / `isLoading`
+- [x] Ввести `isLoadingList` / `isLoadingDetail` (или аналог)
+- [x] Ввести `listError` / `detailError`
+- [x] Мутации (`toggleFavorite`, `moveNoteToFolder`, `updateNote`) — только toast, без записи в list `error`
+- [x] Обновить views, читающие `notesStore.error` / `isLoading`
+- [x] Smoke: сценарии в [`future_autotests.md`](./future_autotests.md) (Vitest, фаза 20); ручной smoke опционален — [`for_tests.md`](./for_tests.md)
 
 ---
 

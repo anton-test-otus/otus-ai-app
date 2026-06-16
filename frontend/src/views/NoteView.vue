@@ -146,14 +146,14 @@
       </div>
 
       <LoadingState
-        v-if="!isNoteReady && notesStore.isLoading"
+        v-if="!isNoteReady && notesStore.isLoadingDetail"
         class="flex-1"
       />
 
       <ErrorState
-        v-else-if="!isNoteReady && notesStore.error"
+        v-else-if="!isNoteReady && notesStore.detailError"
         class="flex-1"
-        :message="notesStore.error"
+        :message="notesStore.detailError"
         @retry="retryLoadNote"
       />
 
@@ -179,7 +179,7 @@
       </div>
     </div>
 
-    <NoteMetadata v-if="isNoteReady && !notesStore.error" ref="metadataRef">
+    <NoteMetadata v-if="isNoteReady && !notesStore.detailError" ref="metadataRef">
       <div class="space-y-6">
         <FolderSelector
           v-model="noteFolderId"

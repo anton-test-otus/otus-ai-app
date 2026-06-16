@@ -12,8 +12,8 @@
       <LoadingState v-if="isInitialLoading" />
 
       <ErrorState
-        v-else-if="notesStore.error"
-        :message="notesStore.error"
+        v-else-if="notesStore.listError"
+        :message="notesStore.listError"
         @retry="loadNotes"
       />
 
@@ -89,7 +89,7 @@ const { toggleFavorite } = useFavoriteToggle()
 const { openNewNote } = useCreateNote()
 
 const isInitialLoading = computed(
-  () => notesStore.isLoading && notesStore.notes.length === 0,
+  () => notesStore.isLoadingList && notesStore.notes.length === 0,
 )
 
 const isEmpty = computed(() => notesStore.notes.length === 0)
@@ -161,8 +161,8 @@ const { sentinelRef: loadMoreSentinel } = useInfiniteList({
   canLoadMore: () =>
     notesStore.hasMore &&
     !notesStore.isLoadingMore &&
-    !notesStore.isLoading &&
-    !notesStore.error,
+    !notesStore.isLoadingList &&
+    !notesStore.listError,
 })
 
 watch(
