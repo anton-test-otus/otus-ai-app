@@ -37,6 +37,7 @@ final class UserFactory
 
     public function createFolder(User $user, string $name = 'Folder', ?Folder $parent = null): Folder
     {
+        $user = $this->resolveUser($user);
         $folder = new Folder();
         $folder->setUser($user);
         $folder->setName($name);
@@ -50,6 +51,7 @@ final class UserFactory
 
     public function createTag(User $user, string $name = 'tag'): Tag
     {
+        $user = $this->resolveUser($user);
         $tag = new Tag();
         $tag->setUser($user);
         $tag->setName($name);
@@ -66,6 +68,7 @@ final class UserFactory
         string $content = 'content',
         ?Folder $folder = null,
     ): Note {
+        $user = $this->resolveUser($user);
         $note = new Note();
         $note->setUser($user);
         $note->setTitle($title);
@@ -80,6 +83,9 @@ final class UserFactory
 
     public function createNoteVersion(Note $note, ?string $content = null, ?string $title = null): NoteVersion
     {
+        if (!$this->entityManager->contains($note)) {
+            $note = $this->entityManager->getReference(Note::class, $note->getId());
+        }
         $version = new NoteVersion();
         $version->setNote($note);
         $version->setContent($content ?? $note->getContent() ?? '');
@@ -95,5 +101,14 @@ final class UserFactory
     {
         $note->setDeletedAt(new \DateTimeImmutable());
         $this->entityManager->flush();
+    }
+
+    private function resolveUser(User $user): User
+    {
+        if ($this->entityManager->contains($user)) {
+            return $user;
+        }
+
+        return $this->entityManager->getReference(User::class, $user->getId());
     }
 }
