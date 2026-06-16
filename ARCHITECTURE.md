@@ -15,8 +15,8 @@ flowchart TB
     
     subgraph backend [Symfony 7 Бэкенд]
         API[API Platform]
-        Auth[Безопасность/JWT]
-        Service[Сервис заметок]
+        Auth[JWT + Refresh]
+        State[State processors / controllers]
     end
     
     subgraph storage [Слой данных]
@@ -25,8 +25,8 @@ flowchart TB
     
     frontend -->|REST API| API
     API --> Auth
-    API --> Service
-    Service --> PG
+    API --> State
+    State --> PG
 ```
 
 ## Стек технологий
@@ -35,12 +35,14 @@ flowchart TB
 
 | Компонент | Технология | Назначение |
 |-----------|------------|------------|
-| Фреймворк | Symfony 7 | Современный PHP фреймворк |
-| API | API Platform 3 | REST API с OpenAPI документацией |
-| ORM | Doctrine | Абстракция БД, миграции |
-| Авторизация | LexikJWTAuthenticationBundle | JWT-аутентификация |
-| Валидация | Symfony Validator | Валидация запросов на бэкенде |
-| Документация API | Swagger UI (через API Platform) | Интерактивная документация API |
+| Фреймворк | Symfony 7.4 | PHP фреймворк |
+| API | API Platform 4.3 | REST API, Hydra/JSON, OpenAPI |
+| ORM | Doctrine ORM 3 | Сущности, репозитории, миграции |
+| Авторизация | LexikJWTAuthenticationBundle | JWT access token |
+| Refresh token | Gesdinet JWTRefreshTokenBundle | Ротация refresh token (`single_use`) |
+| CORS | NelmioCorsBundle | CORS для dev/prod |
+| Валидация | Symfony Validator | Ограничения сущностей, DTO, группы |
+| Документация API | Swagger UI (`/api/docs`) | Каталог endpoints и схем — см. [README.md](./README.md#swagger-ui) |
 | База данных | PostgreSQL 16 | Основное хранилище данных |
 
 ### Безопасность и изоляция данных
@@ -62,15 +64,17 @@ flowchart TB
 |-----------|------------|------------|
 | Фреймворк | Vue 3 + Composition API | UI фреймворк |
 | Язык | TypeScript | Типобезопасность |
-| Сборка | Vite | Быстрая разработка и сборка |
+| Сборка | Vite 6 | Dev-сервер и production-сборка |
+| UI | PrimeVue 4 + PrimeIcons | Компоненты, toast, confirm, формы |
 | Состояние | Pinia | Управление состоянием |
-| Маршрутизация | Vue Router | Клиентская маршрутизация |
-| Редактор | Milkdown | Markdown WYSIWYG редактор |
-| Утилиты | VueUse | Composables (автосохранение, debounce) |
+| Маршрутизация | Vue Router 4 | Клиентская маршрутизация |
+| Редактор / preview | Milkdown 7.9 | WYSIWYG markdown и read-only preview |
+| Утилиты | VueUse | Composables (debounce, breakpoints и др.) |
 | Валидация | VeeValidate + Zod | Валидация форм на фронтенде |
 | Drag & Drop | HTML5 DnD | Перетаскивание заметок из списка на папки в сайдбаре (desktop); диалог на touch |
 | Граф связей | vis-network | Локальная визуализация wiki-связей в `NoteView` |
-| CSS | Tailwind CSS | Mobile-first утилитарные стили |
+| CSS | Tailwind CSS 3 | Mobile-first утилитарные стили |
+| Тесты | Vitest | Unit-тесты утилит, stores, API client |
 
 ## Модель данных
 
@@ -90,10 +94,10 @@ erDiagram
         uuid id PK
         string email UK
         string password
-        string role
+        json roles
         boolean is_active
-        int autosave_delay_seconds
-        int version_consolidation_window_minutes
+        int autosave_delay_seconds nullable
+        int version_consolidation_window_minutes nullable
         timestamp created_at
     }
     
@@ -146,86 +150,52 @@ erDiagram
 otus-ai-app/
 ├── backend/                    # Symfony приложение
 │   ├── config/
-│   │   ├── packages/          # Конфигурации бандлов
-│   │   └── routes.yaml
+│   │   ├── packages/          # Конфигурации бандлов (api_platform, security, jwt, …)
+│   │   └── routes/            # Маршруты API Platform, JWT login
 │   ├── migrations/            # Doctrine миграции
 │   ├── src/
-│   │   ├── Controller/        # Кастомные контроллеры (при необходимости)
-│   │   ├── Entity/            # Doctrine сущности
-│   │   │   ├── User.php
-│   │   │   ├── Note.php
-│   │   │   ├── Folder.php
-│   │   │   ├── Tag.php
-│   │   │   ├── NoteVersion.php
-│   │   │   └── NoteLink.php
-│   │   ├── Repository/        # Doctrine репозитории
-│   │   ├── Service/
-│   │   │   ├── NoteService.php
-│   │   │   ├── WikiLinkParser.php
-│   │   │   ├── NoteLinkSyncService.php
-│   │   │   ├── NoteGraphService.php
-│   │   │   └── TrashService.php
-│   │   ├── DemoSeed/            # Demo seed (фаза 15)
-│   │   │   ├── DemoUniverseDefinition.php
-│   │   │   ├── DemoNoteDefinition.php
-│   │   │   ├── DemoVersionDefinition.php
-│   │   │   ├── DemoUniverseSeeder.php
-│   │   │   ├── DemoLinkPlaceholderResolver.php
-│   │   │   └── Universe/        # PotterUniverse, WesterosUniverse, WitcherUniverse
-│   │   ├── EventSubscriber/   # Doctrine event subscribers
-│   │   └── Command/           # Консольные команды (очистка корзины, seed, admin)
-│   ├── composer.json
-│   └── .env
+│   │   ├── Controller/        # Auth, Admin, WikiLink, NoteSearch
+│   │   ├── Dto/               # ChangePasswordDto, UpdateUserSettingsDto, …
+│   │   ├── Entity/            # User, Note, Folder, Tag, NoteVersion, NoteLink, RefreshToken
+│   │   ├── OpenApi/           # CustomEndpointsOpenApiFactory — auth/admin/wiki в Swagger
+│   │   ├── Repository/
+│   │   ├── Security/          # UserChecker, ResourceOwnershipAssert, OwnedRelationAssert
+│   │   ├── Serializer/        # NoteListNormalizer, NoteReadNormalizer, …
+│   │   ├── Service/           # WikiLinkParser, NoteLinkSyncService, NoteGraphService, …
+│   │   ├── State/             # Processors и providers API Platform
+│   │   ├── DemoSeed/          # Demo seed (3 вселенные)
+│   │   ├── EventListener/     # JWTCreatedListener, NoteNotFoundExceptionListener
+│   │   └── Command/           # reset-schema, create-admin, seed-demo-data, cleanup-trash
+│   ├── tests/                 # PHPUnit (Functional, Integration)
+│   └── composer.json
 │
 ├── frontend/                   # Vue 3 приложение
 │   ├── src/
+│   │   ├── api/               # client.ts (fetch + JWT refresh), auth, notes, folders, …
 │   │   ├── components/
-│   │   │   ├── editor/        # MarkdownEditor, Preview
-│   │   │   ├── notes/         # NoteLinksGraphDialog
-│   │   │   ├── sidebar/       # FolderTree, TagList, Search
-│   │   │   └── common/        # LoadingState, ErrorState, EmptyState, Toast
-│   │   ├── composables/
-│   │   │   ├── useAutosave.ts
-│   │   │   ├── useNotes.ts
-│   │   │   └── useFolders.ts
-│   │   ├── stores/
-│   │   │   ├── auth.ts
-│   │   │   ├── notes.ts
-│   │   │   ├── folders.ts
-│   │   │   └── admin.ts
-│   │   ├── views/
-│   │   │   ├── LoginView.vue
-│   │   │   ├── RegisterView.vue
-│   │   │   ├── DashboardView.vue
-│   │   │   ├── FavoritesView.vue
-│   │   │   ├── NoteView.vue
-│   │   │   ├── NotePrintView.vue
-│   │   │   ├── TrashView.vue
-│   │   │   ├── SettingsView.vue
-│   │   │   └── admin/
-│   │   │       └── UsersView.vue
-│   │   ├── api/
-│   │   │   └── client.ts      # Axios/fetch обёртка
+│   │   │   ├── editor/        # MarkdownEditor, MarkdownPreview, wiki-link nodes
+│   │   │   ├── notes/         # NoteLinksGraphDialog, MoveNoteToFolderDialog
+│   │   │   ├── sidebar/       # FolderTree, TagsPanel
+│   │   │   ├── layout/        # AppLayout, AppSidebar, NoteMetadata
+│   │   │   └── common/        # LoadingState, ErrorState, EmptyState, SaveIndicator
+│   │   ├── composables/       # useAutosave, useNoteExport, useMoveNoteToFolder, …
+│   │   ├── stores/            # auth, notes, folders, tags, trash (+ resetUserStores)
+│   │   ├── views/             # Dashboard, NoteView, Trash, Settings, admin/AdminUsersView, …
+│   │   ├── utils/             # hydra, sanitizeText, exportNote, noteGraph, …
 │   │   ├── types/
-│   │   │   └── index.ts       # TypeScript интерфейсы
-│   │   ├── router/
-│   │   │   └── index.ts
-│   │   ├── App.vue
-│   │   └── main.ts
+│   │   └── router/
 │   ├── package.json
-│   ├── tsconfig.json
 │   └── vite.config.ts
 │
 ├── docker/
 │   ├── nginx/
-│   │   └── default.conf
 │   └── php/
-│       └── Dockerfile
-├── docker-compose.yml          # PostgreSQL, PHP-FPM, Nginx
+├── volumes/                    # node_modules (Docker volume для frontend)
+├── docker-compose.yml          # postgres, php, nginx, node, cron
 ├── docker-compose.prod.yml     # (фаза 19) demo/prod без node-сервиса
 ├── ARCHITECTURE.md
-├── demoseed.md                 # Спецификация demo seed (фаза 15)
-├── REPORT.md                   # Проблемы рефакторинга и их решения
+├── demoseed.md
+├── REPORT.md
 └── README.md
 ```
 
@@ -254,8 +224,9 @@ otus-ai-app/
 - Максимальная глубина вложенности: 3 уровня (валидация на backend)
 - Папки сортируются по названию (алфавитный порядок); перетаскивание папок **не** используется (фаза 5)
 - Заметки сортируются по дате последнего обновления (updated_at DESC)
-- Смена папки заметки: `FolderSelector` в метаданных (`NoteView`); drag-and-drop из списка (`NoteCard` на dashboard и избранном) в дерево сайдбара (`FolderTree` / `FolderTreeItem`, пункт «Все заметки» = корень); на touch — диалог «Переместить в папку» (`MoveNoteToFolderDialog`). Общая логика — `useMoveNoteToFolder` + `notesStore.moveNoteToFolder` (PATCH `folder`)
-- Заметки на корневом уровне разрешены (null `folder_id`)
+- Смена папки заметки: `FolderSelector` в метаданных (`NoteView`); drag-and-drop из списка (`NoteCard`) в дерево сайдбара; на touch — `MoveNoteToFolderDialog`. Общая логика — `useMoveNoteToFolder` + `notesStore.moveNoteToFolder` (**PATCH** `folder` на `/api/notes/{id}`)
+- Заметки на корневом уровне разрешены (`folder = null`)
+- Удаление папки — **soft delete** (`deletedAt` на `Folder`); папка исчезает из `/api/folders/tree`, заметки внутри **не** переносятся в корзину автоматически
 
 ### 4. История версий
 
@@ -282,16 +253,18 @@ otus-ai-app/
 
 ### 7. Корзина (мягкое удаление)
 
-- Временная метка `deleted_at` для мягкого удаления
-- Удалённые заметки исключаются из обычных запросов
-- Просмотр корзины для обзора удалённых заметок
-- Действие восстановления очищает `deleted_at`
-- Запланированная Symfony команда удаляет заметки старше 30 дней
-- Каскад: удаление папки перемещает содержимое в корзину
+- `DELETE /api/notes/{id}` на активной заметке — soft delete (`deleted_at`)
+- Повторный `DELETE /api/notes/{id}` на заметке уже в корзине — **окончательное** удаление
+- `GET /api/notes/trash` — список удалённых заметок
+- `POST /api/notes/{id}/restore` — восстановление
+- `POST /api/notes/trash/empty` — очистка корзины
+- Запланированная Symfony-команда `app:cleanup-trash` удаляет заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно)
 
 ## Управление состоянием на фронтенде
 
 Состояние разделено на **глобальное (Pinia)** — данные с сервера и фильтры, общие для layout/views — и **локальное (composables + refs в views)** — черновик редактора, автосохранение, UI-режимы.
+
+**HTTP-клиент:** `api/client.ts` — native Fetch API (не axios), Bearer JWT, автоматический refresh на 401 через `/api/auth/refresh`, затем повтор запроса; при неудаче — logout.
 
 ```mermaid
 flowchart LR
@@ -434,91 +407,6 @@ flowchart LR
 - **Версии заметок** — отдельная таблица/API; в Pinia не кэшируются глобально, только в `useNoteVersions` на время открытой панели.
 - **Полный список заметок пользователя** — подгружается порциями (infinite scroll на dashboard); избранные — на `/favorites` с тем же паттерном подгрузки
 
-## API Endpoints
-
-### Аутентификация
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| POST | `/api/auth/register` | Регистрация пользователя |
-| POST | `/api/auth/login` | Получение JWT access token и refresh token |
-| POST | `/api/auth/refresh` | Обновление access token по refresh token (тело: `{ "refreshToken": "..." }`) |
-| GET | `/api/auth/me` | Получение текущего пользователя (включая `settings` и `defaults`) |
-| PATCH | `/api/auth/settings` | Обновление настроек текущего пользователя |
-| POST | `/api/auth/change-password` | Смена пароля (текущий + новый; мин. 6 символов; новый ≠ текущий) |
-
-**JWT:** login/register возвращают `token` (access), `refreshToken` и `user`. Access TTL — `JWT_TOKEN_TTL` (default 3600 с). Refresh TTL — `JWT_REFRESH_TOKEN_TTL` (default 2592000 с); при каждом успешном refresh выдаётся новый refresh token (старый инвалидируется). На **401** с истёкшим access token клиент вызывает `/api/auth/refresh`; при невалидном refresh — повторный login.
-
-### Заметки
-
-Сериализация: **`note:list`** — collection-ответы (без `content`, с `contentPreview`); **`note:read`** — одна заметка и ответы мутаций (с полным `content`).
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/notes` | Список заметок (`note:list`; пагинация; фильтры: `folder.id`, `isFavorite`, `title`, `content`; сортировка: `order[updatedAt]`, по умолчанию `updatedAt` desc) |
-| GET | `/api/notes/search` | Поиск и фильтрация (`note:list`; пагинация; параметры: `q`, `folderId`, `tags[]` — логика **И**, `isFavorite`, `dateFrom`, `dateTo`) |
-| POST | `/api/notes` | Создание заметки |
-| GET | `/api/notes/{id}` | Получение заметки с содержимым (`note:read`) |
-| PUT | `/api/notes/{id}` | Полное обновление заметки; создаёт версию при значимых изменениях |
-| PATCH | `/api/notes/{id}` | Частичное обновление (`isFavorite`, `folder`, `tags`, …); версия **не** создаётся; wiki-ссылки синхронизируются только если изменился `content` |
-| DELETE | `/api/notes/{id}` | Мягкое удаление (перемещение в корзину) |
-| PUT | `/api/notes/{id}/move` | Перемещение в папку / изменение порядка |
-| GET | `/api/notes/{id}/versions` | Получение истории версий |
-| POST | `/api/notes/{id}/versions/{versionId}/restore` | Восстановление из версии |
-| GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 1; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
-
-Связи wiki (`note_links`) синхронизируются только через сохранение `content` заметки (`NoteLinkSyncService`); публичного CRUD для `note_links` нет. Глобальная коллекция `GET /api/note_versions` не экспонируется — версии доступны через `/api/notes/{id}/versions`.
-
-Поля **`linkStats`** (`{ incoming, outgoing }`) и **`versionCount`** добавляются в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer`.
-
-**Индексы и поиск (MVP):** списки и избранные используют partial-индексы PostgreSQL на `notes` — `(user_id, updated_at DESC) WHERE deleted_at IS NULL` и вариант с `is_favorite = true`. Поиск по `title`/`content` (`SearchFilter`, `NoteRepository::search`) — `LIKE '%…%'` без full-text индекса; для больших баз — follow-up: GIN + `to_tsvector`.
-
-**UI (фаза 14.3):** в тулбаре `NoteView` — кнопки «Связанные заметки» (`pi-share-alt`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`) и «История версий» (`pi-history`, не на черновиках); обе открывают модалки. Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, fullscreen `< md`): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро. `VersionHistoryDialog` — список версий, diff и restore. Сайдбар метаданных: папка, теги, информация (включая `versionCount` из `note:read`). Обратные ссылки отображаются через граф и `linkStats`, не отдельным API.
-
-### Папки
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/folders` | Список папок в виде дерева |
-| POST | `/api/folders` | Создание папки (`name`, `parent`, опционально `icon` — PrimeIcons без префикса `pi-`) |
-| PUT | `/api/folders/{id}` | Обновление папки (`name`, `parent`, `icon`) |
-| DELETE | `/api/folders/{id}` | Удаление папки (содержимое в корзину) |
-| PUT | `/api/folders/{id}/move` | Перемещение / изменение порядка папки |
-
-### Теги
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/tags` | Список тегов пользователя; опционально `folderId` и `tags[]` — теги заметок в папке / в текущей отфильтрованной выборке |
-| POST | `/api/tags` | Создание тега |
-| DELETE | `/api/tags/{id}` | Удаление тега |
-| GET | `/api/tags/{id}/notes` | Получение заметок с тегом |
-
-### Корзина
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/trash` | Список удалённых заметок |
-| POST | `/api/trash/{id}/restore` | Восстановление заметки из корзины |
-| DELETE | `/api/trash/{id}` | Окончательное удаление |
-| DELETE | `/api/trash` | Очистка корзины |
-
-### Администрирование (требуется ROLE_ADMIN)
-
-| Метод | Endpoint | Описание |
-|-------|----------|----------|
-| GET | `/api/admin/users` | Список всех пользователей (с пагинацией) |
-| GET | `/api/admin/users/{id}` | Получение данных пользователя |
-| PATCH | `/api/admin/users/{id}/enable` | Активация аккаунта пользователя |
-| PATCH | `/api/admin/users/{id}/disable` | Деактивация аккаунта пользователя |
-| DELETE | `/api/admin/users/{id}` | Удаление пользователя и его данных |
-
-## Документация API
-
-- Swagger UI доступен по адресу `/api/docs`
-- Спецификация OpenAPI 3.0 автоматически генерируется API Platform
-- Интерактивное тестирование прямо из документации
-
 ## Валидация
 
 ### Валидация на бэкенде (Symfony Validator)
@@ -557,7 +445,21 @@ const noteSchema = z.object({
 
 ## Пагинация
 
-Все endpoints со списками возвращают пагинированные ответы:
+Два формата ответов для коллекций:
+
+**1. API Platform (Hydra)** — `GET /api/notes`, `/api/folders`, `/api/tags`, `/api/notes/trash`:
+
+```json
+{
+  "member": [...],
+  "totalItems": 150,
+  "view": { "first": "…", "last": "…", "next": "…" }
+}
+```
+
+Фронтенд парсит через `parseHydraCollection()` (`utils/hydra.ts`); query-параметры: `page`, `itemsPerPage` (default 20, max 100).
+
+**2. Кастомный JSON** — `GET /api/notes/search`, `GET /api/admin/users`:
 
 ```json
 {
@@ -571,9 +473,7 @@ const noteSchema = z.object({
 }
 ```
 
-- Размер страницы по умолчанию: 20 элементов
-- Настраивается через query параметры `?page=N&perPage=N`
-- Максимальный размер страницы: 100 элементов
+Query: `page`, `perPage` (search) или `perPage` (admin).
 
 ## Адаптивный дизайн (Mobile-First)
 
@@ -665,9 +565,9 @@ docker compose exec php php bin/console app:create-admin
 | Роль | Права |
 |------|-------|
 | `ROLE_USER` | CRUD своих заметок, папок, тегов |
-| `ROLE_ADMIN` | Все права пользователя + управление пользователями |
+| `ROLE_ADMIN` | Все права пользователя + `/api/admin/*` (управление пользователями) |
 
 - Первый зарегистрированный пользователь автоматически получает `ROLE_ADMIN`
-- Администраторы могут повышать других пользователей до администратора
-- Деактивированные пользователи не могут войти в систему
+- Администраторы могут назначать и снимать роль через promote/demote
+- Деактивированные пользователи не могут войти (`UserChecker`)
 
