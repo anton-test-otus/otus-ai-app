@@ -177,21 +177,4 @@ class NoteRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    /**
-     * Find notes that link to the given note (backlinks)
-     * Returns notes that have wiki-links pointing to this note
-     * 
-     * @return Note[]
-     */
-    public function findBacklinks(Note $note): array
-    {
-        return $this->createQueryBuilder('n')
-            ->innerJoin('n.outgoingLinks', 'nl')
-            ->where('nl.targetNote = :note')
-            ->andWhere('n.deletedAt IS NULL')
-            ->setParameter('note', $note)
-            ->orderBy('n.updatedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
-    }
 }

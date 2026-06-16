@@ -448,15 +448,16 @@ flowchart LR
 | DELETE | `/api/notes/{id}` | Мягкое удаление (перемещение в корзину) |
 | PUT | `/api/notes/{id}/move` | Перемещение в папку / изменение порядка |
 | GET | `/api/notes/{id}/versions` | Получение истории версий |
-| POST | `/api/notes/{id}/restore-version/{versionId}` | Восстановление из версии |
-| GET | `/api/notes/{id}/backlinks` | Получение заметок, ссылающихся на эту |
+| POST | `/api/notes/{id}/versions/{versionId}/restore` | Восстановление из версии |
 | GET | `/api/notes/{id}/graph` | Локальный subgraph wiki-связей (`depth` 1–3, default 1; `direction`: `both` \| `outgoing` \| `incoming`; max 120 узлов; `truncated`, `frontierNodeIds`) |
+
+Связи wiki (`note_links`) синхронизируются только через сохранение `content` заметки (`NoteLinkSyncService`); публичного CRUD для `note_links` нет. Глобальная коллекция `GET /api/note_versions` не экспонируется — версии доступны через `/api/notes/{id}/versions`.
 
 Поля **`linkStats`** (`{ incoming, outgoing }`) и **`versionCount`** добавляются в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer`.
 
 **Индексы и поиск (MVP):** списки и избранные используют partial-индексы PostgreSQL на `notes` — `(user_id, updated_at DESC) WHERE deleted_at IS NULL` и вариант с `is_favorite = true`. Поиск по `title`/`content` (`SearchFilter`, `NoteRepository::search`) — `LIKE '%…%'` без full-text индекса; для больших баз — follow-up: GIN + `to_tsvector`.
 
-**UI (фаза 14.3):** в тулбаре `NoteView` — кнопки «Связанные заметки» (`pi-share-alt`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`) и «История версий» (`pi-history`, не на черновиках); обе открывают модалки. Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, fullscreen `< md`): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро. `VersionHistoryDialog` — список версий, diff и restore. Сайдбар метаданных: папка, теги, информация (включая `versionCount` из `note:read`). Endpoint `GET /notes/{id}/backlinks` в API сохранён, из UI удалён.
+**UI (фаза 14.3):** в тулбаре `NoteView` — кнопки «Связанные заметки» (`pi-share-alt`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`) и «История версий» (`pi-history`, не на черновиках); обе открывают модалки. Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, fullscreen `< md`): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро. `VersionHistoryDialog` — список версий, diff и restore. Сайдбар метаданных: папка, теги, информация (включая `versionCount` из `note:read`). Обратные ссылки отображаются через граф и `linkStats`, не отдельным API.
 
 ### Папки
 

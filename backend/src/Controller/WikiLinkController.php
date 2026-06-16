@@ -25,28 +25,6 @@ class WikiLinkController extends AbstractController
     ) {
     }
 
-    #[Route('/notes/{id}/backlinks', name: 'note_backlinks', methods: ['GET'])]
-    public function getBacklinks(Note $note): JsonResponse
-    {
-        $user = $this->getUser();
-        
-        if ($note->getUser() !== $user) {
-            return $this->json(['error' => 'Access denied'], 403);
-        }
-
-        $backlinks = $this->noteRepository->findBacklinks($note);
-
-        $result = array_map(function (Note $note) {
-            return [
-                'id' => $note->getId(),
-                'title' => $note->getTitle(),
-                'updatedAt' => $note->getUpdatedAt()->format('c'),
-            ];
-        }, $backlinks);
-
-        return $this->json($result);
-    }
-
     #[Route('/notes/{id}/graph', name: 'note_graph', methods: ['GET'])]
     public function getGraph(Note $note, Request $request): JsonResponse
     {

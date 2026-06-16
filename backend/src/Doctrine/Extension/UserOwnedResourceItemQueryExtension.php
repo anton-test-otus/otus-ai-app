@@ -7,7 +7,6 @@ use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
 use App\Entity\Folder;
 use App\Entity\Note;
-use App\Entity\NoteLink;
 use App\Entity\NoteVersion;
 use App\Entity\Tag;
 use Doctrine\ORM\QueryBuilder;
@@ -45,7 +44,6 @@ final class UserOwnedResourceItemQueryExtension implements QueryItemExtensionInt
             Folder::class => $this->applyFolderFilter($queryBuilder, $rootAlias, $user, $isGet),
             Tag::class => $this->applyTagFilter($queryBuilder, $rootAlias, $user),
             NoteVersion::class => $this->applyNoteVersionFilter($queryBuilder, $rootAlias, $user),
-            NoteLink::class => $this->applyNoteLinkFilter($queryBuilder, $rootAlias, $user, $isGet),
             default => null,
         };
     }
@@ -87,19 +85,4 @@ final class UserOwnedResourceItemQueryExtension implements QueryItemExtensionInt
             ->setParameter('owned_user', $user);
     }
 
-    private function applyNoteLinkFilter(QueryBuilder $queryBuilder, string $rootAlias, object $user, bool $isGet): void
-    {
-        $queryBuilder
-            ->innerJoin(sprintf('%s.sourceNote', $rootAlias), 'owned_nl_source')
-            ->innerJoin(sprintf('%s.targetNote', $rootAlias), 'owned_nl_target')
-            ->andWhere('owned_nl_source.user = :owned_user')
-            ->andWhere('owned_nl_target.user = :owned_user')
-            ->setParameter('owned_user', $user);
-
-        if ($isGet) {
-            $queryBuilder
-                ->andWhere('owned_nl_source.deletedAt IS NULL')
-                ->andWhere('owned_nl_target.deletedAt IS NULL');
-        }
-    }
 }

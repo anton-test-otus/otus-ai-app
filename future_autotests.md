@@ -63,7 +63,8 @@
 | 7 | `GET /api/tags/{tagB.id}` + token A | **404** |
 | 8 | `PUT` / `DELETE /api/tags/{tagB.id}` + token A | **404** |
 | 9 | `GET /api/note_versions/{versionB.id}` + token A (если есть fixture) | **404** |
-| 10 | `GET /api/note_links/{linkB.id}` + token A (если есть fixture) | **404** |
+
+**Примечание:** публичный CRUD `note_links` и global `GET /api/note_versions` удалены (BE selfreview шаг 11); кейс для `note_links` не актуален.
 
 **Инвариант:** чужой ресурс не отдаётся и не мутируется; на item GET — **404**, не 403.
 
@@ -142,6 +143,56 @@ docker compose exec php composer require --dev symfony/test-pack phpunit/phpunit
 ### Файлы (предположительно)
 
 - `backend/tests/Functional/OwnedRelationValidationTest.php`
+- переиспользовать fixtures из `ResourceOwnershipTest` / `UserFactory`
+
+---
+
+## BE сузить API — removed endpoints и регрессия
+
+**Источник:** `backend_selfreview.md`, шаг 11 (вариант A); ручной smoke — [`for_tests.md`](./for_tests.md) «BE Шаг 11»  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `NoteLink` без `ApiResource`, `NoteVersion` без global collection, `WikiLinkController` без `backlinks`
+
+### Зачем автотест вместо ручного smoke
+
+Проверка «эндпоинт удалён → 404» и регрессия версий/графа — повторяемый набор HTTP-запросов; покрыть **все пункты** из ручной проверки шага 11 одним test class.
+
+### Подготовка (fixtures)
+
+1. **userA** + JWT (как в «BE IDOR»).
+2. **noteA** — активная заметка user A.
+3. **noteTarget** — вторая активная заметка user A (для wiki-ссылки).
+4. **noteVersion** — хотя бы одна запись в `note_versions` для `noteA` (создать через `PUT` или fixture).
+5. После кейса sync: `noteA` с `content`, содержащим `[[{noteTarget.id}]]`.
+
+### Кейсы — удалённые эндпоинты (404)
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `GET /api/note_links` + token A | **404** |
+| 2 | `POST /api/note_links` + token A, body `{ sourceNote, targetNote }` | **404** |
+| 3 | `GET /api/note_versions` + token A (global collection, без note id) | **404** |
+| 4 | `GET /api/notes/{noteA.id}/backlinks` + token A | **404** |
+
+### Кейсы — регрессия (200 + инварианты)
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 5 | `GET /api/notes/{noteA.id}/versions` + token A | **200**, Hydra collection, ≥1 элемент при наличии версии |
+| 6 | `GET /api/notes/{noteA.id}/graph` + token A | **200**, JSON с `nodes` / `edges` (или пустой subgraph) |
+| 7 | `PUT /api/notes/{noteA.id}` + token A, content с wiki-ссылкой на `noteTarget` | **200** |
+| 8 | `GET /api/notes/{noteA.id}` + token A после кейса 7 | **200**, `linkStats.outgoing >= 1` |
+| 9 | `GET /api/notes/{noteA.id}/graph` + token A после кейса 7 | **200**, ребро source→target в subgraph |
+
+### Дополнительно (route list)
+
+- `debug:router` / assert: нет маршрутов `note_links`, `note_backlinks`, global `GET /api/note_versions` (collection).
+- `GET /api/note_versions/{id}` для своей версии — **200** (item endpoint сохранён).
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/NarrowApiSurfaceTest.php`
 - переиспользовать fixtures из `ResourceOwnershipTest` / `UserFactory`
 
 ---

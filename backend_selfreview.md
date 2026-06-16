@@ -198,10 +198,9 @@
 
 **Файлы:** `Entity/NoteLink.php`, `Entity/NoteVersion.php`, `Controller/WikiLinkController.php`
 
-- [ ] **Вариант A:** убрать `Post`/`Delete`/`GetCollection` у `NoteLink`; оставить только внутреннюю таблицу + graph/backlinks при необходимости
-- [ ] **Вариант B:** пометить deprecated в OpenAPI, добавить `security` / ownership (если оставляем)
-- [ ] Убрать или deprecated `GET /note_versions` collection
-- [ ] `backlinks` — удалить endpoint или оставить с пометкой deprecated (согласовать с фронтом, шаг 4 `frontend_selfreview.md`)
+- [x] **Вариант A:** убрать `Post`/`Delete`/`GetCollection` у `NoteLink`; оставить только внутреннюю таблицу + graph/backlinks при необходимости
+- [x] Убрать или deprecated `GET /note_versions` collection
+- [x] `backlinks` — удалить endpoint или оставить с пометкой deprecated (согласовать с фронтом, шаг 4 `frontend_selfreview.md`)
 
 ---
 

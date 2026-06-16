@@ -8,7 +8,6 @@ use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Post;
 use App\Repository\NoteVersionRepository;
-use App\State\NoteVersionCollectionProvider;
 use App\State\NoteVersionsByNoteProvider;
 use App\State\RestoreVersionProcessor;
 use Doctrine\DBAL\Types\Types;
@@ -21,7 +20,6 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Table(name: 'note_versions')]
 #[ApiResource(
     operations: [
-        new GetCollection(provider: NoteVersionCollectionProvider::class),
         new GetCollection(
             uriTemplate: '/notes/{noteId}/versions',
             uriVariables: [

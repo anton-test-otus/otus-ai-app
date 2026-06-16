@@ -987,5 +987,20 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - `backend/src/Service/WikiLinkParser.php`
 - `backend/src/Service/NoteVersionService.php`
 
+### BE Шаг 11: сузить неиспользуемую поверхность API (исправлено)
+
+**Проблема:** публичный CRUD `note_links`, глобальная коллекция `GET /api/note_versions` и `GET /api/notes/{id}/backlinks` не использовались UI; связи синхронизируются через `NoteLinkSyncService`, версии — через `/notes/{id}/versions`, обратные ссылки — через граф и `linkStats`.
+
+**Решение (вариант A):** с `NoteLink` снят `#[ApiResource]` (таблица только для внутренней синхронизации); удалены `NoteLinkProcessor`, `NoteLinkCollectionProvider`, `NoteVersionCollectionProvider`; убран route `backlinks` и `NoteRepository::findBacklinks`; фильтр ownership для `NoteLink` в item extension больше не нужен.
+
+**Затронутые файлы:**
+- `backend/src/Entity/NoteLink.php`
+- `backend/src/Entity/NoteVersion.php`
+- `backend/src/Controller/WikiLinkController.php`
+- `backend/src/Repository/NoteRepository.php`
+- `backend/src/Doctrine/Extension/UserOwnedResourceItemQueryExtension.php`
+- удалены `NoteLinkProcessor.php`, `NoteLinkCollectionProvider.php`, `NoteVersionCollectionProvider.php`
+- `ARCHITECTURE.md`
+
 ---
 

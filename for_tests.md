@@ -319,3 +319,35 @@
 
 ### Автотесты (фаза 20+)
 - Миграция up/down; EXPLAIN plan smoke в CI (опционально).
+
+---
+
+## BE Шаг 11 — сузить неиспользуемую поверхность API
+
+**Источник:** `backend_selfreview.md`, шаг 11 (вариант A)
+
+### Smoke (ручная проверка)
+- [ ] `GET /api/note_links` → **404**
+- [ ] `POST /api/note_links` → **404**
+- [ ] `GET /api/note_versions` (глобальная коллекция) → **404**
+- [ ] `GET /api/notes/{id}/backlinks` → **404**
+- [ ] `GET /api/notes/{id}/versions` — **200**, список версий заметки (регрессия)
+- [ ] `GET /api/notes/{id}/graph` — **200**, граф связей (регрессия)
+- [ ] Сохранение заметки с wiki-ссылками — `linkStats` и граф обновляются (синхронизация `note_links` через content)
+
+**Ожидание:** лишние эндпоинты недоступны; используемые пути версий/графа/синхронизации работают как раньше.
+
+### Автотесты (фаза 20+)
+
+Покрыть **все эндпоинты из ручной проверки** выше — см. [`future_autotests.md`](./future_autotests.md) «BE сузить API — removed endpoints и регрессия»:
+
+- `GET /api/note_links` → 404
+- `POST /api/note_links` → 404
+- `GET /api/note_versions` (global collection) → 404
+- `GET /api/notes/{id}/backlinks` → 404
+- `GET /api/notes/{id}/versions` → 200
+- `GET /api/notes/{id}/graph` → 200
+- `PUT` заметки с wiki-ссылкой → `linkStats` и graph обновлены
+- Route list: нет `note_links` CRUD, `backlinks`, global `note_versions` collection; item `GET /api/note_versions/{id}` сохранён
+
+---
