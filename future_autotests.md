@@ -2,7 +2,8 @@
 
 Список сценариев для реализации в PHPUnit (бэкенд) и Vitest (фронтенд).  
 **В рамках selfreview тестовый код не пишем** — только фиксируем спецификацию здесь.  
-Ручной smoke остаётся в [`for_tests.md`](./for_tests.md).
+Ручной smoke остаётся в [`for_tests.md`](./for_tests.md).  
+План реализации по PR/спринтам — [`autotests_prs.md`](./autotests_prs.md).
 
 Формат записи:
 

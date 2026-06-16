@@ -399,7 +399,7 @@ Additive-фича; опирается на установленные loading/er
   - **Разработка (текущее):** `docker-compose.yml` — сервис `node` с `npm install` и Vite dev server (`5173`); hot reload; API через nginx (`APP_PORT`, по умолчанию `8080`)
   - **Демо / продакшен:** отдельный compose-файл (например `docker-compose.prod.yml` или profile `demo`) — **без** сервиса `node`; **без** `npm install` и сборки при старте контейнеров; статический фронтенд отдаётся nginx из заранее собранного `dist` (multi-stage build образа или volume с артефактом CI); один входной URL (`APP_PORT`); документировать в README: когда какой вариант использовать, команды запуска, требование предварительной сборки фронта для demo-режима
 - [ ] **Тесты — минимальный набор (smoke):**
-  - **бэкенд (PHPUnit):** регистрация/логин, CRUD заметки, доступ только к своим данным; спецификации — [`future_autotests.md`](./future_autotests.md);
+  - **бэкенд (PHPUnit):** регистрация/логин, CRUD заметки, доступ только к своим данным; спецификации — [`future_autotests.md`](./future_autotests.md); план PR — [`autotests_prs.md`](./autotests_prs.md);
   - **фронтенд (Vitest):** smoke API-клиента или ключевого store (например `notes`)
 - [ ] **Тесты — дополнительные (по возможности):**
   - **бэкенд:** `NoteVersionService`, `WikiLinkParser`, фильтры `NoteRepository` (теги **И**, folder + tags);
