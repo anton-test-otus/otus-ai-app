@@ -33,6 +33,10 @@
 
 **Ожидание:** в результатах title отображается как текст, `alert` не срабатывает.
 
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE XSS — escapeHtml и highlightMatch».
+
 ---
 
 ## FE Шаг 2 — raw HTML в markdown preview
@@ -50,8 +54,9 @@
 
 **Ожидание:** разметка видна как текст, скрипты не выполняются.
 
-### Автотесты (позже)
-- E2E: markdown с raw HTML в preview — нет исполняемых узлов в DOM.
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE sanitize markdown HTML в preview».
 
 ---
 
@@ -71,8 +76,9 @@
 
 **Находка (backlog):** поиск в модалке wiki-ссылок регистрозависимый — см. «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`.
 
-### Автотесты (позже)
-- Unit: `parseHydraCollection` — `hydra:member`, `member`, голый массив, `totalItems = 0`.
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE parseHydraCollection».
 
 ---
 
@@ -91,8 +97,9 @@
 
 **Находка (backlog):** регистронезависимый поиск — см. «Доработки после ревью» в selfreview-файлах.
 
-### Автотесты (позже)
-- Unit: мок `searchApi` в тесте `LinkNoteModal` (фаза 20).
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE LinkNoteModal — searchByTitle».
 
 ---
 
@@ -109,8 +116,9 @@
 
 **Ожидание:** поведение как до рефакторинга; публичный API store (`fetchNotes`, `fetchFavorites`, `loadMore*`) без изменений для views.
 
-### Автотесты (позже)
-- Unit: `fetchPaginatedList` — dedup in-flight, append merge, criteriaKey guard (фаза 20).
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE fetchPaginatedList dedup».
 
 ---
 
@@ -128,8 +136,9 @@
 
 **Ожидание:** поведение UI без изменений; только внутренний рефакторинг.
 
-### Автотесты (позже)
-- Unit: `buildFilterCriteriaKey`, `formatCardDate`, `pluralizeNotes`, `findFolderInTree` (фаза 20).
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE shared utils — filters, folders, dates».
 
 ---
 
@@ -204,7 +213,8 @@
 **Ожидание:** `note_links` синхронизированы с `content` после restore; граф и `linkStats` не показывают «хвост» от состояния до restore.
 
 ### Автотесты (фаза 20+)
-- Restore overwrite/create_version/copy — mock или fixture: content меняется → `syncFromContent` вызван для правильной заметки.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE sync wiki-ссылок после restore версии».
 
 ---
 
@@ -222,7 +232,8 @@
 **Ожидание:** понятное сообщение в теле ответа; нельзя случайно заблокировать или лишить админки единственного администратора.
 
 ### Автотесты (фаза 20+)
-- Admin guards: self disable/delete → 400; last admin demote → 409.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE admin guards — self-delete / self-demote».
 
 ---
 
@@ -238,7 +249,8 @@
 **Ожидание:** предсказуемый конфликт при повторной регистрации; первая регистрация без регрессии.
 
 ### Автотесты (фаза 20+)
-- Register duplicate email → 409; first register → 201.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE register — дубликат email».
 
 ---
 
@@ -255,7 +267,8 @@
 **Ожидание:** меньше запросов к БД; формат JSON ответа не изменился.
 
 ### Автотесты (фаза 20+)
-- `getUsersStatisticsBatch` — пустой массив, один id, несколько id; совпадение с прежним `getUserStatistics`.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE batch admin user statistics».
 
 ---
 
@@ -277,7 +290,8 @@
 **Ожидание:** формат JSON не изменился; preview как до оптимизации; меньше SQL на list/search/trash.
 
 ### Автотесты (фаза 20+)
-- `NotePreviewService::prefetchWikiTitlesForNotes` — дедуп id по странице; пустой content; только aliased links → без SQL.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE batch wiki title resolution в list preview».
 
 ---
 
@@ -297,7 +311,8 @@
 **Ожидание:** формат JSON `note:read` не изменился; меньше SQL на открытие заметки.
 
 ### Автотесты (фаза 20+)
-- `NoteLinkRepository::getNoteReadMetadata` — note без links/versions; note с incoming/outgoing; note с версиями.
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE combine note read metadata queries».
 
 ---
 
@@ -318,7 +333,8 @@
 **Ожидание:** функциональность не изменилась; list/favorites быстрее на больших выборках; `LIKE` по content остаётся без индекса (документировано в `ARCHITECTURE.md`).
 
 ### Автотесты (фаза 20+)
-- Миграция up/down; EXPLAIN plan smoke в CI (опционально).
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE индексы для списков заметок».
 
 ---
 
@@ -364,6 +380,10 @@
 
 **Ожидание:** sync wiki-ссылок только при изменении `content`; допустимые settings из `UserSettingOptions`.
 
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE PATCH sync и settings validation».
+
 ---
 
 ## BE Шаг 13 — security headers и JWT metadata
@@ -376,6 +396,10 @@
 - [ ] В `ARCHITECTURE.md` / `.env.example` — `JWT_TOKEN_TTL`, refresh помечен как не реализован
 
 **Ожидание:** базовые security headers на API; документация и OpenAPI metadata согласованы с MVP JWT.
+
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE security headers и API metadata».
 
 ---
 
@@ -392,6 +416,10 @@
 
 **Ожидание:** refresh через `gesdinet/jwt-refresh-token-bundle`; TTL access — `JWT_TOKEN_TTL`, refresh — `JWT_REFRESH_TOKEN_TTL`; ротация refresh при каждом использовании.
 
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE JWT refresh flow».
+
 ---
 
 ## FE Шаг 5 — JWT refresh flow
@@ -405,5 +433,9 @@
 - [x] Несколько параллельных запросов с истёкшим access — один refresh, все retry успешны (Network tab)
 
 **Ожидание:** interceptor в `client.ts` на 401 вызывает `/auth/refresh`, обновляет токены, повторяет запрос; при неудачном refresh — logout.
+
+### Автотесты (фаза 20+)
+
+Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE JWT refresh interceptor».
 
 ---

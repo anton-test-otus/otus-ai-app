@@ -890,6 +890,24 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Находка при smoke шага 6:** поиск по title регистрозависимый (`LinkNoteModal`, `SearchBar`). Задача вынесена в секцию «Доработки после ревью» в `frontend_selfreview.md` и `backend_selfreview.md`; основной фикс — на бэкенде (`NoteRepository::search`, `SearchFilter`).
 
+### BE Шаг 1: IDOR / ownership на item-операциях (исправлено)
+
+**Проблема:** API Platform загружал `Note`, `Folder`, `Tag`, `NoteVersion` по UUID без фильтра по `user_id`; processors на update/delete не проверяли владельца. Пользователь A мог читать/изменять ресурсы B по известному UUID.
+
+**Решение:**
+- `UserOwnedResourceItemQueryExtension` — item GET/PUT/PATCH/DELETE только для `user = currentUser`; для `Note`/`Folder` на GET — также `deletedAt IS NULL` → **404** (не 403)
+- `ResourceOwnershipAssert::assertOwnedBy()` в `NoteProcessor`, `FolderProcessor`, `TagProcessor` — defense in depth на мутациях
+- `NoteNotFoundExceptionListener` — единое сообщение «Не найдена» для `GET /notes/{id}`
+
+**Затронутые файлы:**
+- `backend/src/Doctrine/Extension/UserOwnedResourceItemQueryExtension.php`
+- `backend/src/Security/ResourceOwnershipAssert.php`
+- `backend/src/EventListener/NoteNotFoundExceptionListener.php`
+- `backend/src/State/NoteProcessor.php`, `FolderProcessor.php`, `TagProcessor.php`
+- `ARCHITECTURE.md` (раздел «Безопасность и изоляция данных»)
+
+**Проверка:** код и коммит `8938551`; ручной smoke своих CRUD — [`for_tests.md`](./for_tests.md); IDOR A→B — [`future_autotests.md`](./future_autotests.md).
+
 ### BE Шаг 2: валидация связей при записи (исправлено)
 
 **Проблема:** при `POST`/`PUT`/`PATCH` заметки клиент мог указать IRI чужой папки или тегов; при смене `parent` у папки — IRI чужой или удалённой папки. `NoteProcessor` / `FolderProcessor` проверяли только владельца самой сущности.

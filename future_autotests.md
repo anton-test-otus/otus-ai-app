@@ -264,3 +264,522 @@ docker compose exec node npm install -D vitest happy-dom
 - `fetchPaginatedList` для favorites использует `favoritesError` — отдельный кейс опционально (не входит в шаг 10, но тот же паттерн).
 - После реализации тестов — отметить smoke FE шаг 10 в [`for_tests.md`](./for_tests.md) как покрытый автотестами.
 
+---
+
+## BE sync wiki-ссылок после restore версии
+
+**Источник:** `backend_selfreview.md`, шаг 3  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `RestoreVersionProcessor`, `NoteLinkSyncService`, `NoteVersionService`
+
+### Подготовка (fixtures)
+
+1. **userA** + JWT.
+2. **noteTarget** — вторая активная заметка user A.
+3. **noteA** — активная заметка с wiki-ссылкой `[[noteTarget.id]]` и `linkStats.outgoing >= 1`.
+4. Создать **versionWithLinks** (PUT noteA) и **versionWithoutLinks** (сохранить версию с пустым content или без ссылок — через fixture или последовательность PUT).
+
+### Кейсы
+
+| # | Действие | Ожидание |
+|---|----------|----------|
+| 1 | `POST /api/notes/{noteA.id}/versions/{versionWithoutLinks.id}/restore` body `{ "mode": "overwrite" }` | **200**; `GET noteA` — `linkStats.outgoing === 0`; content без ссылок |
+| 2 | Restore **versionWithLinks** mode `overwrite` | **200**; `linkStats.outgoing >= 1`; content содержит wiki-ссылку |
+| 3 | Restore mode `create_version` | **200**; новая версия в истории; `note_links` соответствуют content |
+| 4 | Restore mode `copy` из versionWithLinks | **201**/**200**; **новая** заметка с id ≠ noteA; у новой `linkStats.outgoing >= 1` |
+
+### Инварианты
+
+- После каждого restore — `note_links` соответствуют `content` затронутой заметки, без «хвоста» от состояния до restore.
+- Для `copy` sync вызывается для **новой** заметки.
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/RestoreVersionWikiLinksTest.php`
+
+---
+
+## BE admin guards — self-delete / self-demote
+
+**Источник:** `backend_selfreview.md`, шаг 4  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `AdminController`, `UserRepository::countAdmins`
+
+### Подготовка (fixtures)
+
+1. **adminOnly** — единственный пользователь с `ROLE_ADMIN`.
+2. **adminA**, **adminB** — два админа (для demote другого).
+3. **userRegular** — обычный пользователь (регрессия disable/delete).
+
+JWT для каждого admin.
+
+### Кейсы — единственный админ
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `PATCH /api/admin/users/{adminOnly.id}/disable` + token adminOnly | **400** |
+| 2 | `DELETE /api/admin/users/{adminOnly.id}` + token adminOnly | **400** |
+| 3 | `PATCH /api/admin/users/{adminOnly.id}/demote` + token adminOnly | **409** |
+
+### Кейсы — два админа
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 4 | demote **adminB** token adminA | **200**; у adminB нет `ROLE_ADMIN` |
+| 5 | demote последнего adminA (когда adminB уже demoted) | **409** |
+
+### Кейсы — регрессия
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 6 | disable/delete **userRegular** token adminA | **200** |
+| 7 | promote userRegular → admin | **200** |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/AdminSelfManagementTest.php`
+
+---
+
+## BE register — дубликат email
+
+**Источник:** `backend_selfreview.md`, шаг 5  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `AuthController::register`
+
+### Кейсы
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `POST /api/auth/register` новый email | **201**; `token`, `user` в теле |
+| 2 | Повторный register с тем же email | **409**; `{"error":"Email уже занят"}` |
+| 3 | Register с невалидным email | **400**; `errors`, не 409 |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/AuthRegisterTest.php`
+
+---
+
+## BE batch admin user statistics
+
+**Источник:** `backend_selfreview.md`, шаг 6  
+**Тип:** unit / integration  
+**Приоритет:** medium  
+**Связь:** `UserRepository::getUsersStatisticsBatch`, `AdminController::listUsers`
+
+### Unit — `getUsersStatisticsBatch`
+
+| # | Arrange | Assert |
+|---|---------|--------|
+| 1 | `[]` | `[]` |
+| 2 | один userId с notes/folders/tags | ключ userId; counts совпадают с `getUserStatistics` |
+| 3 | несколько userIds | все ключи; batch = по одному вызову `getUserStatistics` |
+
+### Functional (опционально)
+
+| # | Запрос | Assert |
+|---|--------|--------|
+| 4 | `GET /api/admin/users?perPage=20` | `statistics` у каждого; Doctrine query count ≤ ожидаемого (~5) |
+
+### Файлы (предположительно)
+
+- `backend/tests/Unit/Repository/UserRepositoryStatisticsTest.php`
+- `backend/tests/Functional/AdminUsersListTest.php` (опционально)
+
+---
+
+## BE batch wiki title resolution в list preview
+
+**Источник:** `backend_selfreview.md`, шаг 7  
+**Тип:** unit + API functional  
+**Приоритет:** medium  
+**Связь:** `NotePreviewService`, `NoteListCollectionNormalizer`, `NoteSearchController`
+
+### Unit — `NotePreviewService::prefetchWikiTitlesForNotes`
+
+| # | Arrange | Assert |
+|---|---------|--------|
+| 1 | 3 notes с `[[sameTargetId]]` без alias | один вызов `findActiveByIdsForUser` с dedup id |
+| 2 | notes с пустым content | `[]`, без SQL |
+| 3 | только `[[id\|Alias]]` (alias задан) | `[]`, без SQL на target id |
+| 4 | `buildPreview(content, user, titlesById)` | title подставлен, не UUID |
+
+### Functional — `contentPreview` в API
+
+**Подготовка:** `noteTarget` title «Target Note»; 2+ notes с `See [[targetId]]`.
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 5 | `GET /api/notes` | каждый `contentPreview` содержит «Target Note», не UUID |
+| 6 | `GET /api/notes/search?q=…` | то же в `data[]` |
+| 7 | soft-delete note с wiki-link → `GET /api/notes/trash` | preview с заголовками |
+| 8 | `[[uuid\|Alias]]` | preview содержит «Alias» |
+
+### Functional — SQL count (опционально)
+
+- Profiler / Doctrine logger: на list ~20 notes с wiki-links — **1** (или 0) запрос `findActiveByIdsForUser`.
+
+### Файлы (предположительно)
+
+- `backend/tests/Unit/Service/NotePreviewServiceTest.php`
+- `backend/tests/Functional/NoteListPreviewTest.php`
+
+---
+
+## BE combine note read metadata queries
+
+**Источник:** `backend_selfreview.md`, шаг 8  
+**Тип:** unit + API functional  
+**Приоритет:** medium  
+**Связь:** `NoteLinkRepository::getNoteReadMetadata`, `NoteReadNormalizer`
+
+### Unit — `getNoteReadMetadata`
+
+| # | Arrange | Assert |
+|---|---------|--------|
+| 1 | note без links и versions | `{ incoming: 0, outgoing: 0, versionCount: 0 }` |
+| 2 | note с outgoing link на активную заметку | `outgoing >= 1` |
+| 3 | note с incoming link | `incoming >= 1` |
+| 4 | note с N версиями в `note_versions` | `versionCount === N` |
+
+### Functional
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 5 | `GET /api/notes/{id}` | поля `linkStats`, `versionCount`; значения совпадают с unit |
+| 6 | Doctrine: один SQL с subselect для metadata (не 3 COUNT) | опционально через logger |
+
+### Файлы (предположительно)
+
+- `backend/tests/Unit/Repository/NoteLinkRepositoryMetadataTest.php`
+- `backend/tests/Functional/NoteReadMetadataTest.php`
+
+---
+
+## BE индексы для списков заметок
+
+**Источник:** `backend_selfreview.md`, шаг 9  
+**Тип:** integration (optional)  
+**Приоритет:** low  
+**Связь:** миграция `Version20260616120000`, `NoteRepository`
+
+### Кейсы
+
+| # | Действие | Ожидание |
+|---|----------|----------|
+| 1 | `doctrine:migrations:migrate` up | индексы `notes_user_active_updated_idx`, `notes_user_favorite_active_updated_idx` существуют |
+| 2 | migrate down/up | без ошибок |
+| 3 | `GET /api/notes`, `GET /api/notes?isFavorite=true` | **200**, регрессия формата |
+| 4 | `EXPLAIN` list-запроса на test DB с данными | Index Scan / Bitmap по partial index (optional CI) |
+
+### Примечания
+
+- Functional smoke list/favorites достаточен для MVP; EXPLAIN — только при нагрузочном CI.
+- `LIKE` search без full-text индекса — не тестировать на perf, только регрессия `GET /api/notes/search`.
+
+### Файлы (предположительно)
+
+- `backend/tests/Integration/Migrations/NotesIndexesMigrationTest.php`
+
+---
+
+## BE PATCH sync и settings validation
+
+**Источник:** `backend_selfreview.md`, шаг 12  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `NoteProcessor::shouldSyncNoteLinks`, `UserSettingOptions`
+
+### Подготовка
+
+- **noteA** с wiki-ссылкой и `linkStats.outgoing >= 1`
+- Зафиксировать count строк в `note_links` до PATCH
+
+### Кейсы — conditional sync
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `PATCH /api/notes/{noteA.id}` только `{ "isFavorite": true }` | **200**; count `note_links` **не изменился** |
+| 2 | `PATCH` только `{ "folder": "/api/folders/{folderA.id}" }` | **200**; `note_links` без изменений |
+| 3 | `PUT` с изменением `content` (добавить/убрать wiki-link) | **200**; `linkStats` / `note_links` обновлены |
+
+### Кейсы — settings
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 4 | `PATCH /api/auth/settings` `{ "autosaveDelaySeconds": 7 }` (недопустимо) | **422** |
+| 5 | `{ "autosaveDelaySeconds": 5 }` (из `UserSettingOptions`) | **200** |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/NotePatchSyncTest.php`
+- `backend/tests/Functional/UserSettingsValidationTest.php`
+
+---
+
+## BE security headers и API metadata
+
+**Источник:** `backend_selfreview.md`, шаг 13  
+**Тип:** API functional  
+**Приоритет:** low  
+**Связь:** `docker/nginx/default.conf`, `api_platform.yaml`
+
+### Кейсы
+
+| # | Запрос | Assert headers / body |
+|---|--------|----------------------|
+| 1 | `GET /api/auth/me` (с JWT) | `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` |
+| 2 | `GET /api/docs` | OpenAPI title «Персональная база знаний API» (не «Hello API Platform») |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/SecurityHeadersTest.php`
+
+---
+
+## BE JWT refresh flow
+
+**Источник:** `backend_selfreview.md`, шаг 15  
+**Тип:** API functional  
+**Приоритет:** medium  
+**Связь:** `AuthController`, `gesdinet/jwt-refresh-token-bundle`
+
+### Кейсы
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `POST /api/auth/login` | **200**; `token`, `refreshToken`, `user` |
+| 2 | `POST /api/auth/refresh` `{ "refreshToken": "<from login>" }` | **200**; новые `token`, `refreshToken` |
+| 3 | Повторный refresh со **старым** refresh token | **401** (single-use ротация) |
+| 4 | refresh с невалидным token | **401** |
+| 5 | `GET /api/auth/me` с новым access после refresh | **200** |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/JwtRefreshTest.php`
+
+---
+
+## FE XSS — escapeHtml и highlightMatch
+
+**Источник:** `frontend_selfreview.md`, шаг 1  
+**Тип:** unit (Vitest)  
+**Приоритет:** medium (security)  
+**Связь:** `SearchBar.vue`, `utils/` (escapeHtml, highlightMatch)
+
+### Кейсы
+
+| # | Input | Assert |
+|---|-------|--------|
+| 1 | `escapeHtml('<img src=x onerror=alert(1)>')` | строка без исполняемых тегов; угловые скобки escaped |
+| 2 | `highlightMatch('<script>alert(1)</script>', 'script')` | результат без `<script>`; совпадение в `<mark>` |
+| 3 | title с XSS, query без совпадения | output экранирован целиком |
+
+### Файлы (предположительно)
+
+- `frontend/src/utils/__tests__/escapeHtml.test.ts`
+- `frontend/src/utils/__tests__/highlightMatch.test.ts`
+
+---
+
+## FE sanitize markdown HTML в preview
+
+**Источник:** `frontend_selfreview.md`, шаг 2  
+**Тип:** unit (Vitest)  
+**Приоритет:** medium (security)  
+**Связь:** `MarkdownPreview.vue`, `utils/sanitizeText.ts` / DOMPurify
+
+### Кейсы
+
+| # | Input markdown | Assert |
+|---|----------------|--------|
+| 1 | `<script>alert(1)</script>` | нет `<script>` в rendered HTML |
+| 2 | `<img src=x onerror=alert(1)>` | атрибут onerror удалён или тег stripped |
+| 3 | обычный markdown `# Title` | рендер без регрессии |
+
+### Примечания
+
+- E2E с реальным Milkdown — опционально; unit на sanitize-слой достаточен для MVP.
+
+### Файлы (предположительно)
+
+- `frontend/src/utils/__tests__/sanitizeMarkdownHtml.test.ts`
+
+---
+
+## FE JWT refresh interceptor
+
+**Источник:** `frontend_selfreview.md`, шаг 5  
+**Тип:** unit (Vitest)  
+**Приоритет:** medium  
+**Связь:** `api/client.ts`, `stores/auth.ts`, `api/auth.ts`
+
+### Кейсы (mock fetch/axios)
+
+| # | Сценарий | Assert |
+|---|----------|--------|
+| 1 | 401 → refresh **200** → retry original | один вызов refresh; original запрос повторён с новым token |
+| 2 | несколько параллельных 401 | один refresh (mutex/queue), все retry успешны |
+| 3 | 401 → refresh **401** | tokens cleared; redirect `/login` |
+| 4 | нет refreshToken в storage | сразу logout, без вызова refresh |
+
+### Файлы (предположительно)
+
+- `frontend/src/api/__tests__/client.refresh.test.ts`
+
+---
+
+## FE parseHydraCollection
+
+**Источник:** `frontend_selfreview.md`, шаг 6  
+**Тип:** unit (Vitest)  
+**Приоритет:** low  
+**Связь:** `utils/hydra.ts`
+
+### Кейсы
+
+| # | Input response | Assert |
+|---|----------------|--------|
+| 1 | `{ 'hydra:member': [a], 'hydra:totalItems': 1 }` | `{ data: [a], total: 1 }` |
+| 2 | `{ member: [b] }` | `{ data: [b], total: … }` |
+| 3 | голый массив | `{ data: array, total: length }` |
+| 4 | пустая коллекция, totalItems = 0 | `{ data: [], total: 0 }` |
+
+### Файлы (предположительно)
+
+- `frontend/src/utils/__tests__/hydra.test.ts`
+
+---
+
+## FE LinkNoteModal — searchByTitle
+
+**Источник:** `frontend_selfreview.md`, шаг 7  
+**Тип:** unit (Vitest + component)  
+**Приоритет:** low  
+**Связь:** `LinkNoteModal.vue`, `api/search.ts`
+
+### Кейсы
+
+| # | Действие | Assert |
+|---|----------|--------|
+| 1 | ввод query в модалке | вызван `searchApi.searchByTitle`, не `searchApi.search` |
+| 2 | `excludeNoteId` prop | передан в API-вызов |
+
+### Файлы (предположительно)
+
+- `frontend/src/components/.../__tests__/LinkNoteModal.test.ts`
+
+---
+
+## FE fetchPaginatedList dedup
+
+**Источник:** `frontend_selfreview.md`, шаг 8  
+**Тип:** unit (Vitest + Pinia)  
+**Приоритет:** low  
+**Связь:** `stores/notes.ts` (internal `fetchPaginatedList`)
+
+### Кейсы
+
+| # | Сценарий | Assert |
+|---|----------|--------|
+| 1 | два одновременных `fetchNotes()` | один in-flight HTTP |
+| 2 | `loadMore` append | `notes` = page1 + page2; meta обновлена |
+| 3 | смена criteriaKey во время load | результат старого запроса игнорируется |
+
+### Файлы (предположительно)
+
+- `frontend/src/stores/__tests__/notes.paginated.test.ts`
+
+---
+
+## FE shared utils — filters, folders, dates
+
+**Источник:** `frontend_selfreview.md`, шаг 9  
+**Тип:** unit (Vitest)  
+**Приоритет:** low  
+**Связь:** `utils/filters.ts`, `folders.ts`, `date.ts`, `pluralize.ts`
+
+### Кейсы
+
+| # | Функция | Assert |
+|---|---------|--------|
+| 1 | `buildFilterCriteriaKey(null, ['b','a'])` | стабильный ключ независимо от порядка tag ids |
+| 2 | `findFolderInTree` | находит вложенную папку |
+| 3 | `formatCardDate` | «Сегодня» / «Вчера» / locale для старых дат |
+| 4 | `pluralizeNotes(1/2/5)` | корректное склонение ru |
+
+### Файлы (предположительно)
+
+- `frontend/src/utils/__tests__/filters.test.ts`
+- `frontend/src/utils/__tests__/folders.test.ts`
+- `frontend/src/utils/__tests__/date.test.ts`
+- `frontend/src/utils/__tests__/pluralize.test.ts`
+
+---
+
+## BE/FE регистронезависимый поиск (backlog)
+
+**Источник:** «Доработки после ревью» в `frontend_selfreview.md` / `backend_selfreview.md`  
+**Тип:** API functional + unit (FE highlight опционально)  
+**Приоритет:** medium (backlog, вне шагов 1–15)
+
+### BE — подготовка
+
+- Заметка title `Hello World`, content без слова hello.
+
+### BE кейсы
+
+| # | Запрос | Ожидание |
+|---|--------|----------|
+| 1 | `GET /api/notes/search?q=hello` | note найдена |
+| 2 | `GET /api/notes/search?q=HELLO` | note найдена |
+| 3 | `GET /api/notes?title=hello` | note найдена (LinkNoteModal path) |
+| 4 | Unit `NoteRepository::search` | `LOWER`/`ILIKE` в SQL |
+
+### FE кейсы (после BE)
+
+| # | UI | Ожидание |
+|---|-----|----------|
+| 5 | SearchBar query `hello` | находит «Hello World» |
+| 6 | LinkNoteModal query `hello` | находит по title |
+
+### Файлы (предположительно)
+
+- `backend/tests/Functional/NoteSearchCaseInsensitiveTest.php`
+- `backend/tests/Unit/Repository/NoteRepositorySearchTest.php`
+
+---
+
+## Сводка: покрытие selfreview → future_autotests
+
+| Шаг | Секция в этом файле |
+|-----|---------------------|
+| BE 1 | BE IDOR |
+| BE 2 | BE owned relations |
+| BE 3 | BE sync wiki-ссылок после restore |
+| BE 4 | BE admin guards |
+| BE 5 | BE register duplicate email |
+| BE 6 | BE batch admin statistics |
+| BE 7 | BE batch wiki title preview |
+| BE 8 | BE combine note read metadata |
+| BE 9 | BE индексы |
+| BE 11 | BE сузить API |
+| BE 12 | BE PATCH sync и settings |
+| BE 13 | BE security headers |
+| BE 15 | BE JWT refresh |
+| FE 1 | FE XSS escapeHtml |
+| FE 2 | FE sanitize markdown |
+| FE 5 | FE JWT refresh interceptor |
+| FE 6 | FE parseHydraCollection |
+| FE 7 | FE LinkNoteModal searchByTitle |
+| FE 8 | FE fetchPaginatedList |
+| FE 9 | FE shared utils |
+| FE 10 | FE notes store loading/error |
+| Backlog | BE/FE case-insensitive search |
+
+**Не покрываем тестами (по selfreview):** BE 10 (dead code), BE 14 (optional), FE 3–4 (deps/chore), FE 11–14 (refactor follow-up).
+
