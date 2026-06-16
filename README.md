@@ -156,6 +156,7 @@ otus-ai-app/
 │   │   ├── Entity/             # Doctrine сущности
 │   │   ├── Repository/         # Doctrine репозитории
 │   │   └── Command/            # Консольные команды
+│   ├── tests/                  # PHPUnit (Functional, Unit, Integration)
 │   └── public/                 # Точка входа
 ├── frontend/                   # Vue 3 приложение
 │   ├── src/
@@ -255,9 +256,12 @@ make restart          # Перезапуск контейнеров
 make logs             # Просмотр логов (Ctrl+C для выхода)
 make install          # Установка зависимостей Composer (backend)
 make migrate          # Применение миграций
+make db-test          # Создание test БД для PHPUnit
 make schema-reset     # Очистка схемы БД и повторное применение миграций
 make admin            # Создание администратора из .env
 make cache-clear      # Очистка кэша Symfony
+make test             # PHPUnit (backend)
+make frontend-test    # Vitest (frontend)
 make frontend-install # Установка зависимостей npm (frontend)
 make frontend-build   # Сборка production фронтенда
 make clean            # Удаление всех контейнеров и volumes
@@ -319,6 +323,73 @@ docker compose down
 docker compose build --no-cache && docker compose up -d
 ```
 
+## Тесты
+
+Автотесты реализованы в ветках `test/*` (см. [`autotests_prs.md`](./autotests_prs.md)). Спецификации кейсов — в [`future_autotests.md`](./future_autotests.md).
+
+**Backend:** PHPUnit (`symfony/test-pack`), functional/unit/integration-тесты в `backend/tests/`.  
+**Frontend:** Vitest + happy-dom, unit/component-тесты в `frontend/src/**/*.test.ts`.
+
+Запуск **только через Docker** (как и установка зависимостей):
+
+```bash
+# Контейнеры должны быть запущены
+docker compose up -d
+```
+
+### Первый запуск (test database)
+
+PHPUnit использует отдельную БД с суффиксом `_test` (`otus_ai_db_test`). Создайте её один раз:
+
+```bash
+make db-test
+```
+
+Functional-тесты сами пересоздают схему в `setUp` (`ApiTestCase::resetDatabase`); миграции для прогона тестов не нужны.
+
+### Все тесты
+
+```bash
+# Backend (~70 тестов)
+docker compose exec php php bin/phpunit
+
+# Frontend (~49 тестов)
+make frontend-test
+# или: docker compose exec node npm test
+```
+
+Краткий вариант для backend (`make test` = `db-test` + PHPUnit):
+
+```bash
+make test
+```
+
+### Отдельные файлы или наборы
+
+```bash
+# Backend: один класс
+docker compose exec php php bin/phpunit tests/Functional/ResourceOwnershipTest.php
+
+# Backend: несколько файлов
+docker compose exec php php bin/phpunit tests/Functional/JwtRefreshTest.php tests/Functional/AuthRegisterTest.php
+
+# Frontend: один файл
+docker compose exec node npm test -- src/stores/__tests__/notes.store.test.ts
+
+# Frontend: watch-режим (разработка)
+docker compose exec node npm run test:watch
+```
+
+### Конфигурация
+
+| Компонент | Файл |
+|-----------|------|
+| PHPUnit | `backend/phpunit.dist.xml` |
+| Test env | `backend/.env.test`, `backend/tests/bootstrap.php` |
+| Vitest | `frontend/vitest.config.ts` |
+
+Переменная `APP_ENV=test` задаётся в `tests/bootstrap.php` и `phpunit.dist.xml`. Не запускайте `phpunit` / `npm test` на хосте в `backend/` и `frontend/` — окружение и `node_modules` рассчитаны на контейнеры `php` и `node`.
+
 ## Demo-данные
 
 Для dev/demo и проверки графа связей, тегов и версий:
@@ -337,22 +408,15 @@ docker compose exec php php bin/console app:seed-demo-data
 
 Спецификация: [`demoseed.md`](./demoseed.md).
 
-## Следующие шаги
-
-**Фаза 3: Организация**
-- [ ] Сущность папки и API
-- [ ] Компонент дерева папок в боковой панели (адаптивный)
-- [ ] Drag-and-drop для заметок и папок
-- [ ] Реализация тегов
-- [ ] Endpoint поиска заметок и UI
-
 ## Документация
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) - Подробная архитектура приложения
 - [PHASES.md](./PHASES.md) - План реализации по фазам
 - [prompts.md](./prompts.md) - История разработки
 - [REPORT.md](./REPORT.md) - Проблемы рефакторинга и их решения
-- [demoseed.md](./demoseed.md) - Спецификация demo seed (фаза 14.4)
+- [demoseed.md](./demoseed.md) - Спецификация demo seed
+- [future_autotests.md](./future_autotests.md) - Спецификации автотестов
+- [autotests_prs.md](./autotests_prs.md) - План PR/веток для автотестов
 
 ## Swagger UI
 

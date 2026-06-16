@@ -42,7 +42,7 @@ use Symfony\Component\Uid\Uuid;
     normalizationContext: ['groups' => ['folder:read']],
     denormalizationContext: ['groups' => ['folder:write']]
 )]
-#[MaxFolderDepth(3)]
+#[MaxFolderDepth(max: 3)]
 class Folder
 {
     #[ORM\Id]

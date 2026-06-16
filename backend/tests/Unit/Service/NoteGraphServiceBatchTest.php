@@ -6,11 +6,13 @@ use App\Entity\Note;
 use App\Entity\User;
 use App\Repository\NoteLinkRepository;
 use App\Service\NoteGraphService;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 
 class NoteGraphServiceBatchTest extends TestCase
 {
+    #[AllowMockObjectsWithoutExpectations]
     public function testBuildSubgraphCallsFindLinksForNodesAtMostDepthPlusOneTimes(): void
     {
         $callCount = 0;

@@ -531,14 +531,14 @@ JWT для каждого admin.
 
 ### Кейсы
 
-| # | Запрос | Assert headers / body |
-|---|--------|----------------------|
-| 1 | `GET /api/auth/me` (с JWT) | `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` |
-| 2 | `GET /api/docs` | OpenAPI title «Персональная база знаний API» (не «Hello API Platform») |
+| # | Запрос | Assert headers / body | Проверка |
+|---|--------|----------------------|----------|
+| 1 | `GET /api/auth/me` (с JWT) | `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` | **ручная** (`for_tests.md`, BE шаг 13) — nginx, не Symfony test client |
+| 2 | `GET /api/docs.jsonopenapi` | OpenAPI title «Персональная база знаний API» (не «Hello API Platform») | PHPUnit |
 
-### Файлы (предположительно)
+### Файлы
 
-- `backend/tests/Functional/SecurityHeadersTest.php`
+- `backend/tests/Functional/SecurityHeadersTest.php` — кейс 2 (OpenAPI title)
 
 ---
 

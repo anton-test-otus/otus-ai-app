@@ -100,6 +100,10 @@ docker compose exec node npm run build
 - `npm run dev` - запуск dev server
 - `npm run build` - production сборка
 - `npm run preview` - просмотр production сборки
+- `npm test` - Vitest (unit/component), один прогон
+- `npm run test:watch` - Vitest в watch-режиме
+
+Запуск из корня проекта: `make frontend-test` (см. [README](../README.md#тесты)).
 
 ## Особенности реализации
 

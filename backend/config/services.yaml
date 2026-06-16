@@ -52,3 +52,9 @@ services:
     App\Serializer\NoteReadNormalizer:
         tags:
             - { name: serializer.normalizer, priority: 64 }
+
+when@test:
+    services:
+        # Functional tests intentionally trigger 404/422; silence stderr noise from HttpKernel logger.
+        logger:
+            class: Psr\Log\NullLogger

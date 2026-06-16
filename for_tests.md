@@ -405,8 +405,8 @@
 **Источник:** `backend_selfreview.md`, шаг 13
 
 ### Smoke (ручная проверка)
-- [ ] `curl -I http://localhost:8080/api/auth/me` (с JWT или без) — в ответе есть `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`
-- [ ] `/api/docs` — title «Персональная база знаний API», не «Hello API Platform»
+- [ ] `curl -I http://localhost:8080/api/auth/me` (с JWT или без) — в ответе есть `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin` (только ручная проверка через nginx; в PHPUnit не покрывается)
+- [ ] `/api/docs` — title «Персональная база знаний API», не «Hello API Platform» (OpenAPI title также в `SecurityHeadersTest`)
 - [ ] В `ARCHITECTURE.md` / `.env.example` — `JWT_TOKEN_TTL`, refresh помечен как не реализован
 
 **Ожидание:** базовые security headers на API; документация и OpenAPI metadata согласованы с MVP JWT.
