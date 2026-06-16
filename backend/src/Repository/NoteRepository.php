@@ -9,6 +9,14 @@ use Symfony\Component\Uid\Uuid;
 
 class NoteRepository extends ServiceEntityRepository
 {
+    /**
+     * List/search queries filter by user and active notes (`deletedAt IS NULL`).
+     * Partial indexes `notes_user_active_updated_idx` and `notes_user_favorite_active_updated_idx`
+     * cover dashboard and favorites ordering by `updatedAt`.
+     *
+     * Full-text search (`search()`, API Platform SearchFilter on title/content) uses
+     * `LIKE '%…%'` — no index in MVP; PostgreSQL GIN + `to_tsvector` is a follow-up.
+     */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Note::class);

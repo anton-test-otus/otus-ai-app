@@ -454,6 +454,8 @@ flowchart LR
 
 Поля **`linkStats`** (`{ incoming, outgoing }`) и **`versionCount`** добавляются в ответ `GET /api/notes/{id}` (`note:read`) через `NoteReadNormalizer`.
 
+**Индексы и поиск (MVP):** списки и избранные используют partial-индексы PostgreSQL на `notes` — `(user_id, updated_at DESC) WHERE deleted_at IS NULL` и вариант с `is_favorite = true`. Поиск по `title`/`content` (`SearchFilter`, `NoteRepository::search`) — `LIKE '%…%'` без full-text индекса; для больших баз — follow-up: GIN + `to_tsvector`.
+
 **UI (фаза 14.3):** в тулбаре `NoteView` — кнопки «Связанные заметки» (`pi-share-alt`, видна при `linkStats.incoming > 0 || linkStats.outgoing > 0`) и «История версий» (`pi-history`, не на черновиках); обе открывают модалки. Диалог `NoteLinksGraphDialog` (`MODAL_WIDTH.xl`, fullscreen `< md`): force-directed граф, узлы — прямоугольники с названием заметки, alias wiki-ссылок — tooltip при наведении на ребро. `VersionHistoryDialog` — список версий, diff и restore. Сайдбар метаданных: папка, теги, информация (включая `versionCount` из `note:read`). Endpoint `GET /notes/{id}/backlinks` в API сохранён, из UI удалён.
 
 ### Папки

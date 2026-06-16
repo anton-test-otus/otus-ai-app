@@ -257,3 +257,24 @@
 
 ### Автотесты (фаза 20+)
 - `NoteLinkRepository::getNoteReadMetadata` — note без links/versions; note с incoming/outgoing; note с версиями.
+
+---
+
+## BE Шаг 9 — индексы для списков заметок
+
+**Источник:** `backend_selfreview.md`, шаг 9
+
+### Подготовка
+- Применить миграцию: `docker compose exec php bin/console doctrine:migrations:migrate --no-interaction`
+
+### Smoke (ручная проверка)
+- [ ] Dashboard / `GET /api/notes` — список и infinite scroll без регрессии
+- [ ] `/favorites` / `GET /api/notes?isFavorite=true` — избранные загружаются, сортировка по `updatedAt`
+- [ ] `GET /api/notes/search?q=…` — поиск по-прежнему находит заметки (LIKE без full-text)
+- [ ] `EXPLAIN` на типичный list-запрос — Index Scan / Bitmap Index Scan по `notes_user_active_updated_idx` (не Seq Scan на всей таблице при достаточном объёме данных)
+- [ ] `EXPLAIN` на favorites — использование `notes_user_favorite_active_updated_idx`
+
+**Ожидание:** функциональность не изменилась; list/favorites быстрее на больших выборках; `LIKE` по content остаётся без индекса (документировано в `ARCHITECTURE.md`).
+
+### Автотесты (фаза 20+)
+- Миграция up/down; EXPLAIN plan smoke в CI (опционально).

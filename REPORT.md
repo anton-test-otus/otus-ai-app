@@ -917,5 +917,30 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** smoke подтверждён пользователем (2026-06-14).
 
+### BE Шаг 8: combine note read metadata queries (исправлено)
+
+**Проблема:** `NoteReadNormalizer` на каждый `GET /notes/{id}` выполнял 3 SQL: 2× `countLinkStats` + `countByNote`.
+
+**Решение:** `NoteLinkRepository::getNoteReadMetadata()` — один запрос с subselect для incoming/outgoing links и `versionCount`; normalizer вызывает его вместо двух репозиториев.
+
+**Затронутые файлы:**
+- `backend/src/Repository/NoteLinkRepository.php`
+- `backend/src/Serializer/NoteReadNormalizer.php`
+
+### BE Шаг 9: индексы для списков заметок (исправлено)
+
+**Проблема:** частые запросы dashboard/favorites фильтровали `user_id + deleted_at IS NULL` и сортировали по `updated_at`, но на `notes` был только индекс по `user_id`. Поиск — `LIKE '%…%'` без full-text индекса.
+
+**Решение:**
+- миграция `Version20260616120000`: partial-индексы `notes_user_active_updated_idx`, `notes_user_favorite_active_updated_idx`;
+- ограничение `LIKE` задокументировано в `NoteRepository` и `ARCHITECTURE.md` (GIN + `to_tsvector` — follow-up).
+
+**Затронутые файлы:**
+- `backend/migrations/Version20260616120000.php`
+- `backend/src/Repository/NoteRepository.php`
+- `ARCHITECTURE.md`
+
+**Проверка:** миграция применена; API list/favorites без регрессии; EXPLAIN на favorites — `notes_user_favorite_active_updated_idx`.
+
 ---
 
