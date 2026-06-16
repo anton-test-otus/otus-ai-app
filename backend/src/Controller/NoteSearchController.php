@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\User;
 use App\Repository\NoteRepository;
+use App\Service\NotePreviewService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,7 +13,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class NoteSearchController extends AbstractController
 {
     public function __construct(
-        private NoteRepository $noteRepository
+        private NoteRepository $noteRepository,
+        private NotePreviewService $notePreviewService,
     ) {
     }
 
@@ -39,6 +42,12 @@ class NoteSearchController extends AbstractController
 
         $result = $this->noteRepository->search($user, $criteria, $page, $perPage);
 
+        if (!$user instanceof User) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $titlesById = $this->notePreviewService->prefetchWikiTitlesForNotes($result['notes'], $user);
+
         return $this->json([
             'data' => $result['notes'],
             'meta' => [
@@ -47,6 +56,9 @@ class NoteSearchController extends AbstractController
                 'total' => $result['total'],
                 'totalPages' => (int) ceil($result['total'] / $perPage),
             ],
-        ], 200, [], ['groups' => ['note:list']]);
+        ], 200, [], [
+            'groups' => ['note:list'],
+            NotePreviewService::CONTEXT_WIKI_TITLES_BY_ID => $titlesById,
+        ]);
     }
 }

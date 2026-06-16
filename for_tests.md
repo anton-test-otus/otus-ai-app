@@ -215,3 +215,25 @@
 
 ### Автотесты (фаза 20+)
 - `getUsersStatisticsBatch` — пустой массив, один id, несколько id; совпадение с прежним `getUserStatistics`.
+
+---
+
+## BE Шаг 7 — batch wiki title resolution в list preview
+
+**Источник:** `backend_selfreview.md`, шаг 7
+
+### Подготовка
+- Заметка «Target Note» (запомнить UUID)
+- Несколько заметок с `content`: `See [[uuid-target]]` (без alias)
+
+### Smoke (ручная проверка)
+- [ ] Dashboard / список в папке — `contentPreview` показывает «Target Note», не UUID
+- [ ] `GET /api/notes/search?q=…` — то же в `data[].contentPreview`
+- [ ] `GET /api/notes/trash` — заметки с wiki-ссылками: preview с заголовками
+- [ ] Ссылка `[[uuid|Alias]]` — в preview alias, без лишнего SQL на этот uuid
+- [ ] Symfony profiler на странице ~20 заметок с wiki-ссылками — **1** (или 0) запрос `findActiveByIdsForUser`, не N
+
+**Ожидание:** формат JSON не изменился; preview как до оптимизации; меньше SQL на list/search/trash.
+
+### Автотесты (фаза 20+)
+- `NotePreviewService::prefetchWikiTitlesForNotes` — дедуп id по странице; пустой content; только aliased links → без SQL.

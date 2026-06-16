@@ -4,7 +4,6 @@ namespace App\Serializer;
 
 use App\Entity\Note;
 use App\Service\NotePreviewService;
-use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -28,9 +27,13 @@ final class NoteListNormalizer implements NormalizerInterface, NormalizerAwareIn
         $data = $this->normalizer->normalize($object, $format, $context);
 
         if ($object instanceof Note) {
+            /** @var array<string, string>|null $titlesById */
+            $titlesById = $context[NotePreviewService::CONTEXT_WIKI_TITLES_BY_ID] ?? null;
+
             $data['contentPreview'] = $this->notePreviewService->buildPreview(
                 $object->getContent(),
                 $object->getUser(),
+                $titlesById,
             );
         }
 
