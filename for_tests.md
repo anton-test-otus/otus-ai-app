@@ -378,3 +378,18 @@
 **Ожидание:** базовые security headers на API; документация и OpenAPI metadata согласованы с MVP JWT.
 
 ---
+
+## BE Шаг 15 — JWT refresh
+
+**Источник:** `backend_selfreview.md`, шаг 15
+
+### Smoke (ручная проверка)
+- [ ] `POST /api/auth/register` или `POST /api/auth/login` — в ответе есть `token`, `refreshToken`, `user`
+- [ ] `POST /api/auth/refresh` с телом `{ "refreshToken": "<из login>" }` — **200**, новые `token` и `refreshToken`, поле `user`
+- [ ] Повторный `POST /api/auth/refresh` со **старым** refresh token — **401** (single-use ротация)
+- [ ] `POST /api/auth/refresh` с невалидным refresh token — **401**
+- [ ] Access token с истёкшим TTL + валидный refresh — refresh выдаёт новый access (проверка после фронт шаг 5)
+
+**Ожидание:** refresh через `gesdinet/jwt-refresh-token-bundle`; TTL access — `JWT_TOKEN_TTL`, refresh — `JWT_REFRESH_TOKEN_TTL`; ротация refresh при каждом использовании.
+
+---

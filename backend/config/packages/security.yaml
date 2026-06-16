@@ -30,8 +30,11 @@ security:
         api:
             pattern: ^/api
             stateless: true
+            entry_point: jwt
             user_checker: App\Security\UserChecker
             jwt: ~
+            refresh_jwt:
+                check_path: /api/auth/refresh
 
         main:
             lazy: true
@@ -40,6 +43,7 @@ security:
     access_control:
         - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
         - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 

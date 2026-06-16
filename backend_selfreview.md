@@ -257,9 +257,9 @@
 
 **Файлы:** `Controller/AuthController.php`, `config/packages/lexik_jwt_authentication.yaml`, `ARCHITECTURE.md`; на фронте после решения — `stores/auth.ts`, `api/auth.ts`, `api/client.ts`
 
-- [ ] **Вариант A:** реализовать refresh (например `gesdinet/jwt-refresh-token-bundle` или свой endpoint + хранение refresh token); login/register возвращают `refreshToken`; TTL и ротация — в env/документации
+- [x] **Вариант A:** реализовать refresh (например `gesdinet/jwt-refresh-token-bundle` или свой endpoint + хранение refresh token); login/register возвращают `refreshToken`; TTL и ротация — в env/документации
 - [ ] **Вариант B:** зафиксировать MVP без refresh — убрать endpoint из `ARCHITECTURE.md` или пометить «не реализовано»; на фронте шаг 5 вариант B (удалить мёртвый код)
-- [ ] Согласовать поведение на 401: единая политика для фронта и бэка
+- [x] Согласовать поведение на 401: единая политика для фронта и бэка
 - [ ] После решения — закрыть фронтенд шаг 5
 
 ---

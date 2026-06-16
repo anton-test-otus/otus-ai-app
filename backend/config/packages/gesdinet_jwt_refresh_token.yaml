@@ -1,0 +1,6 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\RefreshToken
+    ttl: '%env(int:JWT_REFRESH_TOKEN_TTL)%'
+    token_parameter_name: refreshToken
+    single_use: true
+    ttl_update: true

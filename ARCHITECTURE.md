@@ -47,7 +47,8 @@ flowchart TB
 
 | Механизм | Назначение |
 |----------|------------|
-| Lexik JWT | Access token; TTL — `JWT_TOKEN_TTL` (сек., default 3600). **Refresh token не реализован** в MVP — см. шаг 15 self-review |
+| Lexik JWT | Access token; TTL — `JWT_TOKEN_TTL` (сек., default 3600) |
+| Gesdinet JWT Refresh | Refresh token; TTL — `JWT_REFRESH_TOKEN_TTL` (сек., default 2592000 = 30 дней); ротация при каждом refresh (`single_use`) |
 | `UserOwnedResourceItemQueryExtension` | Item GET/PUT/PATCH/DELETE для `Note`, `Folder`, `Tag`, `NoteVersion`: фильтр `user = currentUser`; чужой UUID → **404** (не 403). Для `Note`/`Folder` на GET — также `deletedAt IS NULL` |
 | `ResourceOwnershipAssert` | Проверка владельца в processors на update/delete существующих сущностей |
 | `OwnedRelationAssert` | На запись: `folder`, `parent`, `tags` принадлежат текущему пользователю → иначе **422** |
@@ -440,13 +441,13 @@ flowchart LR
 | Метод | Endpoint | Описание |
 |-------|----------|----------|
 | POST | `/api/auth/register` | Регистрация пользователя |
-| POST | `/api/auth/login` | Получение JWT access token |
-| POST | `/api/auth/refresh` | **Не реализовано в MVP** (зарезервировано; см. self-review шаг 15) |
+| POST | `/api/auth/login` | Получение JWT access token и refresh token |
+| POST | `/api/auth/refresh` | Обновление access token по refresh token (тело: `{ "refreshToken": "..." }`) |
 | GET | `/api/auth/me` | Получение текущего пользователя (включая `settings` и `defaults`) |
 | PATCH | `/api/auth/settings` | Обновление настроек текущего пользователя |
 | POST | `/api/auth/change-password` | Смена пароля (текущий + новый; мин. 6 символов; новый ≠ текущий) |
 
-**JWT (MVP):** один access token из login/register; срок жизни — `JWT_TOKEN_TTL` (Lexik `token_ttl`, default 3600 с). После истечения — повторный login. Refresh token и endpoint `/api/auth/refresh` не реализованы.
+**JWT:** login/register возвращают `token` (access), `refreshToken` и `user`. Access TTL — `JWT_TOKEN_TTL` (default 3600 с). Refresh TTL — `JWT_REFRESH_TOKEN_TTL` (default 2592000 с); при каждом успешном refresh выдаётся новый refresh token (старый инвалидируется). На **401** с истёкшим access token клиент вызывает `/api/auth/refresh`; при невалидном refresh — повторный login.
 
 ### Заметки
 

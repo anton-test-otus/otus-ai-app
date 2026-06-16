@@ -1035,3 +1035,24 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+### BE Шаг 15: JWT refresh (исправлено)
+
+**Проблема:** в `ARCHITECTURE.md` описан `POST /api/auth/refresh`, но endpoint не был реализован; login/register отдавали только access token.
+
+**Решение:** `gesdinet/jwt-refresh-token-bundle` v2; сущность `RefreshToken`, таблица `refresh_tokens`; `POST /api/auth/refresh` с телом `{ "refreshToken" }`; login (Lexik success listener) и register возвращают `refreshToken`; `single_use` + `ttl_update`; env `JWT_REFRESH_TOKEN_TTL` (default 30 дней). Политика 401 зафиксирована в `ARCHITECTURE.md` — refresh, затем login. Фронтенд шаг 5 — отдельно.
+
+**Затронутые файлы:**
+- `backend/composer.json`, `composer.lock`
+- `backend/config/bundles.php`
+- `backend/config/packages/gesdinet_jwt_refresh_token.yaml`
+- `backend/config/packages/security.yaml`
+- `backend/config/routes/gesdinet_jwt_refresh.yaml`
+- `backend/config/services.yaml`
+- `backend/src/Entity/RefreshToken.php`
+- `backend/src/Controller/AuthController.php`
+- `backend/migrations/Version20260616200000.php`
+- `backend/.env.example`
+- `ARCHITECTURE.md`
+
+---
+

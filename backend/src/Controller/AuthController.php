@@ -7,6 +7,8 @@ use App\Dto\UpdateUserSettingsDto;
 use App\Entity\User;
 use App\Service\UserSettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
+use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +29,9 @@ class AuthController extends AbstractController
         private JWTTokenManagerInterface $jwtManager,
         private UserSettingsResolver $userSettingsResolver,
         private SerializerInterface $serializer,
+        private RefreshTokenGeneratorInterface $refreshTokenGenerator,
+        private RefreshTokenManagerInterface $refreshTokenManager,
+        private int $refreshTokenTtl,
     ) {
     }
 
@@ -80,9 +85,11 @@ class AuthController extends AbstractController
         $this->entityManager->flush();
 
         $token = $this->jwtManager->create($user);
+        $refreshToken = $this->createRefreshTokenForUser($user);
 
         return $this->json([
             'token' => $token,
+            'refreshToken' => $refreshToken,
             'user' => $this->serializeUser($user),
         ], Response::HTTP_CREATED);
     }
@@ -196,6 +203,14 @@ class AuthController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Пароль успешно изменён']);
+    }
+
+    private function createRefreshTokenForUser(User $user): string
+    {
+        $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl($user, $this->refreshTokenTtl);
+        $this->refreshTokenManager->save($refreshToken);
+
+        return (string) $refreshToken->getRefreshToken();
     }
 
     private function serializeUser(User $user): array
