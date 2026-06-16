@@ -178,8 +178,8 @@
 | `getVersionsForNote` | `NoteVersionService` | репозиторий вызывается напрямую |
 | `countVersionsForNote` | `NoteVersionService` | репозиторий вызывается напрямую |
 
-- [ ] Удалить неиспользуемые методы (или подключить, если нужны в фазе 20)
-- [ ] `replaceForPlainText` / `parseLinksWithAliases` — оставить (используются в preview)
+- [x] Удалить неиспользуемые методы (или подключить, если нужны в фазе 20)
+- [x] `replaceForPlainText` / `parseLinksWithAliases` — оставить (используются в preview)
 
 ---
 

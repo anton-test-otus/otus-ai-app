@@ -22,30 +22,6 @@ class NoteRepository extends ServiceEntityRepository
         parent::__construct($registry, Note::class);
     }
 
-    public function findByUserWithPagination(string $userId, int $page = 1, int $perPage = 20): array
-    {
-        $qb = $this->createQueryBuilder('n')
-            ->where('n.user = :userId')
-            ->andWhere('n.deletedAt IS NULL')
-            ->setParameter('userId', $userId)
-            ->orderBy('n.updatedAt', 'DESC')
-            ->setFirstResult(($page - 1) * $perPage)
-            ->setMaxResults($perPage);
-
-        return $qb->getQuery()->getResult();
-    }
-
-    public function countByUser(string $userId): int
-    {
-        return $this->createQueryBuilder('n')
-            ->select('COUNT(n.id)')
-            ->where('n.user = :userId')
-            ->andWhere('n.deletedAt IS NULL')
-            ->setParameter('userId', $userId)
-            ->getQuery()
-            ->getSingleScalarResult();
-    }
-
     public function search($user, array $criteria, int $page = 1, int $perPage = 20): array
     {
         $qb = $this->createQueryBuilder('n')
@@ -199,25 +175,6 @@ class NoteRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->getQuery()
             ->getOneOrNullResult();
-    }
-
-    /**
-     * Find notes by title (case-insensitive) for a specific user
-     * Returns active notes only (not deleted)
-     * 
-     * @return Note[]
-     */
-    public function findByTitleCaseInsensitive(string $title, $user): array
-    {
-        return $this->createQueryBuilder('n')
-            ->where('LOWER(n.title) = LOWER(:title)')
-            ->andWhere('n.user = :user')
-            ->andWhere('n.deletedAt IS NULL')
-            ->setParameter('title', $title)
-            ->setParameter('user', $user)
-            ->orderBy('n.updatedAt', 'DESC')
-            ->getQuery()
-            ->getResult();
     }
 
     /**

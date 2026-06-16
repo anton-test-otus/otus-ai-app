@@ -62,22 +62,6 @@ class NoteVersionService
     }
 
     /**
-     * Получение версий для заметки
-     */
-    public function getVersionsForNote(Note $note, int $limit = 50, int $offset = 0): array
-    {
-        return $this->versionRepository->findByNote($note, $limit, $offset);
-    }
-
-    /**
-     * Подсчет количества версий для заметки
-     */
-    public function countVersionsForNote(Note $note): int
-    {
-        return $this->versionRepository->countByNote($note);
-    }
-
-    /**
      * Восстановление заметки из версии
      */
     public function restoreFromVersion(Note $note, NoteVersion $version, bool $createNewVersion = true): Note

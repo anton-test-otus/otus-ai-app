@@ -19,25 +19,6 @@ class WikiLinkParser
     }
 
     /**
-     * @return string[] UUID целевых заметок (lowercase, unique)
-     */
-    public function parseLinks(string $content): array
-    {
-        $ids = [];
-
-        if (preg_match_all(self::wikiLinkPattern(), $content, $matches)) {
-            foreach ($matches[1] as $id) {
-                $normalized = strtolower(trim($id));
-                if ($normalized !== '') {
-                    $ids[] = $normalized;
-                }
-            }
-        }
-
-        return array_values(array_unique($ids));
-    }
-
-    /**
      * @return array<int, array{noteId: string, alias: string|null, raw: string}>
      */
     public function parseLinksWithAliases(string $content): array

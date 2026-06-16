@@ -976,5 +976,16 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** миграция применена; API list/favorites без регрессии; EXPLAIN на favorites — `notes_user_favorite_active_updated_idx`.
 
+### BE Шаг 10: мёртвый код в репозиториях и сервисах (исправлено)
+
+**Проблема:** в `NoteRepository`, `WikiLinkParser`, `NoteVersionService` оставались публичные методы без вызовов в кодовой базе — legacy после перехода на API Platform providers и прямой доступ к `NoteVersionRepository`.
+
+**Решение:** удалены `findByUserWithPagination`, `countByUser`, `findByTitleCaseInsensitive` (`NoteRepository`); `parseLinks` (`WikiLinkParser`); `getVersionsForNote`, `countVersionsForNote` (`NoteVersionService`). `parseLinksWithAliases` и `replaceForPlainText` сохранены.
+
+**Затронутые файлы:**
+- `backend/src/Repository/NoteRepository.php`
+- `backend/src/Service/WikiLinkParser.php`
+- `backend/src/Service/NoteVersionService.php`
+
 ---
 
