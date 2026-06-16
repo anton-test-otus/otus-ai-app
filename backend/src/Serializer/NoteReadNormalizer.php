@@ -4,7 +4,6 @@ namespace App\Serializer;
 
 use App\Entity\Note;
 use App\Repository\NoteLinkRepository;
-use App\Repository\NoteVersionRepository;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareInterface;
 use Symfony\Component\Serializer\Normalizer\NormalizerAwareTrait;
 use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
@@ -17,7 +16,6 @@ final class NoteReadNormalizer implements NormalizerInterface, NormalizerAwareIn
 
     public function __construct(
         private NoteLinkRepository $noteLinkRepository,
-        private NoteVersionRepository $versionRepository,
     ) {
     }
 
@@ -29,8 +27,9 @@ final class NoteReadNormalizer implements NormalizerInterface, NormalizerAwareIn
         $data = $this->normalizer->normalize($object, $format, $context);
 
         if ($object instanceof Note) {
-            $data['linkStats'] = $this->noteLinkRepository->countLinkStats($object);
-            $data['versionCount'] = $this->versionRepository->countByNote($object);
+            $metadata = $this->noteLinkRepository->getNoteReadMetadata($object);
+            $data['linkStats'] = $metadata['linkStats'];
+            $data['versionCount'] = $metadata['versionCount'];
         }
 
         return $data;

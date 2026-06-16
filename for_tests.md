@@ -237,3 +237,23 @@
 
 ### Автотесты (фаза 20+)
 - `NotePreviewService::prefetchWikiTitlesForNotes` — дедуп id по странице; пустой content; только aliased links → без SQL.
+
+---
+
+## BE Шаг 8 — combine note read metadata queries
+
+**Источник:** `backend_selfreview.md`, шаг 8
+
+### Подготовка
+- Заметка с wiki-ссылками (incoming/outgoing > 0) и историей версий (например из demo seed, `isFavorite` с версиями)
+
+### Smoke (ручная проверка)
+- [ ] `GET /api/notes/{id}` — поля `linkStats.incoming`, `linkStats.outgoing`, `versionCount` на месте
+- [ ] Значения совпадают с UI: кнопка «Связанные заметки» видна при `incoming > 0 OR outgoing > 0`; «История версий» — при `versionCount > 0`
+- [ ] Заметка без ссылок и версий — `{ incoming: 0, outgoing: 0, versionCount: 0 }`
+- [ ] Symfony profiler / Doctrine на `GET /api/notes/{id}` — **1** SQL с subselect для metadata (не 3 отдельных COUNT)
+
+**Ожидание:** формат JSON `note:read` не изменился; меньше SQL на открытие заметки.
+
+### Автотесты (фаза 20+)
+- `NoteLinkRepository::getNoteReadMetadata` — note без links/versions; note с incoming/outgoing; note с версиями.

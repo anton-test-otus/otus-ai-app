@@ -17,6 +17,55 @@ class NoteLinkRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return array{linkStats: array{incoming: int, outgoing: int}, versionCount: int}
+     */
+    public function getNoteReadMetadata(Note $note): array
+    {
+        $noteId = $note->getId();
+        if ($noteId === null) {
+            return [
+                'linkStats' => ['incoming' => 0, 'outgoing' => 0],
+                'versionCount' => 0,
+            ];
+        }
+
+        /** @var array{incoming: string|int, outgoing: string|int, version_count: string|int} $row */
+        $row = $this->getEntityManager()->getConnection()->fetchAssociative(
+            <<<'SQL'
+                SELECT
+                    (
+                        SELECT COUNT(nl_in.id)
+                        FROM note_links nl_in
+                        INNER JOIN notes sn ON sn.id = nl_in.source_note_id
+                        WHERE nl_in.target_note_id = :noteId
+                          AND sn.deleted_at IS NULL
+                    ) AS incoming,
+                    (
+                        SELECT COUNT(nl_out.id)
+                        FROM note_links nl_out
+                        INNER JOIN notes tn ON tn.id = nl_out.target_note_id
+                        WHERE nl_out.source_note_id = :noteId
+                          AND tn.deleted_at IS NULL
+                    ) AS outgoing,
+                    (
+                        SELECT COUNT(nv.id)
+                        FROM note_versions nv
+                        WHERE nv.note_id = :noteId
+                    ) AS version_count
+            SQL,
+            ['noteId' => $noteId->toRfc4122()],
+        );
+
+        return [
+            'linkStats' => [
+                'incoming' => (int) ($row['incoming'] ?? 0),
+                'outgoing' => (int) ($row['outgoing'] ?? 0),
+            ],
+            'versionCount' => (int) ($row['version_count'] ?? 0),
+        ];
+    }
+
+    /**
      * @return array{incoming: int, outgoing: int}
      */
     public function countLinkStats(Note $note): array
