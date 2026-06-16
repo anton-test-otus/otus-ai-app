@@ -420,14 +420,27 @@ docker compose exec php php bin/console app:seed-demo-data
 
 ## Swagger UI
 
-Интерактивная документация API доступна по адресу:
-http://localhost:8080/api/docs
+Интерактивная документация API (API Platform + OpenAPI 3):
 
-Здесь можно:
-- Просмотреть все доступные endpoints
-- Протестировать API запросы
-- Посмотреть схемы данных
-- Авторизоваться с JWT токеном
+| Ресурс | URL |
+|--------|-----|
+| **Swagger UI** (браузер) | http://localhost:8080/api/docs |
+| **OpenAPI JSON** | http://localhost:8080/api/docs.jsonopenapi |
+| **OpenAPI YAML** | http://localhost:8080/api/docs.yamlopenapi |
+
+> Порт `8080` — значение по умолчанию (`APP_PORT` в `.env`). Для продакшена подставьте свой хост и порт.
+
+В Swagger UI можно:
+- просмотреть endpoints API Platform (заметки, папки, теги, версии);
+- протестировать запросы прямо из браузера;
+- посмотреть схемы данных и форматы ответов.
+
+**Авторизация в Swagger UI:**
+1. Выполните `POST /api/auth/login` с `username` (email) и `password`.
+2. Скопируйте значение `token` из ответа.
+3. Нажмите **Authorize** → введите `Bearer <token>` (префикс `Bearer` обязателен).
+
+В Swagger также описаны кастомные endpoints: **Auth** (`/api/auth/*`), **Admin** (`/api/admin/*`, требуется `ROLE_ADMIN`) и **WikiLinks**.
 
 ## Лицензия
 

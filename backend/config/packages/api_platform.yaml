@@ -1,6 +1,9 @@
 api_platform:
     title: 'Персональная база знаний API'
     version: 1.0.0
+    enable_swagger_ui: true
+    swagger:
+        persist_authorization: true
     defaults:
         stateless: true
         cache_headers:
