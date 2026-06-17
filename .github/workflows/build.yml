@@ -91,12 +91,12 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: bot/frontend-dist
           base: dist
-          title: chore(ci): update frontend dist
+          title: "chore(ci): update frontend dist"
           body: |
             Auto-generated after successful CI on `main`.
 
             Source SHA: `${{ github.event.workflow_run.head_sha || github.sha }}`
-          commit-message: chore(ci): update frontend dist from ${{ github.event.workflow_run.head_sha || github.sha }}
+          commit-message: "chore(ci): update frontend dist from ${{ github.event.workflow_run.head_sha || github.sha }}"
           delete-branch: true
 
       - name: Enable auto-merge
