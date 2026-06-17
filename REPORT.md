@@ -1145,3 +1145,32 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Затронутые файлы:** `PHASES.md` (пункт закрыт, строка убрана из таблицы расхождений).
 
+---
+
+## Фаза 19: Однопользовательский режим (2026-06-17)
+
+**Задача:** развёртывание как локальной базы без login/register (ТЗ, zero config).
+
+**Решение:**
+- Env `APP_AUTH_ENABLED` (backend) / `VITE_AUTH_ENABLED` (frontend); default `true` — multi-user без изменений для dev/demo.
+- `SingleUserAuthenticator` на firewall `api`: при `APP_AUTH_ENABLED=false` каждый запрос аутентифицируется как `SINGLE_USER_EMAIL` (`owner@local` по умолчанию).
+- `app:ensure-single-user` — idempotent создание пустого пользователя.
+- `AuthDisabledSubscriber` + guards в `AuthController` — login/register/refresh/change-password → 404.
+- Frontend: условные роуты, `fetchUser()` без token, скрыты admin/logout/email/аккаунт в settings.
+
+**Prod compose (авто ensure-single-user в entrypoint)** — отложено на фазу 21.
+
+---
+
+## Prod frontend: сборка вне Dockerfile (2026-06-17)
+
+**Задача:** убрать multi-stage `npm run build` из `docker/nginx/Dockerfile`; сборка `frontend/dist` — локально (`make frontend-build`) или в GitHub Actions.
+
+**Решение:**
+- `docker/nginx/Dockerfile` — только `COPY frontend/dist` в образ nginx.
+- `make frontend-build` — одноразовый контейнер `node:22-alpine` (`npm ci` + `vite build`), `VITE_AUTH_ENABLED` из корневого `.env`.
+- `.dockerignore` — `frontend/dist` включён в build context.
+- `.github/workflows/ci.yml` — job `frontend` (build + Vitest), артеfact `frontend-dist`, job `docker-nginx` проверяет сборку образа.
+
+**Затронутые файлы:** `docker/nginx/Dockerfile`, `docker-compose.yml`, `Makefile`, `.dockerignore`, `.github/workflows/ci.yml`, `README.md`, `ARCHITECTURE.md`, `PHASES.md`.
+

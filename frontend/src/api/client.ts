@@ -2,6 +2,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 interface RequestConfig extends RequestInit {
   params?: Record<string, any>
+  skipAuth?: boolean
 }
 
 class HttpError extends Error {
@@ -66,10 +67,13 @@ async function refreshAccessToken(): Promise<boolean> {
   return refreshPromise
 }
 
-function clearSessionAndRedirect(): void {
+async function clearSessionAndRedirect(): Promise<void> {
   localStorage.removeItem('token')
   localStorage.removeItem('refreshToken')
-  window.location.href = '/login'
+
+  const { useAuthStore } = await import('@/stores/auth')
+  const authStore = useAuthStore()
+  window.location.href = authStore.authUiEnabled ? '/login' : '/'
 }
 
 class ApiClient {
@@ -88,7 +92,7 @@ class ApiClient {
     config: RequestConfig = {},
     retriedAfterRefresh = false
   ): Promise<T> {
-    const { params, headers, ...restConfig } = config
+    const { params, headers, skipAuth, ...restConfig } = config
 
     let url = `${this.baseURL}${endpoint}`
     if (params) {
@@ -121,7 +125,7 @@ class ApiClient {
       })
     }
 
-    const token = localStorage.getItem('token')
+    const token = skipAuth ? null : localStorage.getItem('token')
     if (token) {
       mergedHeaders.set('Authorization', `Bearer ${token}`)
     }
@@ -137,7 +141,10 @@ class ApiClient {
       endpoint === '/auth/refresh'
 
     if (response.status === 401) {
-      if (!isAuthAttempt && !retriedAfterRefresh) {
+      const { useAuthStore } = await import('@/stores/auth')
+      const authUiEnabled = useAuthStore().authUiEnabled
+
+      if (!isAuthAttempt && !retriedAfterRefresh && authUiEnabled) {
         const refreshed = await refreshAccessToken()
         if (refreshed) {
           return this.request<T>(endpoint, config, true)
@@ -151,8 +158,8 @@ class ApiClient {
         errorData = { message: response.statusText }
       }
 
-      if (!isAuthAttempt || endpoint === '/auth/refresh') {
-        clearSessionAndRedirect()
+      if (authUiEnabled && (!isAuthAttempt || endpoint === '/auth/refresh')) {
+        await clearSessionAndRedirect()
       }
 
       throw new HttpError(401, 'Unauthorized', errorData)

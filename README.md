@@ -81,6 +81,38 @@ ADMIN_PASSWORD=your_secure_admin_password
    - **Backend API**: http://localhost:8080/api
    - **Swagger UI**: http://localhost:8080/api/docs
 
+### Prod / demo (без node, один URL)
+
+```bash
+cp .env.example .env                    # APP_AUTH_ENABLED=false для single-user
+cp backend/.env.example backend/.env    # DB, APP_SECRET, JWT_PASSPHRASE
+
+make init-prod
+# или:
+make frontend-build                      # npm ci + vite build → frontend/dist
+docker compose build && docker compose up -d
+```
+
+- Фронт собирается **до** образа nginx (`make frontend-build` или job CI); `VITE_AUTH_ENABLED` берётся из корневого `.env` (`APP_AUTH_ENABLED`) — **build-time**
+- Образ nginx копирует готовый `frontend/dist` (без node-stage в Dockerfile)
+- Бэкенд: migrate + `app:ensure-single-user` в entrypoint php — **runtime**
+- Приложение: http://localhost:8080/ (`/` → SPA, `/api` → Symfony)
+
+**Смена `APP_AUTH_ENABLED`** → `make frontend-build && docker compose build nginx`.
+
+### Dev (Vite)
+
+```bash
+make init-dev
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+```
+
+- API: http://localhost:8080/api · UI: http://localhost:5173
+
+### Однопользовательский режим — один параметр
+
+В корневом `.env`: `APP_AUTH_ENABLED=false`. Compose прокидывает его в php (runtime); для prod-сборки фронта — `make frontend-build` (читает `APP_AUTH_ENABLED` → `VITE_AUTH_ENABLED`). Дополнительно UI определяет режим по `GET /api/auth/me` без токена.
+
 ### Альтернативный способ (без Make)
 
 ```bash
@@ -271,7 +303,7 @@ make clean            # Удаление всех контейнеров и volu
 
 npm-пакеты фронтенда хранятся в **`volumes/node_modules`** (Docker volume), а не в `frontend/node_modules`. В контейнере `node` путь `/app/node_modules` указывает на volume; на хосте `frontend/node_modules` при этом остаётся пустым.
 
-- Сборка и typecheck: `docker compose exec node npm run build` или `make frontend-build`
+- Сборка и typecheck: `make frontend-build` (prod) или `docker compose exec node npm run build` (dev)
 - Установка пакетов: `docker compose exec node npm install` (не на хосте в `frontend/`)
 
 **Для Cursor / VS Code** — symlink, чтобы IDE резолвила типы (после первого `make up`):

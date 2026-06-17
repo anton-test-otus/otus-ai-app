@@ -17,8 +17,8 @@ export const authApi = {
     return apiClient.post<AuthResponse>('/auth/register', credentials)
   },
 
-  async me(): Promise<User> {
-    return apiClient.get<User>('/auth/me')
+  async me(options?: { skipAuth?: boolean }): Promise<User> {
+    return apiClient.get<User>('/auth/me', { skipAuth: options?.skipAuth })
   },
 
   async refresh(refreshToken: string): Promise<AuthResponse> {

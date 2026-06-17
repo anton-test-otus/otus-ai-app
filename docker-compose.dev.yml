@@ -1,0 +1,31 @@
+# Dev overlay: hot reload backend + Vite на :5173 (поверх docker-compose.yml).
+# Запуск: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
+services:
+  php:
+    volumes:
+      - ./backend:/var/www/backend
+
+  nginx:
+    build: !reset null
+    image: nginx:alpine
+    volumes:
+      - ./backend:/var/www/backend
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+
+  node:
+    image: node:22-alpine
+    container_name: otus_node
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - ./volumes/node_modules:/app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    networks:
+      - otus_network
+    environment:
+      VITE_API_URL: http://localhost:${APP_PORT:-8080}/api
+      VITE_AUTOSAVE_DEBOUNCE_MS: ${VITE_AUTOSAVE_DEBOUNCE_MS:-2000}
+      VITE_AUTH_ENABLED: ${APP_AUTH_ENABLED:-true}

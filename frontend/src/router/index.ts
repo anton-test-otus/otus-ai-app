@@ -78,6 +78,27 @@ const router = createRouter({
 
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
+  await authStore.initializeSession()
+
+  if (!authStore.authUiEnabled) {
+    if (to.name === 'login' || to.name === 'register') {
+      next({ name: 'dashboard' })
+      return
+    }
+
+    if (to.matched.some((record) => record.meta.requiresAdmin)) {
+      next({ name: 'dashboard' })
+      return
+    }
+
+    if (to.matched.some((record) => record.meta.requiresAuth) && !authStore.isAuthenticated) {
+      next(false)
+      return
+    }
+
+    next()
+    return
+  }
 
   if (!authStore.user && authStore.token) {
     await authStore.fetchUser()

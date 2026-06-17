@@ -1,11 +1,16 @@
-.PHONY: help init build up down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user
+
+COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 help:
 	@echo "Доступные команды:"
-	@echo "  make init             - Первоначальная настройка проекта (копирование .env, сборка, запуск)"
-	@echo "  make build            - Сборка Docker образов"
-	@echo "  make rebuild          - Сборка Docker образов без кэша"
-	@echo "  make up               - Запуск контейнеров"
+	@echo "  make init-prod        - Prod/demo: корневой .env, build, up (миграции + single-user в entrypoint)"
+	@echo "  make init-dev         - Dev: backend .env, overlay с node/Vite (бывший make init)"
+	@echo "  make init             - Alias для make init-dev"
+	@echo "  make build            - Сборка prod Docker образов (php + nginx; нужен frontend/dist)"
+	@echo "  make build-dev        - Сборка с dev overlay"
+	@echo "  make up               - Запуск prod (один URL :8080, SPA + API)"
+	@echo "  make up-dev           - Запуск dev (API :8080, Vite :5173)"
 	@echo "  make down             - Остановка контейнеров"
 	@echo "  make restart          - Перезапуск контейнеров"
 	@echo "  make status           - Статус контейнеров проекта"
@@ -24,7 +29,7 @@ help:
 	@echo "  make test             - PHPUnit (backend)"
 	@echo "  make frontend-test    - Vitest (frontend)"
 	@echo "  make frontend-install - Установка зависимостей npm (frontend)"
-	@echo "  make frontend-build   - Сборка production фронтенда"
+	@echo "  make frontend-build   - Сборка frontend/dist (npm ci + vite build, для prod/CI)"
 	@echo "  make frontend-dev     - Запуск Vite dev server"
 	@echo "  make frontend-kill    - Остановка всех Node.js/Vite процессов"
 	@echo "  make frontend-restart - Перезапуск Vite dev server"
@@ -33,41 +38,59 @@ help:
 volumes-init:
 	@mkdir -p volumes/postgres volumes/node_modules
 
-init: volumes-init
-	@echo "Инициализация проекта..."
+init-dev: volumes-init
+	@echo "Инициализация dev-окружения (Vite + mount backend)..."
 	@if [ ! -f backend/.env ]; then \
-		echo "Копирование .env.example в .env..."; \
+		echo "Копирование backend/.env.example..."; \
 		cp backend/.env.example backend/.env; \
-		echo "ВАЖНО: Отредактируйте backend/.env и установите безопасные значения!"; \
+		echo "ВАЖНО: Отредактируйте backend/.env"; \
 		echo "Нажмите Enter для продолжения..."; \
 		read dummy; \
 	fi
-	@echo "Сборка Docker образов..."
-	@$(MAKE) build
-	@echo "Запуск контейнеров..."
-	@$(MAKE) up
-	@echo "Ожидание запуска PostgreSQL..."
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@$(MAKE) build-dev
+	@$(MAKE) up-dev
+	@echo "Ожидание PostgreSQL..."
 	@sleep 5
-	@echo "Установка зависимостей..."
 	@$(MAKE) install
-	@echo "Применение миграций..."
 	@$(MAKE) migrate
-	@echo "Создание администратора..."
 	@$(MAKE) admin
 	@echo ""
-	@echo "✅ Проект успешно инициализирован!"
-	@echo "🌐 API доступен на http://localhost:8080/api"
-	@echo "📚 Swagger UI доступен на http://localhost:8080/api/docs"
-	@echo "💻 Frontend dev server на http://localhost:5173"
+	@echo "✅ Dev окружение готово"
+	@echo "🌐 API: http://localhost:8080/api"
+	@echo "💻 UI:  http://localhost:5173"
+
+init-prod: volumes-init
+	@echo "Инициализация prod/demo (static SPA, без node)..."
+	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@if [ ! -f backend/.env ]; then cp backend/.env.example backend/.env; fi
+	@echo "Проверьте .env (APP_AUTH_ENABLED) и backend/.env (DB, APP_SECRET, JWT)"
+	@echo "Нажмите Enter для продолжения..."
+	@read dummy
+	@$(MAKE) frontend-build
+	@$(MAKE) build
+	@$(MAKE) up
+	@echo "Ожидание bootstrap (migrate + ensure-single-user)..."
+	@sleep 8
+	@echo ""
+	@echo "✅ Prod окружение: http://localhost:$${APP_PORT:-8080}/"
+
+init: init-dev
 
 build:
 	docker compose build
+
+build-dev:
+	$(COMPOSE_DEV) build
 
 rebuild:
 	docker compose build --no-cache
 
 up: volumes-init
 	docker compose up -d
+
+up-dev: volumes-init
+	$(COMPOSE_DEV) up -d
 
 down:
 	docker compose down
@@ -123,20 +146,28 @@ test: db-test
 	docker exec otus_php bin/phpunit
 
 frontend-test:
-	@docker compose start node 2>/dev/null || true
+	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
 	docker exec otus_node npm test
 
 frontend-install:
-	@docker compose start node 2>/dev/null || true
+	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
 	docker exec otus_node npm install
 
+APP_AUTH_ENABLED ?= $(shell grep -E '^APP_AUTH_ENABLED=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' || echo true)
+
 frontend-build:
-	@docker compose start node 2>/dev/null || true
-	docker exec otus_node npm run build
+	@echo "Сборка frontend/dist (VITE_AUTH_ENABLED=$(APP_AUTH_ENABLED))..."
+	docker run --rm \
+		-v "$(CURDIR)/frontend:/app" \
+		-w /app \
+		-e VITE_API_URL=/api \
+		-e VITE_AUTH_ENABLED=$(APP_AUTH_ENABLED) \
+		node:22-alpine \
+		sh -c "npm ci && npm run build"
 
 frontend-dev:
 	@echo "Запуск Vite dev server..."
-	@docker compose start node 2>/dev/null || true
+	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
 	docker exec -it otus_node sh -c "cd /app && npm run dev"
 
 frontend-kill:

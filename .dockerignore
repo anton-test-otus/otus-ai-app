@@ -1,0 +1,12 @@
+.git
+.idea
+.vscode
+volumes
+backend/var
+backend/vendor
+frontend/node_modules
+**/.env
+**/.env.local
+**/.env.*.local
+*.md
+!README.md

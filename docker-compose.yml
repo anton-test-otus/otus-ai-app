@@ -1,3 +1,6 @@
+# Production / demo: SPA из frontend/dist (сборка: make frontend-build / CI) + API (без сервиса node).
+# Разработка с Vite: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -22,10 +25,13 @@ services:
       dockerfile: docker/php/Dockerfile
     container_name: otus_php
     working_dir: /var/www/backend
-    volumes:
-      - ./backend:/var/www/backend
     env_file:
       - ./backend/.env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-true}
+      SINGLE_USER_EMAIL: ${SINGLE_USER_EMAIL:-owner@local}
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,33 +39,16 @@ services:
       - otus_network
 
   nginx:
-    image: nginx:alpine
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
     container_name: otus_nginx
     ports:
       - "${APP_PORT:-8080}:80"
-    volumes:
-      - ./backend:/var/www/backend
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php
     networks:
       - otus_network
-
-  node:
-    image: node:22-alpine
-    container_name: otus_node
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
-      - ./volumes/node_modules:/app/node_modules
-    ports:
-      - "${FRONTEND_PORT:-5173}:5173"
-    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
-    networks:
-      - otus_network
-    environment:
-      - VITE_API_URL=http://localhost:${APP_PORT:-8080}/api
-      - VITE_AUTOSAVE_DEBOUNCE_MS=${VITE_AUTOSAVE_DEBOUNCE_MS:-2000}
 
   cron:
     build:
@@ -67,10 +56,13 @@ services:
       dockerfile: docker/php/Dockerfile
     container_name: otus_cron
     working_dir: /var/www/backend
-    volumes:
-      - ./backend:/var/www/backend
     env_file:
       - ./backend/.env
+    environment:
+      APP_ENV: prod
+      APP_DEBUG: 0
+      APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-true}
+      SINGLE_USER_EMAIL: ${SINGLE_USER_EMAIL:-owner@local}
     depends_on:
       postgres:
         condition: service_healthy

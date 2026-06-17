@@ -1,7 +1,16 @@
 parameters:
+    env(APP_AUTH_ENABLED): 'true'
+    env(SINGLE_USER_EMAIL): 'owner@local'
     env(AUTOSAVE_DELAY_SECONDS): '10'
     env(NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES): '5'
     env(TRASH_RETENTION_DAYS): '30'
+    app.auth_enabled: '%env(bool:APP_AUTH_ENABLED)%'
+    app.single_user_email: '%env(SINGLE_USER_EMAIL)%'
     user_settings.default_autosave_delay_seconds: '%env(int:AUTOSAVE_DELAY_SECONDS)%'
     user_settings.default_version_consolidation_window_minutes: '%env(int:NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES)%'
     app.trash_retention_days: '%env(int:TRASH_RETENTION_DAYS)%'
+
+when@single_user:
+    parameters:
+        app.auth_enabled: false
+        app.single_user_email: 'owner@local'

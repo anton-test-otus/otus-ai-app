@@ -41,6 +41,18 @@ services:
         bind:
             $trashRetentionDays: '%app.trash_retention_days%'
 
+    App\Feature\AuthFeature:
+        arguments:
+            $authEnabled: '%app.auth_enabled%'
+
+    App\Service\SingleUserProvider:
+        arguments:
+            $singleUserEmail: '%app.single_user_email%'
+
+    App\Command\EnsureSingleUserCommand:
+        arguments:
+            $singleUserEmail: '%app.single_user_email%'
+
     App\Serializer\NoteListCollectionNormalizer:
         tags:
             - { name: serializer.normalizer, priority: 128 }

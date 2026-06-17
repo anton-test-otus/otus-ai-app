@@ -5,6 +5,7 @@
 /backend/.env.local.php
 /backend/.env.*.local
 /backend/config/jwt/
+/.env
 /frontend/node_modules/
 /frontend/dist/
 /frontend/.env

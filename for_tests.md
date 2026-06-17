@@ -472,3 +472,34 @@
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE мелкие улучшения — trash, graph batch, content on create (шаг 14)» и «FE черновик — POST только с непустым content (шаг 14)».
 
 ---
+
+## Фаза 19 — однопользовательский режим
+
+**Источник:** `PHASES.md`, фаза 19
+
+### Smoke: multi-user (default, `APP_AUTH_ENABLED=true`)
+
+- [ ] `docker compose up -d`; login/register доступны; после входа — dashboard
+- [ ] Sidebar: email, logout, admin (для ROLE_ADMIN)
+- [ ] Settings: блок «Аккаунт» с email и сменой пароля
+
+**Ожидание:** поведение как до фазы 19.
+
+### Smoke: single-user (`APP_AUTH_ENABLED=false`)
+
+- [ ] В корневом `.env`: `APP_AUTH_ENABLED=false`; `docker compose up -d --force-recreate php node`
+- [ ] `docker compose exec php php bin/console app:ensure-single-user`
+- [ ] Открыть http://localhost:5173 — сразу dashboard, без редиректа на login
+- [ ] Sidebar: «Настройки» вместо email; нет logout и admin
+- [ ] Settings: только автосохранение и тема (без аккаунта)
+- [ ] CRUD заметки без token: создать заметку, обновить, удалить в корзину
+- [ ] `curl http://localhost:8080/api/auth/me` без Authorization → 200, email `owner@local`
+- [ ] `curl -X POST http://localhost:8080/api/auth/login ...` → 404
+
+**Ожидание:** zero-config UX после ensure-single-user; API без JWT.
+
+### Автотесты
+
+- [x] `SingleUserModeTest` (PHPUnit) — me/notes без Authorization; login/register disabled
+
+---

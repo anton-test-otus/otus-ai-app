@@ -3,7 +3,7 @@
       <div class="page-header">
         <h1 class="page-title">Настройки</h1>
         <p class="page-subtitle mt-0 text-surface-600 dark:text-surface-400">
-          Автосохранение, оформление и безопасность аккаунта
+          {{ settingsSubtitle }}
         </p>
       </div>
 
@@ -87,7 +87,7 @@
         </template>
       </Card>
 
-      <Card>
+      <Card v-if="authStore.authUiEnabled">
         <template #title>Аккаунт</template>
         <template #content>
           <div class="stack-sections">
@@ -201,9 +201,9 @@ import Button from 'primevue/button'
 import SelectButton from 'primevue/selectbutton'
 import { z } from '@/lib/zod'
 import { HttpError } from '@/api/client'
+import { appConfig } from '@/config/app'
 import { useAuthStore } from '@/stores/auth'
 import { useTheme } from '@/composables/useTheme'
-import { appConfig } from '@/config/app'
 import {
   AUTOSAVE_DELAY_SECONDS_OPTIONS,
   VERSION_CONSOLIDATION_MINUTES_OPTIONS,
@@ -219,6 +219,12 @@ const saving = ref(false)
 const changingPassword = ref(false)
 const showPasswordForm = ref(false)
 const themeOptions = THEME_OPTIONS
+
+const settingsSubtitle = computed(() =>
+  authStore.authUiEnabled
+    ? 'Автосохранение, оформление и безопасность аккаунта'
+    : 'Автосохранение и оформление',
+)
 
 const selectedTheme = computed({
   get: () => theme.value,

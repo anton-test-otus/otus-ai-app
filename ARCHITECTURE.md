@@ -525,16 +525,26 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Запуск | `docker compose up -d` — готовое приложение по ТЗ | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
 | Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev (`5173`) |
 | API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` (как сейчас) |
-| Сборка фронта | в образе / CI до запуска | не обязательна (HMR) |
+| Сборка фронта | `make frontend-build` / GitHub Actions → `frontend/dist` → образ nginx | не обязательна (HMR) |
 | Назначение | сдача проекта, демо, staging | ежедневная разработка |
 
-Текущий `docker-compose.yml` — **временно dev-ориентирован** (сервис `node`, Vite на `:5173`); nginx отдаёт только Symfony `public/`. В фазе 21 дефолтный compose станет prod: без `node`, SPA из `dist`, `try_files` + проксирование `/api`; dev вынесется в `docker-compose.dev.yml`.
+Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/ci.yml`).
+
+### Режим аутентификации
+
+| | Multi-user (default) | Single-user |
+|---|---------------------|-------------|
+| Env | корневой `.env`: `APP_AUTH_ENABLED=true` | корневой `.env`: `APP_AUTH_ENABLED=false` (+ `VITE_*` из compose) |
+| API | JWT (Lexik) | `SingleUserAuthenticator` — каждый запрос от имени `SINGLE_USER_EMAIL` |
+| Пользователь | регистрация / demo seed | `app:ensure-single-user` (пустая база) |
+| UI | login, register, admin, logout | сразу dashboard; admin и пароль скрыты |
 
 ## Консольные команды
 
 | Команда | Назначение |
 |---------|------------|
 | `app:reset-schema` | Удалить схему БД и применить миграции заново |
+| `app:ensure-single-user` | Создать единственного пользователя для `APP_AUTH_ENABLED=false` (idempotent) |
 | `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
 | `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать demo-пользователей |
 | `app:cleanup-trash` | Удалить заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно) |

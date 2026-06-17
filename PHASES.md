@@ -394,10 +394,10 @@ Additive-фича; опирается на установленные loading/er
 
 Развёртывание как локальной персональной базы без регистрации и входа.
 
-- [ ] **Конфигурация:** env-флаг (например `SINGLE_USER_MODE` / `APP_AUTH_ENABLED=false`) на бэкенде и фронтенде; документировать в README / docker-compose
-- [ ] **Бэкенд:** при включённом режиме — единственный пользователь (создание при первом запуске / fixtures); security firewall без JWT для API или автоматическая подстановка default user; сохранить изоляцию данных по `user_id` в коде
-- [ ] **Фронтенд:** скрыть `/login`, `/register`; роутер без auth-guard; не показывать logout / email в sidebar; прямой вход на dashboard
-- [ ] **Совместимость:** многопользовательский режим остаётся режимом по умолчанию; smoke-проверка обоих вариантов развёртывания
+- [x] **Конфигурация:** `APP_AUTH_ENABLED` / `VITE_AUTH_ENABLED`; документировано в README / docker-compose
+- [x] **Бэкенд:** `SingleUserAuthenticator`, `app:ensure-single-user`, блокировка login/register/refresh; изоляция по `user_id` без изменений
+- [x] **Фронтенд:** без `/login`, `/register`; роутер без auth-guard; скрыты logout / email / admin; прямой вход на dashboard
+- [ ] **Совместимость:** smoke-проверка обоих вариантов развёртывания (см. `for_tests.md`)
 
 ## Фаза 20: Критичные расхождения с ТЗ
 
@@ -432,8 +432,8 @@ Additive-фича; опирается на установленные loading/er
 
 - [ ] Демо-данные для БД — см. **фаза 15** (`app:seed-demo-data`)
 - [ ] **Два варианта окружения (Docker):**
-  - **Демо / продакшен (по умолчанию):** `docker-compose.yml` — целевой compose для `docker compose up -d` по ТЗ; **без** сервиса `node`; статический фронтенд отдаётся nginx из `frontend/dist` (multi-stage build образа или артефакт CI); один входной URL (`APP_PORT`): `/api` → PHP, `/` → SPA; при старте — миграции, seed/single-user (см. остальные пункты фазы)
-  - **Разработка:** `docker-compose.dev.yml` (или profile `dev`) — опциональный overlay с сервисом `node` (`npm install` + Vite dev, `5173`), hot reload; API через nginx (`APP_PORT`); документировать в README: `docker compose up -d` для сдачи/демо, `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` (или эквивалент) для ежедневной разработки
+  - [x] **Демо / продакшен (по умолчанию):** `docker-compose.yml` — без `node`; nginx копирует `frontend/dist` (сборка в CI / `make frontend-build`); entrypoint php (migrate + ensure-single-user); один URL `APP_PORT`
+  - [x] **Разработка:** `docker-compose.dev.yml` — overlay с `node` (Vite `:5173`); README (`make up-dev`)
 - [ ] **Тесты — минимальный набор (smoke):**
   - **бэкенд (PHPUnit):** регистрация/логин, CRUD заметки, доступ только к своим данным; спецификации — [`future_autotests.md`](./future_autotests.md); план PR — [`autotests_prs.md`](./autotests_prs.md);
   - **фронтенд (Vitest):** smoke API-клиента или ключевого store (например `notes`)
@@ -467,7 +467,7 @@ Additive-фича; опирается на установленные loading/er
 - [x] REST API с живой OpenAPI/Swagger документацией (`/api/docs`)
 - [x] Не менее 10 unit/integration тестов (~24 PHPUnit + ~14 Vitest файлов, ~118 test-методов)
 - [ ] CI pipeline (GitHub Actions): lint + тесты (**фаза 20**, `.github/workflows/` отсутствует)
-- [ ] Запуск всего приложения одной командой `docker compose up -d` — дефолтный `docker-compose.yml` должен поднимать готовое приложение (миграции, seed/single-user, статический фронт без Vite); сейчас compose dev-ориентирован и требует `make init` (**фаза 21**)
+- [x] Запуск всего приложения одной командой `docker compose up -d` — prod compose: build + up, migrate + single-user в entrypoint (**фаза 21**, demo-seed — опционально)
 - [x] `README.md` с инструкцией по запуску (markdown)
 - [x] `ARCHITECTURE.md` с описанием архитектуры и плана разработки (markdown)
 - [ ] Ссылка на видео-демонстрацию (опционально) — не создана (**фаза 21**)
@@ -493,7 +493,7 @@ Additive-фича; опирается на установленные loading/er
 
 ### Вариант 5 — нефункциональные
 
-- [ ] Однопользовательское приложение без авторизации, zero config — сейчас JWT, регистрация/логин, 3 demo-пользователя (**фаза 19**)
+- [x] Однопользовательское приложение без авторизации, zero config — `APP_AUTH_ENABLED=false`, `SingleUserAuthenticator`, `app:ensure-single-user` (**фаза 19**; prod compose — **фаза 21**)
 
 ### Seed-данные (конкретные цифры ТЗ, на одну вселенную)
 
@@ -510,11 +510,11 @@ Additive-фича; опирается на установленные loading/er
 | Приоритет | Задача | Фаза / действие |
 |:---------:|--------|-----------------|
 | 🔴 | GitHub Actions (lint + тесты) | фаза 20 |
-| 🔴 | Однопользовательский режим (zero config) | фаза 19 |
+| 🔴 | Однопользовательский режим (zero config) | фаза 19 ✅ (prod compose — фаза 21) |
 | 🔴 | Дашборд с графиками / статистикой | фаза 20 |
 | 🔴 | Полнотекстовый поиск (FTS) | фаза 20 |
 | 🟡 | Seed при `make init` / `docker compose up` | фаза 21 |
 | 🟡 | 15 тегов в demo seed | фаза 15 / правка Universe (можно в фазе 21) |
-| 🟡 | `docker-compose.yml` как prod по умолчанию (`up -d` = готовое приложение) | фаза 21 |
+| 🟡 | `docker-compose.yml` как prod по умолчанию | фаза 21 ✅ |
 | 🟢 | Скринкаст / видео-демо | фаза 21 |
 

@@ -18,7 +18,7 @@
       </router-link>
 
       <router-link
-        v-if="authStore.isAdmin"
+        v-if="authStore.authUiEnabled && authStore.isAdmin"
         :to="{ name: 'admin-users' }"
         class="sidebar-nav-item"
         :class="{ 'sidebar-nav-item--active': route.name === 'admin-users' }"
@@ -37,10 +37,13 @@
         @click="handleNavigate"
       >
         <i class="pi pi-cog sidebar-nav-icon" aria-hidden="true" />
-        <span class="sidebar-nav-label truncate">{{ authStore.user?.email }}</span>
+        <span class="sidebar-nav-label truncate">
+          {{ authStore.authUiEnabled ? authStore.user?.email : 'Настройки' }}
+        </span>
       </router-link>
 
       <button
+        v-if="authStore.authUiEnabled"
         type="button"
         class="sidebar-nav-item sidebar-logout-btn w-full mt-1"
         @click="logout"

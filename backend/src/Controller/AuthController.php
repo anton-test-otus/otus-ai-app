@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Dto\ChangePasswordDto;
 use App\Dto\UpdateUserSettingsDto;
 use App\Entity\User;
+use App\Feature\AuthFeature;
 use App\Service\UserSettingsResolver;
 use Doctrine\ORM\EntityManagerInterface;
 use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
@@ -31,6 +32,7 @@ class AuthController extends AbstractController
         private SerializerInterface $serializer,
         private RefreshTokenGeneratorInterface $refreshTokenGenerator,
         private RefreshTokenManagerInterface $refreshTokenManager,
+        private AuthFeature $authFeature,
         private int $refreshTokenTtl,
     ) {
     }
@@ -38,6 +40,10 @@ class AuthController extends AbstractController
     #[Route('/register', name: 'api_auth_register', methods: ['POST'])]
     public function register(Request $request): JsonResponse
     {
+        if ($response = $this->denyWhenAuthDisabled()) {
+            return $response;
+        }
+
         $data = json_decode($request->getContent(), true);
 
         if (!is_array($data)) {
@@ -162,6 +168,10 @@ class AuthController extends AbstractController
     #[Route('/change-password', name: 'api_auth_change_password', methods: ['POST'])]
     public function changePassword(Request $request): JsonResponse
     {
+        if ($response = $this->denyWhenAuthDisabled()) {
+            return $response;
+        }
+
         $user = $this->getUser();
 
         if (!$user instanceof User) {
@@ -203,6 +213,18 @@ class AuthController extends AbstractController
         $this->entityManager->flush();
 
         return $this->json(['message' => 'Пароль успешно изменён']);
+    }
+
+    private function denyWhenAuthDisabled(): ?JsonResponse
+    {
+        if (!$this->authFeature->isEnabled()) {
+            return $this->json(
+                ['error' => 'Authentication is disabled in single-user mode'],
+                Response::HTTP_NOT_FOUND,
+            );
+        }
+
+        return null;
     }
 
     private function createRefreshTokenForUser(User $user): string
