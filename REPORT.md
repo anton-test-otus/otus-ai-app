@@ -1219,6 +1219,16 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## CI: publish-dist — прямой push вместо PR (2026-06-17)
+
+**Проблема:** job `Publish dist (PR → dist)` падал с `GitHub Actions is not permitted to create or approve pull requests` — политика org/repo запрещает Actions создавать PR (Settings → Actions → «Allow GitHub Actions to create and approve pull requests»).
+
+**Решение:** `publish-dist` пушит коммит напрямую в ветку `dist` (`contents: write`); убраны `peter-evans/create-pull-request` и `gh pr merge --auto`. Auto-merge PR был избыточен — ревью не выполнялось.
+
+**Затронутые файлы:** `.github/workflows/build.yml`, `README.md`, `for_tests.md`, `PHASES.md`.
+
+---
+
 ## CI: удаление GHCR (2026-06-17)
 
 **Задача:** убрать push Docker-образов в GHCR — деплой только через git + ветку `dist`.

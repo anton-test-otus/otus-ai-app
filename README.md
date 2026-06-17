@@ -107,13 +107,13 @@ docker compose build && docker compose up -d
 Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) запускается **после успешного CI** на `main` (и вручную через **Actions → Build artifacts**):
 
 1. **`frontend`** — `npm ci` + `vite build` → artifact **`frontend-dist`** (30 дней)
-2. **`publish-dist`** — PR `bot/frontend-dist` → ветка **`dist`** с `frontend/dist` + `.dist-source-sha`, **auto-merge**
+2. **`publish-dist`** — push в ветку **`dist`** с `frontend/dist` + `.dist-source-sha`
 
 Сервис **cron** в CI/CD отдельно не собирается: это тот же backend-образ с другим `command` (`crond`). Логика `app:cleanup-trash` проверяется PHPUnit (`CleanupTrashCommandTest`), не контейнером cron.
 
 Тесты на PR/push — [`.github/workflows/ci.yml`](.github/workflows/ci.yml): PHPUnit, Vitest, `vue-tsc` (через `npm run build`), проверка сборки nginx. ESLint не подключён — typecheck через `vue-tsc`.
 
-**Настройка GitHub (один раз):** Settings → General → **Allow auto-merge**; Settings → Actions → Workflow permissions → **Read and write**.
+**Настройка GitHub (один раз):** Settings → Actions → General → Workflow permissions → **Read and write permissions**. PR не создаётся — прямой push в `dist` (не требует «Allow GitHub Actions to create pull requests»).
 
 **Ветка `dist`:** на `main` каталог `frontend/dist` в `.gitignore`; в `dist` — только собранные ассеты (обновляются CI). Файл `.dist-source-sha` — SHA коммита `main`, с которого собран фронт.
 
