@@ -1183,7 +1183,7 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 **Решение:**
 - `.github/workflows/build.yml` — после успешного CI на `main` (`workflow_run`) и `workflow_dispatch`
 - Job `frontend`: `npm run build` → artifact `frontend-dist` (30 дней)
-- Job `docker` (matrix nginx/php/cron): скачивает dist, `docker compose build`, push в GHCR `ghcr.io/<owner>/otus-ai-app/<service>:<sha|latest>`
+- Job `docker-nginx` + `docker-backend`: nginx + `php` в GHCR; cron — сервис compose на том же образе, без отдельного push
 - `.github/workflows/ci.yml` — тесты + проверка сборки nginx на PR (без push образов)
 
 ---

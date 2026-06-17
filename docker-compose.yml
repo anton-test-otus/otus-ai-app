@@ -23,6 +23,7 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
+    image: otus-ai-app-php
     container_name: otus_php
     working_dir: /var/www/backend
     env_file:
@@ -51,9 +52,7 @@ services:
       - otus_network
 
   cron:
-    build:
-      context: .
-      dockerfile: docker/php/Dockerfile
+    image: otus-ai-app-php
     container_name: otus_cron
     working_dir: /var/www/backend
     env_file:
@@ -64,6 +63,8 @@ services:
       APP_AUTH_ENABLED: ${APP_AUTH_ENABLED:-true}
       SINGLE_USER_EMAIL: ${SINGLE_USER_EMAIL:-owner@local}
     depends_on:
+      php:
+        condition: service_started
       postgres:
         condition: service_healthy
     networks:
