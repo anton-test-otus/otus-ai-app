@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend build & tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck and build production assets
+        env:
+          VITE_API_URL: /api
+          VITE_AUTH_ENABLED: "false"
+        run: npm run build
+
+      - name: Run Vitest
+        run: npm test
+
+      - name: Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 1
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: otus_ai_db_test
+          POSTGRES_USER: otus_user
+          POSTGRES_PASSWORD: otus_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U otus_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl, zip, openssl
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare test environment
+        env:
+          DATABASE_URL: postgresql://otus_user:otus_password@127.0.0.1:5432/otus_ai_db_test?serverVersion=16&charset=utf8
+        run: |
+          cp .env.test .env
+          mkdir -p config/jwt
+          openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096
+          openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem
+          php bin/console doctrine:database:create --if-not-exists --env=test
+          php bin/console doctrine:migrations:migrate --no-interaction --env=test --allow-no-migration
+
+      - name: Run PHPUnit
+        env:
+          DATABASE_URL: postgresql://otus_user:otus_password@127.0.0.1:5432/otus_ai_db_test?serverVersion=16&charset=utf8
+        run: vendor/bin/phpunit
+
+  docker-nginx:
+    name: Docker nginx image
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist
+
+      - name: Build nginx image
+        run: docker compose build nginx

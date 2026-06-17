@@ -525,10 +525,10 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Запуск | `docker compose up -d` — готовое приложение по ТЗ | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
 | Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev (`5173`) |
 | API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` (как сейчас) |
-| Сборка фронта | `make frontend-build` / GitHub Actions → `frontend/dist` → образ nginx | не обязательна (HMR) |
+| Сборка фронта | `make frontend-build` / CI [`build.yml`](.github/workflows/build.yml) → artifact + GHCR | не обязательна (HMR) |
 | Назначение | сдача проекта, демо, staging | ежедневная разработка |
 
-Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/ci.yml`).
+Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/build.yml` → artifact + GHCR).
 
 ### Режим аутентификации
 

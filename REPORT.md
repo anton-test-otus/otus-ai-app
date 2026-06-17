@@ -1174,3 +1174,31 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Затронутые файлы:** `docker/nginx/Dockerfile`, `docker-compose.yml`, `Makefile`, `.dockerignore`, `.github/workflows/ci.yml`, `README.md`, `ARCHITECTURE.md`, `PHASES.md`.
 
+---
+
+## CI: workflow сборки артефактов (2026-06-17)
+
+**Задача:** отдельный GitHub Actions pipeline для prod-артефактов (не только тесты).
+
+**Решение:**
+- `.github/workflows/build.yml` — после успешного CI на `main` (`workflow_run`) и `workflow_dispatch`
+- Job `frontend`: `npm run build` → artifact `frontend-dist` (30 дней)
+- Job `docker` (matrix nginx/php/cron): скачивает dist, `docker compose build`, push в GHCR `ghcr.io/<owner>/otus-ai-app/<service>:<sha|latest>`
+- `.github/workflows/ci.yml` — тесты + проверка сборки nginx на PR (без push образов)
+
+---
+
+## CI pipeline: закрытие пунктов 1–6 (2026-06-17)
+
+**Задача:** зелёный CI по критичным расхождениям фазы 20.
+
+**Решение:**
+- `backend/.env.test`: `DEFAULT_URI`, `CORS_ALLOW_ORIGIN`, `APP_AUTH_ENABLED`
+- `client.refresh.test.ts`: mock `authUiEnabled: true` (фаза 19)
+- Lint: ESLint не подключён; gate — `vue-tsc` в `npm run build`; скрипт `lint` заменён на `typecheck`
+- README: badge CI; `build.yml` только после успешного CI на `main` (`workflow_run`)
+- `ci.yml`: PHP extensions `intl`, `zip`; `docker-nginx` depends on backend + frontend
+- `PHASES.md`: чеклист CI отмечен
+
+**Затронутые файлы:** `backend/.env.test`, `frontend/src/api/__tests__/client.refresh.test.ts`, `frontend/package.json`, `.github/workflows/ci.yml`, `.github/workflows/build.yml`, `README.md`, `PHASES.md`.
+

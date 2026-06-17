@@ -1,5 +1,7 @@
 # Персональная база знаний
 
+[![CI](https://github.com/anton-test-otus/otus-ai-app/actions/workflows/ci.yml/badge.svg)](https://github.com/anton-test-otus/otus-ai-app/actions/workflows/ci.yml)
+
 Многопользовательское веб-приложение для ведения персональной базы знаний с markdown-заметками, иерархическими папками, историей версий, wiki-ссылками, тегами и drag-and-drop организацией.
 
 ## Текущий статус
@@ -99,6 +101,38 @@ docker compose build && docker compose up -d
 - Приложение: http://localhost:8080/ (`/` → SPA, `/api` → Symfony)
 
 **Смена `APP_AUTH_ENABLED`** → `make frontend-build && docker compose build nginx`.
+
+### CI: сборка артефактов
+
+Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) запускается **после успешного CI** на `main` (и вручную через **Actions → Build artifacts**):
+
+1. **`frontend`** — `npm ci` + `vite build` → artifact **`frontend-dist`** (30 дней)
+2. **`docker`** — скачивает `frontend/dist`, собирает образы `nginx`, `php`, `cron` и пушит в **GHCR**:
+   - `ghcr.io/<owner>/otus-ai-app/nginx:<sha>` / `:latest`
+   - `ghcr.io/<owner>/otus-ai-app/php:<sha>` / `:latest`
+   - `ghcr.io/<owner>/otus-ai-app/cron:<sha>` / `:latest`
+
+Тесты на PR/push — [`.github/workflows/ci.yml`](.github/workflows/ci.yml): PHPUnit, Vitest, `vue-tsc` (через `npm run build`), проверка сборки nginx. ESLint не подключён — typecheck через `vue-tsc`.
+
+**Деплой с GHCR** (на сервере, после `docker login ghcr.io`):
+
+```bash
+export OWNER=<github-owner-lowercase>
+export TAG=<commit-sha>   # или latest
+
+docker pull ghcr.io/$OWNER/otus-ai-app/nginx:$TAG
+docker pull ghcr.io/$OWNER/otus-ai-app/php:$TAG
+docker pull ghcr.io/$OWNER/otus-ai-app/cron:$TAG
+
+# переопределить образы в compose или tag locally:
+docker tag ghcr.io/$OWNER/otus-ai-app/nginx:$TAG otus-ai-app-nginx
+docker tag ghcr.io/$OWNER/otus-ai-app/php:$TAG otus-ai-app-php
+docker tag ghcr.io/$OWNER/otus-ai-app/cron:$TAG otus-ai-app-cron
+
+docker compose up -d
+```
+
+`frontend/dist` в git **не нужен** — он создаётся в CI и попадает в artifact / образ nginx.
 
 ### Dev (Vite)
 

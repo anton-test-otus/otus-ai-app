@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createPinia, setActivePinia } from 'pinia'
 
-const applyAuthResponse = vi.fn()
-
-vi.mock('@/stores/auth', () => ({
-  useAuthStore: () => ({
-    applyAuthResponse,
-  }),
+vi.mock('@/config/app', () => ({
+  appConfig: {
+    authEnabled: true,
+    autosaveDelaySeconds: 10,
+    versionConsolidationWindowMinutes: 5,
+  },
 }))
 
 function createLocalStorageMock() {
@@ -48,7 +49,6 @@ function getAuthorizationHeader(init?: RequestInit): string | null {
 }
 
 async function loadClient() {
-  vi.resetModules()
   return import('@/api/client')
 }
 
@@ -57,7 +57,7 @@ describe('apiClient token refresh', () => {
   let fetchMock: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    applyAuthResponse.mockReset()
+    setActivePinia(createPinia())
     localStorageMock = createLocalStorageMock()
     fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

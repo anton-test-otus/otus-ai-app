@@ -405,10 +405,11 @@ Additive-фича; опирается на установленные loading/er
 
 ### CI pipeline
 
-- [ ] GitHub Actions workflow (`.github/workflows/`): lint + тесты на push/PR
-- [ ] **Бэкенд:** PHPUnit (существующий набор); при необходимости — PHP CS Fixer / static analysis
-- [ ] **Фронтенд:** `npm run build` (vue-tsc) + Vitest; ESLint, если подключён
-- [ ] Документировать badge/статус CI в `README.md`
+- [x] GitHub Actions workflow (`.github/workflows/`): тесты на push/PR (`ci.yml`); typecheck через `vue-tsc` в `npm run build` (ESLint не подключён)
+- [x] **Бэкенд:** PHPUnit (существующий набор); PHP CS Fixer / static analysis — не подключены
+- [x] **Фронтенд:** `npm run build` (vue-tsc) + Vitest
+- [x] Badge/статус CI в `README.md`
+- [x] Prod-артефакты: `build.yml` после green CI на `main` → `frontend-dist` + GHCR
 
 ### Дашборд с визуализацией данных
 
@@ -450,7 +451,7 @@ Additive-фича; опирается на установленные loading/er
 
 Аудит по состоянию кодовой базы (**2026-06-17**). Отмечать `- [x]` по мере закрытия расхождений. Связанные фазы доработки указаны в скобках.
 
-**Сводка:** функционально проект близок к ТЗ; для формальной сдачи остаются **фаза 19** (single-user), **фаза 20** (CI, дашборд, FTS) и **фаза 21** (seed, prod `docker-compose.yml`, финализация).
+**Сводка:** функционально проект близок к ТЗ; для формальной сдачи остаются **фаза 20** (дашборд, FTS) и **фаза 21** (seed, финализация). CI pipeline — закрыт.
 
 ### Общие требования — функциональные
 
@@ -466,7 +467,7 @@ Additive-фича; опирается на установленные loading/er
 - [ ] Seed-данные при запуске приложения — `app:seed-demo-data` есть, но **не вызывается** автоматически при `docker compose up` / `make init` (**фаза 21**)
 - [x] REST API с живой OpenAPI/Swagger документацией (`/api/docs`)
 - [x] Не менее 10 unit/integration тестов (~24 PHPUnit + ~14 Vitest файлов, ~118 test-методов)
-- [ ] CI pipeline (GitHub Actions): lint + тесты (**фаза 20**, `.github/workflows/` отсутствует)
+- [x] CI pipeline (GitHub Actions): тесты + typecheck (`ci.yml`), сборка артефактов после green CI (`build.yml`)
 - [x] Запуск всего приложения одной командой `docker compose up -d` — prod compose: build + up, migrate + single-user в entrypoint (**фаза 21**, demo-seed — опционально)
 - [x] `README.md` с инструкцией по запуску (markdown)
 - [x] `ARCHITECTURE.md` с описанием архитектуры и плана разработки (markdown)
@@ -509,7 +510,7 @@ Additive-фича; опирается на установленные loading/er
 
 | Приоритет | Задача | Фаза / действие |
 |:---------:|--------|-----------------|
-| 🔴 | GitHub Actions (lint + тесты) | фаза 20 |
+| 🔴 | GitHub Actions (тесты + typecheck) | фаза 20 ✅ |
 | 🔴 | Однопользовательский режим (zero config) | фаза 19 ✅ (prod compose — фаза 21) |
 | 🔴 | Дашборд с графиками / статистикой | фаза 20 |
 | 🔴 | Полнотекстовый поиск (FTS) | фаза 20 |
