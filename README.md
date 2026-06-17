@@ -107,31 +107,30 @@ docker compose build && docker compose up -d
 Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) запускается **после успешного CI** на `main` (и вручную через **Actions → Build artifacts**):
 
 1. **`frontend`** — `npm ci` + `vite build` → artifact **`frontend-dist`** (30 дней)
-2. **`docker-nginx`** / **`docker-backend`** — nginx + backend (`php`); в GHCR только:
-   - `ghcr.io/<owner>/otus-ai-app/nginx:<sha>` / `:latest`
-   - `ghcr.io/<owner>/otus-ai-app/php:<sha>` / `:latest` — тот же образ для сервисов `php` и `cron` в compose
+2. **`publish-dist`** — PR `bot/frontend-dist` → ветка **`dist`** с `frontend/dist` + `.dist-source-sha`, **auto-merge**
 
 Сервис **cron** в CI/CD отдельно не собирается: это тот же backend-образ с другим `command` (`crond`). Логика `app:cleanup-trash` проверяется PHPUnit (`CleanupTrashCommandTest`), не контейнером cron.
 
 Тесты на PR/push — [`.github/workflows/ci.yml`](.github/workflows/ci.yml): PHPUnit, Vitest, `vue-tsc` (через `npm run build`), проверка сборки nginx. ESLint не подключён — typecheck через `vue-tsc`.
 
-**Деплой с GHCR** (на сервере, после `docker login ghcr.io`):
+**Настройка GitHub (один раз):** Settings → General → **Allow auto-merge**; Settings → Actions → Workflow permissions → **Read and write**.
+
+**Ветка `dist`:** на `main` каталог `frontend/dist` в `.gitignore`; в `dist` — только собранные ассеты (обновляются CI). Файл `.dist-source-sha` — SHA коммита `main`, с которого собран фронт.
+
+#### Деплой (ветка `dist`)
+
+На сервере — код с `main`, ассеты с `dist`:
 
 ```bash
-export OWNER=<github-owner-lowercase>
-export TAG=<commit-sha>   # или latest
+git pull origin main
+git fetch origin dist
+git checkout origin/dist -- frontend/dist .dist-source-sha
+# или: make sync-dist
 
-docker pull ghcr.io/$OWNER/otus-ai-app/nginx:$TAG
-docker pull ghcr.io/$OWNER/otus-ai-app/php:$TAG
-
-docker tag ghcr.io/$OWNER/otus-ai-app/nginx:$TAG otus-ai-app-nginx
-docker tag ghcr.io/$OWNER/otus-ai-app/php:$TAG otus-ai-app-php
-# cron в compose использует image: otus-ai-app-php — отдельный pull не нужен
-
-docker compose up -d
+docker compose build && docker compose up -d
 ```
 
-`frontend/dist` в git **не нужен** — он создаётся в CI и попадает в artifact / образ nginx.
+`make frontend-build` на сервере **не нужен**.
 
 ### Dev (Vite)
 

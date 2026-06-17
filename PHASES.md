@@ -409,7 +409,7 @@ Additive-фича; опирается на установленные loading/er
 - [x] **Бэкенд:** PHPUnit (существующий набор); PHP CS Fixer / static analysis — не подключены
 - [x] **Фронтенд:** `npm run build` (vue-tsc) + Vitest
 - [x] Badge/статус CI в `README.md`
-- [x] Prod-артефакты: `build.yml` после green CI на `main` → `frontend-dist` + GHCR
+- [x] Prod-артефакты: `build.yml` после green CI на `main` → `frontend-dist` + ветка `dist` (PR auto-merge)
 
 ### Дашборд с визуализацией данных
 

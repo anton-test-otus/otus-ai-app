@@ -3787,3 +3787,32 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** backlog-пункт снят без изменений кода; актуальное поведение — сортировка по `updatedAt DESC`, избранное для закрепления.
 
 ---
+
+## Промпт 195
+
+> давай (ветка dist + PR auto-merge для frontend/dist через CI)
+
+### Выполненные действия:
+
+- `.github/workflows/build.yml` — job `publish-dist`: artifact → PR `bot/frontend-dist` → `dist` → auto-merge squash
+- `.gitignore` — `.dist-source-sha` (только в ветке `dist`, не в `main`)
+- `Makefile` — `make sync-dist` для деплоя
+- `README.md`, `REPORT.md`, `for_tests.md` — документация и smoke-сценарии
+
+**Результат:** после зелёного CI на `main` ассеты публикуются в ветку `dist` через PR.
+
+---
+
+## Промпт 196
+
+> вычисти (GHCR из pipeline и документации)
+
+### Выполненные действия:
+
+- `.github/workflows/build.yml` — удалены jobs `docker-nginx` и `docker-backend`
+- `README.md`, `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md` — убраны упоминания GHCR
+- Деплой: только `git pull` + `make sync-dist` + `docker compose build`
+
+**Результат:** CI публикует ассеты в ветку `dist`; образы собираются на сервере локально.
+
+---

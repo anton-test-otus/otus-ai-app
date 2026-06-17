@@ -1,4 +1,4 @@
-.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user sync-dist
 
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
@@ -30,6 +30,7 @@ help:
 	@echo "  make frontend-test    - Vitest (frontend)"
 	@echo "  make frontend-install - Установка зависимостей npm (frontend)"
 	@echo "  make frontend-build   - Сборка frontend/dist (npm ci + vite build, для prod/CI)"
+	@echo "  make sync-dist        - Подтянуть frontend/dist с ветки dist (CI)"
 	@echo "  make frontend-dev     - Запуск Vite dev server"
 	@echo "  make frontend-kill    - Остановка всех Node.js/Vite процессов"
 	@echo "  make frontend-restart - Перезапуск Vite dev server"
@@ -164,6 +165,12 @@ frontend-build:
 		-e VITE_AUTH_ENABLED=$(APP_AUTH_ENABLED) \
 		node:22-alpine \
 		sh -c "npm ci && npm run build"
+
+sync-dist:
+	@echo "Подтягивание frontend/dist с origin/dist..."
+	git fetch origin dist
+	git checkout origin/dist -- frontend/dist .dist-source-sha
+	@echo "✅ dist обновлён (source: $$(cat .dist-source-sha 2>/dev/null || echo unknown))"
 
 frontend-dev:
 	@echo "Запуск Vite dev server..."

@@ -1202,3 +1202,30 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Затронутые файлы:** `backend/.env.test`, `frontend/src/api/__tests__/client.refresh.test.ts`, `frontend/package.json`, `.github/workflows/ci.yml`, `.github/workflows/build.yml`, `README.md`, `PHASES.md`.
 
+---
+
+## CI: ветка dist + PR auto-merge (2026-06-17)
+
+**Задача:** публиковать `frontend/dist` в git через CI, не засоряя `main`.
+
+**Решение:**
+- Job `publish-dist` в `build.yml`: artifact → PR `bot/frontend-dist` → `dist` (`peter-evans/create-pull-request@v7`) → `gh pr merge --auto --squash`
+- Bootstrap ветки `dist` при первом запуске (`git push HEAD:refs/heads/dist`)
+- `.dist-source-sha` в ветке `dist` — SHA исходного коммита `main`
+- `main`: `frontend/dist` и `.dist-source-sha` в `.gitignore`
+- README: деплой `git pull main` + `git checkout origin/dist -- frontend/dist`
+
+**Затронутые файлы:** `.github/workflows/build.yml`, `.gitignore`, `README.md`, `Makefile`, `for_tests.md`.
+
+---
+
+## CI: удаление GHCR (2026-06-17)
+
+**Задача:** убрать push Docker-образов в GHCR — деплой только через git + ветку `dist`.
+
+**Решение:**
+- Из `build.yml` удалены jobs `docker-nginx` и `docker-backend`
+- `ci.yml` по-прежнему проверяет сборку nginx на PR (без push в registry)
+- README, `PHASES.md`, `ARCHITECTURE.md` — без упоминаний GHCR
+
+**Затронутые файлы:** `.github/workflows/build.yml`, `README.md`, `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md`.

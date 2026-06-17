@@ -503,3 +503,22 @@
 - [x] `SingleUserModeTest` (PHPUnit) — me/notes без Authorization; login/register disabled
 
 ---
+
+## CI — ветка dist + PR auto-merge
+
+**Источник:** `build.yml` job `publish-dist`
+
+### Smoke (ручная проверка)
+- [ ] GitHub: Settings → General → Allow auto-merge включён
+- [ ] Push в `main` → CI зелёный → workflow **Build artifacts** → job **Publish dist** создаёт PR в `dist`
+- [ ] PR auto-merge сливается без ручного ревью
+- [ ] На сервере: `git pull origin main && make sync-dist && docker compose build nginx && docker compose up -d`
+- [ ] http://localhost:8080/ — SPA открывается; `.dist-source-sha` совпадает с последним merge в `main`
+
+**Ожидание:** `main` без `frontend/dist` в истории; ассеты только в ветке `dist`; деплой без `make frontend-build`.
+
+### Автотесты (позже)
+
+- Workflow smoke на fork с проверкой создания PR (опционально)
+
+---

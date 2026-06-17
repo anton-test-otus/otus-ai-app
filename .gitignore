@@ -8,6 +8,7 @@
 /.env
 /frontend/node_modules/
 /frontend/dist/
+.dist-source-sha
 /frontend/.env
 /frontend/.env.local
 /volumes/*
