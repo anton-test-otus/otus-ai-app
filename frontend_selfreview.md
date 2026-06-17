@@ -2,7 +2,7 @@
 
 **Дата:** 2026-06-13  
 **Область:** `frontend/src`  
-**Статус:** ревью выполнено; правки — отдельными коммитами по шагам ниже.
+**Статус:** ревью выполнено; **обязательные шаги 1–10 и backlog закрыты** (2026-06-17). Шаги 11–14 — отложенный backlog (не блокирует фазу 19).
 
 Исправления по каждому шагу можно коммитить отдельно. Внутри шага пункты с `- [ ]` — чеклист задач.
 
@@ -201,13 +201,13 @@
 - [x] Ввести `listError` / `detailError`
 - [x] Мутации (`toggleFavorite`, `moveNoteToFolder`, `updateNote`) — только toast, без записи в list `error`
 - [x] Обновить views, читающие `notesStore.error` / `isLoading`
-- [x] Smoke: сценарии в [`future_autotests.md`](./future_autotests.md) (Vitest, фаза 20); ручной smoke опционален — [`for_tests.md`](./for_tests.md)
+- [x] Smoke: сценарии в [`future_autotests.md`](./future_autotests.md) (Vitest, фаза 21); ручной smoke опционален — [`for_tests.md`](./for_tests.md)
 
 ---
 
 ## Шаг 11. Рефакторинг NoteView
 
-**Приоритет:** medium (можно отложить)  
+**Приоритет:** medium (отложено — backlog фазы 18, см. `PHASES.md`)  
 **Коммит:** `refactor(frontend): extract NoteView composables`
 
 **Проблема:** `NoteView.vue` — 874 строки: routing, черновик, autosave, метаданные, export, restore версий, shortcuts, favorite, delete.
@@ -221,7 +221,7 @@
 
 ## Шаг 12. Рефакторинг редактора и FolderTreeItem
 
-**Приоритет:** medium (можно отложить)  
+**Приоритет:** medium (отложено — backlog фазы 18, см. `PHASES.md`)  
 **Коммит:** `refactor(frontend): split MarkdownEditor and FolderTreeItem`
 
 **Проблема:**
@@ -238,7 +238,7 @@
 
 ## Шаг 13. Согласованность паттернов
 
-**Приоритет:** medium / low  
+**Приоритет:** medium / low (отложено — backlog фазы 18, см. `PHASES.md`)  
 **Коммит:** `refactor(frontend): unify loading, errors, imports`
 
 **Проблема:** расхождения с `ARCHITECTURE.md` (фаза 12).
@@ -264,7 +264,7 @@
 
 ## Шаг 14. Мелкие улучшения (low, optional)
 
-**Приоритет:** low  
+**Приоритет:** low (отложено — backlog фазы 18, см. `PHASES.md`)  
 **Коммит:** по желанию, можно включить в шаг 13
 
 - [ ] `NoteListCriteria` в `api/notes.ts` — unexport или перенести в `types`

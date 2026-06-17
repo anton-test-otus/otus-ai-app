@@ -16,7 +16,7 @@
 
 **Ожидание:** …
 
-### Автотесты (позже, фаза 20+)
+### Автотесты (позже, фаза 21+)
 - …
 ```
 
@@ -33,7 +33,7 @@
 
 **Ожидание:** в результатах title отображается как текст, `alert` не срабатывает.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE XSS — escapeHtml и highlightMatch».
 
@@ -54,7 +54,7 @@
 
 **Ожидание:** разметка видна как текст, скрипты не выполняются.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE sanitize markdown HTML в preview».
 
@@ -76,7 +76,7 @@
 
 **Находка (backlog):** поиск в модалке wiki-ссылок регистрозависимый — **исправлено** (см. «Backlog — регистронезависимый поиск» в `for_tests.md`).
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE parseHydraCollection».
 
@@ -111,7 +111,7 @@
 
 **Ожидание:** `NoteRepository::search` — `LOWER(title/content) LIKE`; `GET /notes?title=` — `SearchFilter` `ipartial`.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE/FE регистронезависимый поиск заметок»; также «FE LinkNoteModal — searchByTitle».
 
@@ -130,7 +130,7 @@
 
 **Ожидание:** поведение как до рефакторинга; публичный API store (`fetchNotes`, `fetchFavorites`, `loadMore*`) без изменений для views.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE fetchPaginatedList dedup».
 
@@ -150,7 +150,7 @@
 
 **Ожидание:** поведение UI без изменений; только внутренний рефакторинг.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE shared utils — filters, folders, dates».
 
@@ -172,7 +172,7 @@
 
 **Ожидание:** list- и detail-состояния изолированы; мутации не пишут в `listError`.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE notes store — изоляция list/detail loading и error». После реализации Vitest — закрыть проверку шага 10 без ручного smoke.
 
@@ -188,7 +188,7 @@
 
 **Ожидание:** собственные CRUD и корзина работают как до фикса.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Сценарий с **двумя пользователями и чужими UUID** — в [`future_autotests.md`](./future_autotests.md) («BE IDOR — item-операции только для владельца»). Ручная регистрация A/B не требуется.
 
@@ -208,7 +208,7 @@
 
 **Ожидание:** понятное сообщение в теле ответа (422), не silent ignore и не 500.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 См. [`future_autotests.md`](./future_autotests.md) — «BE owned relations при записи».
 
@@ -226,7 +226,7 @@
 
 **Ожидание:** `note_links` синхронизированы с `content` после restore; граф и `linkStats` не показывают «хвост» от состояния до restore.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE sync wiki-ссылок после restore версии».
 
@@ -245,7 +245,7 @@
 
 **Ожидание:** понятное сообщение в теле ответа; нельзя случайно заблокировать или лишить админки единственного администратора.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE admin guards — self-delete / self-demote».
 
@@ -262,7 +262,7 @@
 
 **Ожидание:** предсказуемый конфликт при повторной регистрации; первая регистрация без регрессии.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE register — дубликат email».
 
@@ -280,7 +280,7 @@
 
 **Ожидание:** меньше запросов к БД; формат JSON ответа не изменился.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE batch admin user statistics».
 
@@ -303,7 +303,7 @@
 
 **Ожидание:** формат JSON не изменился; preview как до оптимизации; меньше SQL на list/search/trash.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE batch wiki title resolution в list preview».
 
@@ -324,7 +324,7 @@
 
 **Ожидание:** формат JSON `note:read` не изменился; меньше SQL на открытие заметки.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE combine note read metadata queries».
 
@@ -346,7 +346,7 @@
 
 **Ожидание:** функциональность не изменилась; list/favorites быстрее на больших выборках; `LIKE` по content остаётся без индекса (документировано в `ARCHITECTURE.md`).
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE индексы для списков заметок».
 
@@ -367,7 +367,7 @@
 
 **Ожидание:** лишние эндпоинты недоступны; используемые пути версий/графа/синхронизации работают как раньше.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Покрыть **все эндпоинты из ручной проверки** выше — см. [`future_autotests.md`](./future_autotests.md) «BE сузить API — removed endpoints и регрессия»:
 
@@ -394,7 +394,7 @@
 
 **Ожидание:** sync wiki-ссылок только при изменении `content`; допустимые settings из `UserSettingOptions`.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE PATCH sync и settings validation».
 
@@ -411,7 +411,7 @@
 
 **Ожидание:** базовые security headers на API; документация и OpenAPI metadata согласованы с MVP JWT.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE security headers и API metadata».
 
@@ -430,7 +430,7 @@
 
 **Ожидание:** refresh через `gesdinet/jwt-refresh-token-bundle`; TTL access — `JWT_TOKEN_TTL`, refresh — `JWT_REFRESH_TOKEN_TTL`; ротация refresh при каждом использовании.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE JWT refresh flow».
 
@@ -448,7 +448,7 @@
 
 **Ожидание:** interceptor в `client.ts` на 401 вызывает `/auth/refresh`, обновляет токены, повторяет запрос; при неудачном refresh — logout.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «FE JWT refresh interceptor».
 
@@ -467,7 +467,7 @@
 
 **Ожидание:** граф и создание заметок без регрессии; пустой content на POST отклоняется.
 
-### Автотесты (фаза 20+)
+### Автотесты (фаза 21+)
 
 Спецификация: [`future_autotests.md`](./future_autotests.md) — «BE мелкие улучшения — trash, graph batch, content on create (шаг 14)» и «FE черновик — POST только с непустым content (шаг 14)».
 

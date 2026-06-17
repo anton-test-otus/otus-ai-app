@@ -981,6 +981,23 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 
 **Проверка:** smoke подтверждён пользователем (2026-06-14).
 
+### BE Шаг 7: batch wiki title resolution в list preview (исправлено)
+
+**Проблема:** `NoteListNormalizer` на каждую заметку в collection вызывал `resolveWikiLinkTitles` → отдельный SQL на карточку (до N запросов на страницу).
+
+**Решение:**
+- `NotePreviewService::prefetchWikiTitlesForNotes()` — один batch `findActiveByIdsForUser` по всем UUID wiki-ссылок страницы
+- `NoteListCollectionNormalizer` — prefetch в context `CONTEXT_WIKI_TITLES_BY_ID` перед нормализацией collection
+- `NoteListNormalizer` / `buildPreview` — опциональный аргумент `titlesById`; тот же prefetch в `NoteSearchController`
+
+**Затронутые файлы:**
+- `backend/src/Service/NotePreviewService.php`
+- `backend/src/Serializer/NoteListCollectionNormalizer.php`
+- `backend/src/Serializer/NoteListNormalizer.php`
+- `backend/src/Controller/NoteSearchController.php`
+
+**Проверка:** `NoteListPreviewTest` (functional).
+
 ### BE Шаг 8: combine note read metadata queries (исправлено)
 
 **Проблема:** `NoteReadNormalizer` на каждый `GET /notes/{id}` выполнял 3 SQL: 2× `countLinkStats` + `countByNote`.
@@ -1113,4 +1130,18 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 **Затронутые файлы:** `Entity/Note.php`, `ARCHITECTURE.md`
 
 ---
+
+## Фаза 18: закрытие (2026-06-17)
+
+**Итог:** все обязательные шаги self-review закрыты. Critical (XSS, IDOR), medium на фронте (1–10) и бэке (1–15), JWT refresh с обеих сторон, backlog регистронезависимого поиска. Отложено в backlog фазы 18 (`PHASES.md`): FE 11–14 (рефакторинг и косметика паттернов). FTS/GIN — follow-up по чеклисту ТЗ, не входил в шаг 9 selfreview.
+
+**Документация синхронизирована:** `PHASES.md` (фаза 18 ✅), `frontend_selfreview.md`, `backend_selfreview.md`, этот раздел `REPORT.md`.
+
+### DnD порядка заметок внутри папки — не планируется (2026-06-17)
+
+**Контекст:** в чеклисте «Вариант 5» оставался опциональный пункт про drag-and-drop для ручного порядка заметок в папке.
+
+**Решение:** не реализовывать. Согласовано с решением по проблеме 11 (`position` удалён): заметки — по `updated_at DESC`, закрепление — через избранное; DnD только для смены папки (фаза 17). Ручной порядок противоречит сортировке по дате изменения и не соответствует UX заметочника.
+
+**Затронутые файлы:** `PHASES.md` (пункт закрыт, строка убрана из таблицы расхождений).
 

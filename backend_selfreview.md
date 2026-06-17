@@ -2,7 +2,7 @@
 
 **Дата:** 2026-06-13  
 **Область:** `backend/src`, `backend/config`, `backend/migrations`  
-**Статус:** ревью выполнено; правки — отдельными коммитами по шагам ниже.
+**Статус:** ревью выполнено; **обязательные шаги 1–15 закрыты** (2026-06-17). Правки — отдельными коммитами по шагам ниже.
 
 Исправления по каждому шагу можно коммитить отдельно. Внутри шага пункты с `- [ ]` — чеклист задач.
 
@@ -37,7 +37,7 @@
 - [x] Добавить `QueryItemExtensionInterface` для `Note`, `Folder`, `Tag` (и при необходимости `NoteVersion`, `NoteLink`) — `andWhere entity.user = :currentUser` *(NoteLink — не нужен после шага 11)*
 - [x] В процессорах на мутациях существующих сущностей — `assertSame($data->getUser(), $user)` или `AccessDeniedHttpException`
 - [x] Для `GET /notes/{id}` — отдавать 404 (не 403), если заметка чужая или в корзине (`deletedAt IS NOT NULL`), если так задумано для UX
-- [ ] Smoke: один пользователь — свои CRUD и корзина без регрессии; IDOR A→B — см. [`future_autotests.md`](./future_autotests.md)
+- [x] Smoke: свой CRUD без регрессии; IDOR A→B — `ResourceOwnershipTest` (см. [`future_autotests.md`](./future_autotests.md))
 
 ---
 
@@ -54,7 +54,7 @@
 - [x] Для каждого тега в коллекции: `tag->getUser() === $user`
 - [x] Для папки: `parent === null || parent->getUser() === $user`; parent не soft-deleted
 - [x] Ошибка: `422` с понятным сообщением, не silent ignore
-- [ ] Smoke: попытка привязать заметку к чужой папке — отказ *(отложено: [`future_autotests.md`](./future_autotests.md) — BE owned relations)*
+- [x] Smoke: попытка привязать заметку к чужой папке — отказ — `OwnedRelationValidationTest`
 
 ---
 
@@ -128,9 +128,9 @@
 
 **Файлы:** `Serializer/NoteListNormalizer.php`, `Service/NotePreviewService.php`
 
-- [ ] Собрать все UUID из wiki-ссылок без alias по всей странице → один batch `findActiveByIdsForUser`
-- [ ] Передавать `titlesById` в `buildPreview` (опциональный аргумент)
-- [ ] Альтернатива: context-aware normalizer с prefetch на уровне collection provider
+- [x] Собрать все UUID из wiki-ссылок без alias по всей странице → один batch `findActiveByIdsForUser`
+- [x] Передавать `titlesById` в `buildPreview` (опциональный аргумент)
+- [x] Context-aware normalizer с prefetch: `NoteListCollectionNormalizer` + `NotePreviewService::prefetchWikiTitlesForNotes`
 
 ---
 
@@ -143,8 +143,8 @@
 
 **Файлы:** `Serializer/NoteReadNormalizer.php`, `Repository/NoteLinkRepository.php`, `Repository/NoteVersionRepository.php`
 
-- [ ] Один метод `getNoteReadMetadata(Note $note): { linkStats, versionCount }` с объединённым SQL или subselect
-- [ ] Либо кэш в рамках одного request (менее предпочтительно)
+- [x] Один метод `getNoteReadMetadata(Note $note): { linkStats, versionCount }` с объединённым SQL или subselect
+- [x] `NoteReadNormalizer` вызывает `getNoteReadMetadata` вместо отдельных count-запросов
 
 ---
 
@@ -157,10 +157,10 @@
 
 **Файлы:** новая миграция, `Repository/NoteRepository.php`
 
-- [ ] Составной индекс `(user_id, deleted_at)` или `(user_id, deleted_at, updated_at DESC)`
-- [ ] Индекс `(user_id, is_favorite, updated_at)` — для избранных
-- [ ] Документировать ограничение `LIKE` для MVP; опционально PostgreSQL `GIN` + `to_tsvector` для `/notes/search` (follow-up)
-- [ ] Smoke: explain plan на типичных запросах dashboard/search
+- [x] Partial-индекс `notes_user_active_updated_idx` (`user_id`, `updated_at DESC` WHERE `deleted_at IS NULL`) — миграция `Version20260616120000`
+- [x] Partial-индекс `notes_user_favorite_active_updated_idx` — для избранных
+- [x] Документировать ограничение `LIKE` для MVP; PostgreSQL `GIN` + `to_tsvector` — follow-up (вне scope шага)
+- [x] Smoke: `NotesIndexesMigrationTest`; EXPLAIN на favorites — `notes_user_favorite_active_updated_idx`
 
 ---
 
@@ -324,6 +324,6 @@
 - [x] `NoteRepository::search`: `LOWER(n.title) LIKE LOWER(:query)` (и content); для PostgreSQL можно `ILIKE`, если зафиксировать СУБД
 - [x] `GET /notes?title=` (после консолидации search API, фронт шаг 7): тот же критерий — кастомный `SearchFilter` или убрать дублирующий путь
 - [x] Smoke: title `Hello World`, запросы `hello`, `HELLO` — находят заметку в SearchBar и модалке ссылок
-- [ ] При необходимости — PHPUnit на `NoteRepository::search` (фаза 20) — см. [`future_autotests.md`](./future_autotests.md) («BE/FE регистронезависимый поиск заметок»)
+- [x] При необходимости — PHPUnit на `NoteRepository::search` — `NoteSearchCaseInsensitiveTest` (фаза 21 / autotests PR)
 
 **Связь:** [`frontend_selfreview.md` — доработки после ревью](./frontend_selfreview.md#доработки-после-ревью-backlog)

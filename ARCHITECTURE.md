@@ -191,8 +191,8 @@ otus-ai-app/
 │   ├── nginx/
 │   └── php/
 ├── volumes/                    # node_modules (Docker volume для frontend)
-├── docker-compose.yml          # postgres, php, nginx, node, cron
-├── docker-compose.prod.yml     # (фаза 19) demo/prod без node-сервиса
+├── docker-compose.yml          # (фаза 21) prod/demo по умолчанию: postgres, php, nginx, cron
+├── docker-compose.dev.yml      # (фаза 21) overlay для разработки: + node (Vite)
 ├── ARCHITECTURE.md
 ├── demoseed.md
 ├── REPORT.md
@@ -502,7 +502,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 - `AppSidebar` — навигация (избранное, папки, теги) + footer с системной навигацией (корзина, админка, аккаунт): drawer `< lg`, fixed `≥ lg`
 - `NoteMetadata` — метаданные заметки (только `NoteView`): drawer `< 3xl`, fixed `≥ 3xl`; папка, теги, информация (`versionCount`)
 - Список заметок: карточки на всю ширину на мобильных, компактный список на десктопе
-- Редактор: полноэкранный на мобильных, split-pane на десктопе
+- Редактор: полноэкранный на мобильных; на десктопе — WYSIWYG (`edit`) или read-only превью (`preview`), без split-pane
 - Модальные окна: fullscreen `< md` для графа и истории версий; по центру на десктопе
 
 ## Тема оформления (светлая / тёмная)
@@ -517,17 +517,18 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 
 ## Варианты развёртывания (Docker)
 
-> Реализация — **фаза 19**. Ниже целевая схема.
+> Реализация: **фаза 19** (single-user), **фаза 21** (prod `docker-compose.yml`). Ниже целевая схема.
 
-| | Разработка | Демо / продакшен |
+| | Демо / продакшен (по умолчанию) | Разработка |
 |---|------------|------------------|
-| Compose | `docker-compose.yml` | `docker-compose.prod.yml` (или profile `demo`) |
-| Frontend | сервис `node`: `npm install` + Vite dev (`5173`) | **без** `node`; статика из `frontend/dist` |
-| API + SPA | API `:8080`, UI `:5173` | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` |
-| Сборка фронта | не обязательна (HMR) | **один раз** до запуска (`npm run build` в CI или multi-stage образ) |
-| Назначение | ежедневная разработка | сдача проекта, демо, staging |
+| Compose | `docker-compose.yml` | `docker-compose.dev.yml` (overlay) или profile `dev` |
+| Запуск | `docker compose up -d` — готовое приложение по ТЗ | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
+| Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev (`5173`) |
+| API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` (как сейчас) |
+| Сборка фронта | в образе / CI до запуска | не обязательна (HMR) |
+| Назначение | сдача проекта, демо, staging | ежедневная разработка |
 
-Текущий nginx (`docker/nginx/default.conf`) отдаёт только Symfony `public/`; для demo-режима потребуется конфиг с `try_files` для SPA и проксированием `/api`.
+Текущий `docker-compose.yml` — **временно dev-ориентирован** (сервис `node`, Vite на `:5173`); nginx отдаёт только Symfony `public/`. В фазе 21 дефолтный compose станет prod: без `node`, SPA из `dist`, `try_files` + проксирование `/api`; dev вынесется в `docker-compose.dev.yml`.
 
 ## Консольные команды
 

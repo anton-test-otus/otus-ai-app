@@ -1,4 +1,4 @@
-# Автотесты (фаза 20+)
+# Автотесты (фаза 21+)
 
 Список сценариев для реализации в PHPUnit (бэкенд) и Vitest (фронтенд).  
 **В рамках selfreview тестовый код не пишем** — только фиксируем спецификацию здесь.  
@@ -808,7 +808,7 @@ JWT для каждого admin.
 **Приоритет:** medium  
 **Связь:** `NoteRepository::search`, `NoteSearchController`, `SearchFilter` `ipartial` на `Note`, `SearchBar.vue`, `LinkNoteModal.vue`, `highlightMatch.ts`
 
-**Реализация:** `LOWER(n.title/content) LIKE` в `NoteRepository::search`; `GET /notes?title=` — `ipartial` в Api Platform. Smoke пройден; автотесты — фаза 20.
+**Реализация:** `LOWER(n.title/content) LIKE` в `NoteRepository::search`; `GET /notes?title=` — `ipartial` в Api Platform. Smoke пройден; автотесты — фаза 21.
 
 ### BE — подготовка
 

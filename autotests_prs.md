@@ -1,6 +1,6 @@
 # План автотестов: PR / спринты
 
-Разбивка реализации автотестов (фаза 20+) на reviewable PR.  
+Разбивка реализации автотестов (фаза 21+) на reviewable PR.  
 Детальные спецификации кейсов — в [`future_autotests.md`](./future_autotests.md).  
 Ручной smoke — в [`for_tests.md`](./for_tests.md).
 
