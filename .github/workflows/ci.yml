@@ -69,6 +69,12 @@ jobs:
           extensions: pdo_pgsql, intl, zip, openssl
           coverage: none
 
+      - name: Prepare environment file
+        run: |
+          cp .env.test .env
+          # GitHub Actions postgres service listens on localhost, not the "postgres" hostname.
+          sed -i 's|@postgres:5432/otus_ai_db|@127.0.0.1:5432/otus_ai_db_test|' .env
+
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
@@ -76,7 +82,6 @@ jobs:
         env:
           DATABASE_URL: postgresql://otus_user:otus_password@127.0.0.1:5432/otus_ai_db_test?serverVersion=16&charset=utf8
         run: |
-          cp .env.test .env
           mkdir -p config/jwt
           openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096
           openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem
