@@ -16,7 +16,7 @@ when@test:
         session:
             storage_factory_id: session.storage.factory.mock_file
 
-when@single_user:
+when@test_single_user:
     framework:
         test: true
         php_errors:

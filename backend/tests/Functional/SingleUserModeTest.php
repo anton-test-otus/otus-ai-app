@@ -21,7 +21,7 @@ class SingleUserModeTest extends WebTestCase
         self::ensureKernelShutdown();
         parent::setUp();
 
-        $this->client = static::createClient(['environment' => 'single_user']);
+        $this->client = static::createClient(['environment' => 'test_single_user']);
         $container = static::getContainer();
         $this->entityManager = $container->get(EntityManagerInterface::class);
         $this->resetDatabase();

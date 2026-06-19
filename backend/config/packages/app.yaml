@@ -10,7 +10,7 @@ parameters:
     user_settings.default_version_consolidation_window_minutes: '%env(int:NOTE_VERSION_CONSOLIDATION_WINDOW_MINUTES)%'
     app.trash_retention_days: '%env(int:TRASH_RETENTION_DAYS)%'
 
-when@single_user:
+when@test_single_user:
     parameters:
         app.auth_enabled: false
         app.single_user_email: 'owner@local'

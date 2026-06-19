@@ -34,6 +34,12 @@ when@test:
             # "TEST_TOKEN" is typically set by ParaTest
             dbname_suffix: '_test%env(default::TEST_TOKEN)%'
 
+when@test_single_user:
+    doctrine:
+        dbal:
+            # PHPUnit boots this env in SingleUserModeTest; use the same isolated DB as test.
+            dbname_suffix: '_test%env(default::TEST_TOKEN)%'
+
 when@prod:
     doctrine:
         orm:
