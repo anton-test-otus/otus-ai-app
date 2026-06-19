@@ -49,6 +49,9 @@ jobs:
   backend:
     name: Backend tests
     runs-on: ubuntu-latest
+    env:
+      # GitHub Actions postgres service is on localhost, not the Docker hostname "postgres".
+      DB_HOST: 127.0.0.1
     services:
       postgres:
         image: postgres:16-alpine
@@ -76,10 +79,7 @@ jobs:
           coverage: none
 
       - name: Prepare environment file
-        run: |
-          cp .env.test .env
-          # GitHub Actions postgres service listens on localhost, not the "postgres" hostname.
-          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
+        run: cp .env.test .env
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
