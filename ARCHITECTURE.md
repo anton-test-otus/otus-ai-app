@@ -528,7 +528,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Сборка фронта | `make frontend-build` / CI [`build.yml`](.github/workflows/build.yml) → ветка `dist` | не обязательна (HMR) |
 | Назначение | сдача проекта, демо, staging | ежедневная разработка |
 
-Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/build.yml` → ветка `dist`).
+Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + demo seed / ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/build.yml` → ветка `dist`).
 
 ### Режим аутентификации
 
@@ -536,7 +536,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 |---|---------------------|-------------|
 | Env | корневой `.env`: `APP_AUTH_ENABLED=true` | корневой `.env`: `APP_AUTH_ENABLED=false` (+ `VITE_*` из compose) |
 | API | JWT (Lexik) | `SingleUserAuthenticator` — каждый запрос от имени `SINGLE_USER_EMAIL` |
-| Пользователь | регистрация / demo seed | `app:ensure-single-user` (пустая база) |
+| Пользователь | demo seed (`--if-missing`) / регистрация / `app:create-admin` | `app:ensure-single-user` (пустая база) |
 | UI | login, register, admin, logout | сразу dashboard; admin и пароль скрыты |
 
 ## Консольные команды
@@ -546,7 +546,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | `app:reset-schema` | Удалить схему БД и применить миграции заново |
 | `app:ensure-single-user` | Создать единственного пользователя для `APP_AUTH_ENABLED=false` (idempotent) |
 | `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
-| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать demo-пользователей |
+| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать; `--if-missing` — пропустить, если уже есть (bootstrap prod/demo) |
 | `app:cleanup-trash` | Удалить заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно) |
 
 ### Demo seed (`app:seed-demo-data`)

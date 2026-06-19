@@ -163,6 +163,23 @@ describe('apiClient token refresh', () => {
     expect(window.location.href).toBe('/login')
   })
 
+  it('does not redirect on 401 when skipAuth is used (single-user probe)', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(401, { message: 'JWT Token not found' }))
+
+    const { apiClient, HttpError } = await loadClient()
+
+    await expect(
+      apiClient.get('/auth/me', { skipAuth: true })
+    ).rejects.toMatchObject({
+      status: 401,
+      name: 'HttpError',
+    })
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(localStorageMock.removeItem).not.toHaveBeenCalled()
+    expect(window.location.href).toBe('http://localhost/')
+  })
+
   it('does not call refresh when refreshToken is missing', async () => {
     localStorageMock.setItem('token', 'old-access-token')
 

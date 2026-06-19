@@ -144,7 +144,7 @@ class ApiClient {
       const { useAuthStore } = await import('@/stores/auth')
       const authUiEnabled = useAuthStore().authUiEnabled
 
-      if (!isAuthAttempt && !retriedAfterRefresh && authUiEnabled) {
+      if (!skipAuth && !isAuthAttempt && !retriedAfterRefresh && authUiEnabled) {
         const refreshed = await refreshAccessToken()
         if (refreshed) {
           return this.request<T>(endpoint, config, true)
@@ -158,7 +158,8 @@ class ApiClient {
         errorData = { message: response.statusText }
       }
 
-      if (authUiEnabled && (!isAuthAttempt || endpoint === '/auth/refresh')) {
+      // skipAuth: probe for single-user mode (/auth/me without JWT) — 401 is expected in multi-user
+      if (authUiEnabled && !skipAuth && (!isAuthAttempt || endpoint === '/auth/refresh')) {
         await clearSessionAndRedirect()
       }
 

@@ -46,15 +46,28 @@ class SeedDemoDataCommand extends Command
             InputOption::VALUE_NONE,
             'Удалить существующих demo-пользователей и пересоздать данные',
         );
+        $this->addOption(
+            'if-missing',
+            null,
+            InputOption::VALUE_NONE,
+            'Пропустить загрузку, если demo-пользователи уже существуют (для bootstrap prod/demo)',
+        );
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
         $force = (bool) $input->getOption('force');
+        $ifMissing = (bool) $input->getOption('if-missing');
 
         $existingUsers = $this->findExistingDemoUsers();
         if ($existingUsers !== [] && !$force) {
+            if ($ifMissing) {
+                $io->note('Demo-данные уже загружены, пропуск.');
+
+                return Command::SUCCESS;
+            }
+
             $io->warning('Demo-пользователи уже существуют: '.implode(', ', array_map(
                 static fn (User $user): string => (string) $user->getEmail(),
                 $existingUsers,

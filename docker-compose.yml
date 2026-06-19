@@ -14,7 +14,7 @@ services:
     networks:
       - otus_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-otus_user}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-otus_user} -d ${DB_NAME:-otus_ai_db}"]
       interval: 10s
       timeout: 5s
       retries: 5

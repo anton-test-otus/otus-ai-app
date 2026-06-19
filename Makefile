@@ -1,10 +1,11 @@
-.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user sync-dist
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
 
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 help:
 	@echo "Доступные команды:"
-	@echo "  make init-prod        - Prod/demo: корневой .env, build, up (миграции + single-user в entrypoint)"
+	@echo "  make env              - Сгенерировать backend/.env и frontend/.env из корневого .env"
+	@echo "  make init-prod        - Prod/demo: .env, dist (CI или build), up (migrate + demo seed)"
 	@echo "  make init-dev         - Dev: backend .env, overlay с node/Vite (бывший make init)"
 	@echo "  make init             - Alias для make init-dev"
 	@echo "  make build            - Сборка prod Docker образов (php + nginx; нужен frontend/dist)"
@@ -29,7 +30,8 @@ help:
 	@echo "  make test             - PHPUnit (backend)"
 	@echo "  make frontend-test    - Vitest (frontend)"
 	@echo "  make frontend-install - Установка зависимостей npm (frontend)"
-	@echo "  make frontend-build   - Сборка frontend/dist (npm ci + vite build, для prod/CI)"
+	@echo "  make frontend-build   - Сборка frontend/dist локально (npm ci + vite build)"
+	@echo "  make frontend-dist    - frontend/dist: sync-dist или fallback на frontend-build"
 	@echo "  make sync-dist        - Подтянуть frontend/dist с ветки dist (CI)"
 	@echo "  make frontend-dev     - Запуск Vite dev server"
 	@echo "  make frontend-kill    - Остановка всех Node.js/Vite процессов"
@@ -41,14 +43,11 @@ volumes-init:
 
 init-dev: volumes-init
 	@echo "Инициализация dev-окружения (Vite + mount backend)..."
-	@if [ ! -f backend/.env ]; then \
-		echo "Копирование backend/.env.example..."; \
-		cp backend/.env.example backend/.env; \
-		echo "ВАЖНО: Отредактируйте backend/.env"; \
-		echo "Нажмите Enter для продолжения..."; \
-		read dummy; \
-	fi
 	@if [ ! -f .env ]; then cp .env.example .env; fi
+	@$(MAKE) env
+	@echo "ВАЖНО: Отредактируйте корневой .env (секреты, пароли)"
+	@echo "Нажмите Enter для продолжения..."
+	@read dummy
 	@$(MAKE) build-dev
 	@$(MAKE) up-dev
 	@echo "Ожидание PostgreSQL..."
@@ -64,33 +63,39 @@ init-dev: volumes-init
 init-prod: volumes-init
 	@echo "Инициализация prod/demo (static SPA, без node)..."
 	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@if [ ! -f backend/.env ]; then cp backend/.env.example backend/.env; fi
-	@echo "Проверьте .env (APP_AUTH_ENABLED) и backend/.env (DB, APP_SECRET, JWT)"
+	@$(MAKE) env
+	@sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' frontend/.env
+	@echo "Проверьте корневой .env (APP_AUTH_ENABLED, секреты, DB)"
 	@echo "Нажмите Enter для продолжения..."
 	@read dummy
-	@$(MAKE) frontend-build
+	@$(MAKE) frontend-dist
 	@$(MAKE) build
 	@$(MAKE) up
-	@echo "Ожидание bootstrap (migrate + ensure-single-user)..."
+	@echo "Ожидание bootstrap (migrate + demo seed / ensure-single-user)..."
 	@sleep 8
 	@echo ""
-	@echo "✅ Prod окружение: http://localhost:$${APP_PORT:-8080}/"
+	@echo "✅ Prod/demo окружение: http://localhost:$${APP_PORT:-8080}/"
+	@echo "   Demo: hogwarts@demo.local / westeros@demo.local / witcher@demo.local — пароль demo1234"
 
 init: init-dev
 
-build:
+env:
+	@chmod +x scripts/generate-env.sh
+	@./scripts/generate-env.sh
+
+build: env
 	docker compose build
 
-build-dev:
+build-dev: env
 	$(COMPOSE_DEV) build
 
 rebuild:
 	docker compose build --no-cache
 
-up: volumes-init
+up: env volumes-init
 	docker compose up -d
 
-up-dev: volumes-init
+up-dev: env volumes-init
 	$(COMPOSE_DEV) up -d
 
 down:
@@ -154,22 +159,40 @@ frontend-install:
 	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
 	docker exec otus_node npm install
 
-APP_AUTH_ENABLED ?= $(shell grep -E '^APP_AUTH_ENABLED=' .env 2>/dev/null | cut -d= -f2- | tr -d '"' || echo true)
-
-frontend-build:
-	@echo "Сборка frontend/dist (VITE_AUTH_ENABLED=$(APP_AUTH_ENABLED))..."
-	docker run --rm \
+frontend-build: env
+	@echo "Сборка frontend/dist..."
+	@docker run --rm \
 		-v "$(CURDIR)/frontend:/app" \
 		-w /app \
-		-e VITE_API_URL=/api \
-		-e VITE_AUTH_ENABLED=$(APP_AUTH_ENABLED) \
+		--env-file "$(CURDIR)/frontend/.env" \
 		node:22-alpine \
 		sh -c "npm ci && npm run build"
 
+frontend-dist:
+	@echo "Получение frontend/dist..."
+	@if git fetch origin dist 2>/dev/null && git rev-parse --verify origin/dist >/dev/null 2>&1; then \
+		rm -rf frontend/dist .dist-source-sha 2>/dev/null \
+			|| docker run --rm -v "$(CURDIR):/repo" -w /repo alpine sh -c "rm -rf frontend/dist .dist-source-sha"; \
+		git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha; \
+		if [ -f frontend/dist/index.html ]; then \
+			echo "✅ dist с origin/dist (source: $$(cat .dist-source-sha 2>/dev/null || echo unknown))"; \
+		else \
+			echo "⚠️  sync-dist не удался — локальная сборка (frontend-build)..."; \
+			$(MAKE) frontend-build; \
+		fi; \
+	elif [ -f frontend/dist/index.html ]; then \
+		echo "⚠️  origin/dist недоступна — используется существующий frontend/dist"; \
+	else \
+		echo "⚠️  origin/dist недоступна — локальная сборка (frontend-build)..."; \
+		$(MAKE) frontend-build; \
+	fi
+
 sync-dist:
 	@echo "Подтягивание frontend/dist с origin/dist..."
+	@rm -rf frontend/dist .dist-source-sha 2>/dev/null \
+		|| docker run --rm -v "$(CURDIR):/repo" -w /repo alpine sh -c "rm -rf frontend/dist .dist-source-sha"
 	git fetch origin dist
-	git checkout origin/dist -- frontend/dist .dist-source-sha
+	git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
 	@echo "✅ dist обновлён (source: $$(cat .dist-source-sha 2>/dev/null || echo unknown))"
 
 frontend-dev:

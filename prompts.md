@@ -3816,3 +3816,183 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** CI публикует ассеты в ветку `dist`; образы собираются на сервере локально.
 
 ---
+
+## Промпт 197
+
+> (фаза 19) Однопользовательский режим без авторизации — zero config по ТЗ
+
+### Выполненные действия:
+
+- `APP_AUTH_ENABLED` / `VITE_AUTH_ENABLED` — env-флаги; default `true` (multi-user без регрессий)
+- Backend: `SingleUserAuthenticator`, `SingleUserProvider`, `AuthFeature`, `AuthDisabledSubscriber`, `app:ensure-single-user`
+- `AuthController` — login/register/refresh → 404 при `APP_AUTH_ENABLED=false`
+- Frontend: условные роуты, `auth.ts` / auth store — probe `/auth/me` без JWT, скрытие login/admin в UI
+- Prod compose: `docker-compose.dev.yml` overlay; nginx `prod.conf`; php entrypoint (migrate + ensure-single-user)
+- `Makefile`: `init-prod`, `frontend-build`, `ensure-single-user`; `.dockerignore`
+- Тесты: `SingleUserModeTest`; документация `README`, `ARCHITECTURE`, `PHASES`, `REPORT`, `for_tests`
+
+**Результат:** коммит `662ac6c` — режим `APP_AUTH_ENABLED=false` даёт вход без UI как `owner@local`; prod compose с auto bootstrap отложен частично на фазу 21.
+
+---
+
+## Промпт 198
+
+> (фаза 20) CI pipeline — тесты, сборка dist, публикация артефактов
+
+### Выполненные действия:
+
+- `.github/workflows/ci.yml` — PHPUnit, Vitest, `vue-tsc` через build, сборка nginx на PR
+- `.github/workflows/build.yml` — `workflow_run` после green CI; job `frontend` → artifact; `publish-dist` → ветка `dist`
+- Итерации: fix YAML/permissions (`409dfcf`), убран дублирующий push php-образа / GHCR (`1ae088e`), prod-документация по artifact (`7e08252`), YAML validation (`8a91df0`), merge/summary в README и PHASES (`93f07b7`)
+- `backend/.env.test`, `client.refresh.test.ts` — совместимость с фазой 19; `frontend/package.json` — `lint` → `typecheck`
+- `PHASES.md` — чеклист CI отмечен ✅
+
+**Результат:** коммиты `3c2e004`…`93f07b7` — зелёный CI на PR, dist публикуется в ветку `dist` после merge в `main`.
+
+---
+
+## Промпт 199
+
+> Попробуй развернуть приложение в демо-режиме в соответствии с README.md НЕ ИСПОЛЬЗУЯ КОМАНДЫ MAKE
+> по умолчанию дефолтный режим должен быть МНОГОПОЛЬЗОВАТЕЛЬСКИЙ
+
+### Выполненные действия:
+
+- Prod/demo деплой вручную: env → `frontend/dist` (docker node build) → `docker compose build/up`
+- `.env.example`, `.env`, `build.yml` — default `APP_AUTH_ENABLED=true` / `VITE_AUTH_ENABLED=true`
+- README — multi-user как дефолт prod/demo; single-user — opt-in
+- Пересборка фронта и контейнеров; `app:create-admin`
+
+**Результат:** demo/prod поднимается без Make; дефолт — JWT и страница login.
+
+---
+
+## Промпт 200
+
+> страница /login в зацикленной перезагрузке
+
+### Выполненные действия:
+
+- `frontend/src/api/client.ts` — при `skipAuth: true` на 401 не вызывать refresh и `clearSessionAndRedirect` (probe single-user в multi-user)
+- `client.refresh.test.ts` — тест «does not redirect on 401 when skipAuth is used»
+- Пересборка `frontend/dist` и nginx
+
+**Результат:** `/login` стабильно открывается; single-user probe по-прежнему работает (200 без JWT).
+
+---
+
+## Промпт 201
+
+> Failed to fetch dynamically imported module … AppLayout-….js (устаревший кэш после пересборки)
+
+### Выполненные действия:
+
+- `docker/nginx/prod.conf` — `/assets/*` → 404 если файла нет (без SPA fallback); `index.html` → `Cache-Control: no-cache`
+- Пересборка образа nginx
+
+**Результат:** после деплоя браузер не получает HTML вместо отсутствующего JS-chunk; dev (:5173) не затронут.
+
+---
+
+## Промпт 202
+
+> создание демо/прод режима должно так же добавлять сид-данные
+
+### Выполненные действия:
+
+- `SeedDemoDataCommand` — флаг `--if-missing` (idempotent bootstrap)
+- `docker/php/docker-entrypoint.sh` — при `APP_AUTH_ENABLED=true` → `app:seed-demo-data --if-missing`
+- `Makefile`, `README`, `ARCHITECTURE`, `PHASES` — demo seed в bootstrap prod/demo
+
+**Результат:** первый `docker compose up` загружает hogwarts/westeros/witcher@demo.local (demo1234); повторный up — без дубликатов.
+
+---
+
+## Промпт 203
+
+> В альтернативный способ (без Make) добавить инструкцию по сид-данным и артефактам — пошаговый demo-деплой для проверяющего
+
+### Выполненные действия:
+
+- `README.md` — секция «Demo / prod деплой» первой в быстром старте
+- Способ 1: docker compose по шагам (env → dist вариант A/B → build/up → bootstrap → проверка login)
+- Способ 2: `make init-prod`; подраздел про ветку `dist` и CI
+- Раздел «Demo-данные» — auto-seed в prod vs ручной в dev
+
+**Результат:** проверяющий видит полный чеклист demo-деплоя до dev-инструкций.
+
+---
+
+## Промпт 204
+
+> make init-prod должен так же запустить получение ассетов
+
+### Выполненные действия:
+
+- `Makefile` — цель `frontend-dist` (sync `origin/dist` или fallback `frontend-build`); `init-prod` вызывает `frontend-dist` вместо `frontend-build`
+- Очистка root-owned `frontend/dist` перед checkout; `sync-dist` с тем же поведением
+- README — описание `make init-prod` = sync dist + build + up
+
+**Результат:** `make init-prod` подтягивает CI-артефакты с `origin/dist`, если ветка доступна.
+
+---
+
+## Промпт 205
+
+> очисть все контейнеры и volumes и запусти make init-prod (убедись что записи и эндпоинты работают)
+
+### Выполненные действия:
+
+- Полная очистка контейнеров `otus_*` и `volumes/postgres` (через alpine для root-owned файлов)
+- `make init-prod` — dist с `origin/dist`, migrate, demo seed
+- Smoke: 3 demo-пользователя, 40/47/39 заметок, HTTP 200 на SPA/API, login hogwarts@demo.local
+
+**Результат:** чистый prod/demo деплой end-to-end подтверждён.
+
+---
+
+## Промпт 206
+
+> Проверь флоу подключения ассетов. Локальный деплой прод-версии создаёт ассеты из ветки dist. При этом они попадают в список изменений.
+
+### Выполненные действия:
+
+- Причина: `git checkout origin/dist -- frontend/dist` ставил файлы в git index на `main`
+- `Makefile` (`frontend-dist`, `sync-dist`) и `README.md` — `git restore --source=origin/dist --worktree --`
+- Проверка: `make sync-dist` → dist на диске, `git status` по `frontend/dist` пустой
+
+**Результат:** локальный prod-деплой не засоряет staged changes; коммит не создан.
+
+---
+
+## Промпт 208
+
+> Доработай деплой. Файлы .env в frontend и backend — в .gitignore, генерировать при билде (VITE_* → frontend, остальное → backend)
+
+### Выполненные действия:
+
+- Единый корневой `.env.example` — все переменные проекта (Symfony, DB, JWT, admin, VITE_*)
+- `scripts/generate-env.sh` — из корневого `.env`: `backend/.env` (без VITE_*), `frontend/.env` (только VITE_*); `VITE_AUTH_ENABLED` из `APP_AUTH_ENABLED`, если не задан
+- `Makefile`: `make env`; вызов перед `build`, `up`, `frontend-build`, `init-*`; `init-prod` принудительно `VITE_API_URL=/api`
+- `docker-compose.dev.yml` — node читает `frontend/.env` через `env_file`
+- CI (`ci.yml`, `build.yml`) — generate-env перед сборкой фронта/nginx
+- `README.md` — один `.env` для деплоя, без ручного копирования в подкаталоги
+
+**Результат:** оператор редактирует только корневой `.env`; `backend/.env` и `frontend/.env` пересоздаются при `make env` / `make build`.
+
+---
+
+## Промпт 209
+
+> Убери DATABASE_URL из энвов бэкенда и передавай в параметры доктрины DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
+
+### Выполненные действия:
+
+- `backend/config/packages/doctrine.yaml` — `dbal`: `host`, `port`, `dbname`, `user`, `password` из env `DB_*` (PostgreSQL 16)
+- `backend/.env.example`, `.env.test`, `.env.single_user` — удалён `DATABASE_URL`
+- `docker/php/docker-entrypoint.sh` — проверка bootstrap по `DB_HOST` / `DB_NAME`
+- `.github/workflows/ci.yml` — PHPUnit без `DATABASE_URL`; test DB через `DB_HOST=127.0.0.1` + `dbname_suffix: _test`
+
+**Результат:** подключение к БД только через отдельные переменные; DSN не хранится в env.
+
+---

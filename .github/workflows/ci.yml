@@ -15,6 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Generate env files
+        run: |
+          cp .env.example .env
+          sed -i 's/^VITE_AUTH_ENABLED=.*/VITE_AUTH_ENABLED=false/' .env
+          chmod +x scripts/generate-env.sh
+          ./scripts/generate-env.sh
+          sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' frontend/.env
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -25,9 +33,6 @@ jobs:
         run: npm ci
 
       - name: Typecheck and build production assets
-        env:
-          VITE_API_URL: /api
-          VITE_AUTH_ENABLED: "false"
         run: npm run build
 
       - name: Run Vitest
@@ -53,7 +58,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U otus_user"
+          --health-cmd "pg_isready -U otus_user -d otus_ai_db_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -73,14 +78,12 @@ jobs:
         run: |
           cp .env.test .env
           # GitHub Actions postgres service listens on localhost, not the "postgres" hostname.
-          sed -i 's|@postgres:5432/otus_ai_db|@127.0.0.1:5432/otus_ai_db_test|' .env
+          sed -i 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' .env
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist
 
       - name: Prepare test environment
-        env:
-          DATABASE_URL: postgresql://otus_user:otus_password@127.0.0.1:5432/otus_ai_db_test?serverVersion=16&charset=utf8
         run: |
           mkdir -p config/jwt
           openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096
@@ -89,8 +92,6 @@ jobs:
           php bin/console doctrine:migrations:migrate --no-interaction --env=test --allow-no-migration
 
       - name: Run PHPUnit
-        env:
-          DATABASE_URL: postgresql://otus_user:otus_password@127.0.0.1:5432/otus_ai_db_test?serverVersion=16&charset=utf8
         run: vendor/bin/phpunit
 
   docker-nginx:
@@ -105,6 +106,12 @@ jobs:
         with:
           name: frontend-dist
           path: frontend/dist
+
+      - name: Generate env files
+        run: |
+          cp .env.example .env
+          chmod +x scripts/generate-env.sh
+          ./scripts/generate-env.sh
 
       - name: Build nginx image
         run: docker compose build nginx

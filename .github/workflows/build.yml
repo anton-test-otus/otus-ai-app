@@ -11,9 +11,9 @@ on:
         description: VITE_AUTH_ENABLED for frontend build (false = single-user)
         type: choice
         options:
-          - "false"
           - "true"
-        default: "false"
+          - "false"
+        default: "true"
 
 permissions:
   contents: write
@@ -31,6 +31,17 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
+      - name: Generate env files
+        run: |
+          cp .env.example .env
+          if [ "${{ inputs.vite_auth_enabled || 'true' }}" = "false" ]; then
+            sed -i 's/^APP_AUTH_ENABLED=.*/APP_AUTH_ENABLED=false/' .env
+            sed -i 's/^VITE_AUTH_ENABLED=.*/VITE_AUTH_ENABLED=false/' .env
+          fi
+          chmod +x scripts/generate-env.sh
+          ./scripts/generate-env.sh
+          sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' frontend/.env
+
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -38,9 +49,6 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Build production assets
-        env:
-          VITE_API_URL: /api
-          VITE_AUTH_ENABLED: ${{ inputs.vite_auth_enabled || 'false' }}
         run: npm ci && npm run build
 
       - name: Upload frontend dist

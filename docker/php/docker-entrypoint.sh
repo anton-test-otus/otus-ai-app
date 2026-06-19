@@ -1,8 +1,8 @@
 #!/bin/sh
 
 run_bootstrap() {
-    if [ -z "${DATABASE_URL:-}" ]; then
-        echo "DATABASE_URL is not set, skipping database bootstrap."
+    if [ -z "${DB_HOST:-}" ] || [ -z "${DB_NAME:-}" ]; then
+        echo "DB_HOST/DB_NAME is not set, skipping database bootstrap."
         return 0
     fi
 
@@ -19,6 +19,9 @@ run_bootstrap() {
     if [ "$APP_AUTH_ENABLED" = "false" ] || [ "$APP_AUTH_ENABLED" = "0" ]; then
         echo "Ensuring single-user account..."
         php bin/console app:ensure-single-user --no-interaction
+    else
+        echo "Seeding demo data (if missing)..."
+        php bin/console app:seed-demo-data --no-interaction --if-missing
     fi
 
     echo "Warming up cache..."
