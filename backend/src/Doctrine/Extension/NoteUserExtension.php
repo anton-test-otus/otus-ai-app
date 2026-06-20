@@ -7,6 +7,7 @@ use ApiPlatform\Doctrine\Orm\Util\QueryNameGeneratorInterface;
 use ApiPlatform\Metadata\Operation;
 use App\Entity\Note;
 use Doctrine\ORM\QueryBuilder;
+use App\Security\AuthenticatedUserAssert;
 use Symfony\Bundle\SecurityBundle\Security;
 
 final class NoteUserExtension implements QueryCollectionExtensionInterface
@@ -31,10 +32,7 @@ final class NoteUserExtension implements QueryCollectionExtensionInterface
             return;
         }
 
-        $user = $this->security->getUser();
-        if (null === $user) {
-            return;
-        }
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->security->getUser());
 
         $rootAlias = $queryBuilder->getRootAliases()[0];
         $queryBuilder

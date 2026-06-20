@@ -9,6 +9,7 @@ use App\Entity\NoteVersion;
 use App\Repository\NoteRepository;
 use App\Service\NoteLinkSyncService;
 use App\Service\NoteVersionService;
+use App\Security\AuthenticatedUserAssert;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
@@ -31,10 +32,7 @@ class RestoreVersionProcessor implements ProcessorInterface
             throw new BadRequestException('Invalid data type');
         }
 
-        $user = $this->security->getUser();
-        if (!$user) {
-            throw new AccessDeniedHttpException('User not authenticated');
-        }
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->security->getUser());
 
         $note = $data->getNote();
         

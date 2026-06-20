@@ -3,35 +3,53 @@
 namespace App\Repository;
 
 use App\Entity\Note;
+use App\Entity\User;
+use App\Security\AuthenticatedUserAssert;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Uid\Uuid;
 
 class NoteRepository extends ServiceEntityRepository
 {
+    private const FTS_CONFIG = 'russian';
+
+    /** Minimum token length for prefix match (`:*`); shorter tokens are ignored. */
+    private const FTS_MIN_PREFIX_LENGTH = 3;
+
     /**
      * List/search queries filter by user and active notes (`deletedAt IS NULL`).
      * Partial indexes `notes_user_active_updated_idx` and `notes_user_favorite_active_updated_idx`
      * cover dashboard and favorites ordering by `updatedAt`.
      *
-     * Full-text search (`search()`, API Platform SearchFilter on title/content) uses
-     * `LIKE '%…%'` — no index in MVP; PostgreSQL GIN + `to_tsvector` is a follow-up.
+     * Full-text search (`search()`, `GET /api/notes/search`) uses PostgreSQL `search_vector`
+     * (`to_tsvector` + GIN) and `to_tsquery` with prefix `:*` per token. Title-only filter
+     * on `GET /api/notes?title=` (wiki link picker) stays on API Platform SearchFilter (`ILIKE`).
      */
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Note::class);
     }
 
-    public function search($user, array $criteria, int $page = 1, int $perPage = 20): array
+    public function search(User $user, array $criteria, int $page = 1, int $perPage = 20): array
     {
+        $user = AuthenticatedUserAssert::requirePersistedUser($user);
+
         $qb = $this->createQueryBuilder('n')
             ->where('n.user = :user')
             ->andWhere('n.deletedAt IS NULL')
             ->setParameter('user', $user);
 
-        if (!empty($criteria['query'])) {
-            $qb->andWhere('(LOWER(n.title) LIKE :query OR LOWER(n.content) LIKE :query)')
-                ->setParameter('query', '%' . strtolower($criteria['query']) . '%');
+        if (is_string($criteria['query'] ?? null)) {
+            $query = trim($criteria['query']);
+            if ($query !== '') {
+                $matchingIds = $this->findActiveNoteIdsMatchingFullText($user, $query);
+                if ($matchingIds === []) {
+                    return ['notes' => [], 'total' => 0];
+                }
+
+                $qb->andWhere('n.id IN (:ftsNoteIds)')
+                    ->setParameter('ftsNoteIds', $matchingIds);
+            }
         }
 
         if (!empty($criteria['folderId'])) {
@@ -90,6 +108,83 @@ class NoteRepository extends ServiceEntityRepository
         }
 
         return array_values(array_unique(array_filter($tags, static fn ($id) => is_string($id) && $id !== '')));
+    }
+
+    /**
+     * @return list<Uuid>
+     */
+    private function findActiveNoteIdsMatchingFullText(User $user, string $query): array
+    {
+        $tsQuery = $this->buildPrefixTsQuery($query);
+        if ($tsQuery === null) {
+            return [];
+        }
+
+        try {
+            $rows = $this->getEntityManager()->getConnection()->fetchFirstColumn(
+                <<<'SQL'
+                    SELECT id
+                    FROM notes
+                    WHERE user_id = :userId
+                      AND deleted_at IS NULL
+                      AND search_vector @@ to_tsquery(:config, :tsquery)
+                SQL,
+                [
+                    'userId' => $user->getId()->toRfc4122(),
+                    'config' => self::FTS_CONFIG,
+                    'tsquery' => $tsQuery,
+                ],
+                [
+                    'userId' => 'uuid',
+                ],
+            );
+        } catch (\Doctrine\DBAL\Exception) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($rows as $row) {
+            if (is_string($row) && Uuid::isValid($row)) {
+                $ids[] = Uuid::fromString($row);
+            }
+        }
+
+        return $ids;
+    }
+
+    private function buildPrefixTsQuery(string $query): ?string
+    {
+        $tokens = preg_split('/\s+/u', trim($query), -1, PREG_SPLIT_NO_EMPTY);
+        if (!is_array($tokens) || $tokens === []) {
+            return null;
+        }
+
+        $parts = [];
+        foreach ($tokens as $token) {
+            $token = preg_replace('/[&|!():*\'"\\\\]+/u', '', $token) ?? '';
+            if ($token === '' || mb_strlen($token) < self::FTS_MIN_PREFIX_LENGTH) {
+                continue;
+            }
+
+            $parts[] = $this->quoteTsQueryLexeme($token) . ':*';
+        }
+
+        if ($parts === []) {
+            return null;
+        }
+
+        return implode(' & ', $parts);
+    }
+
+    private function quoteTsQueryLexeme(string $token): string
+    {
+        $token = str_replace("'", "''", $token);
+
+        if (preg_match('/^[\p{L}\p{N}_-]+$/u', $token) === 1) {
+            return $token;
+        }
+
+        return "'" . $token . "'";
     }
 
     public function findDeletedNotes($user, int $page = 1, int $perPage = 20): array

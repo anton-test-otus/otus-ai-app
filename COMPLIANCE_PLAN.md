@@ -28,7 +28,7 @@
 | Проблема аудита | Шаг | Статус |
 |-----------------|:---:|--------|
 | Дашборд с графиками/статистикой | C3 | ✅ закрыто |
-| FTS-поиск (не `LIKE`) | C4 | ❌ открыто |
+| FTS-поиск (не `LIKE`) | C4 | ✅ закрыто (smoke — в `for_tests.md`) |
 | 15 тегов в demo seed (сейчас 10) | C5 | ✅ закрыто |
 
 **Minimal pass:** **C3 + C4 + C5**.
@@ -40,7 +40,7 @@
 | # | Проблема | Приоритет | Оценка diff | Статус |
 |---|----------|:---------:|:-----------:|--------|
 | C3 | Дашборд с графиками / статистикой | 🔴 | M | ✅ закрыто |
-| C4 | Полнотекстовый поиск (FTS, не `LIKE`) | 🔴 | M | открыто |
+| C4 | Полнотекстовый поиск (FTS, не `LIKE`) | 🔴 | M | ✅ закрыто |
 | C5 | 15 тегов в demo seed (сейчас 10) | 🟡 | S | ✅ закрыто |
 
 ---
@@ -84,11 +84,29 @@
 
 **Цель:** заменить `LIKE '%…%'` на полнотекстовый поиск (аналог FTS5 для PostgreSQL).
 
-### Минимальный diff
+### Реализовано (2026-06-20)
+
+**Решения:** локаль `russian`; сортировка `updatedAt DESC` (без `ts_rank`); `GET /api/notes?title=` — ILIKE (wiki-модалка); minimal scope.
+
+1. Миграция `Version20260620120000`: `search_vector tsvector GENERATED ALWAYS` (`to_tsvector('russian', title || content)`) + GIN.
+2. `NoteRepository::search()` — `to_tsquery('russian', 'token:* & …')` (префикс по лексемам, мин. 3 символа на токен).
+3. Тесты: `NoteRepositorySearchTest`, `NoteSearchCaseInsensitiveTest` (PHPUnit).
+
+### Исходный план (архив)
+
+<details>
+<summary>Минимальный diff из первоначального плана</summary>
 
 1. Миграция: `search_vector tsvector` + GIN-индекс; локаль `simple` или `russian`.
 2. `NoteRepository::search()` — `plainto_tsquery` + `ts_rank`.
 3. Обновить/добавить тесты в `NoteRepositorySearchTest`.
+
+</details>
+
+### Smoke
+
+- SearchBar: полные слова (`хогвартс`, `патронус`) и **префикс** (`факульт` → «факультет»); не имена тегов.
+- Регистронезависимость; поиск + папка/теги; wiki-модалка — ILIKE по title.
 
 ### Коммит
 
@@ -140,7 +158,7 @@ flowchart LR
 ## Чеклист после minimal pass (C3+C4+C5)
 
 - [x] `/stats` — KPI + ≥2 графика; smoke подтверждён (2026-06-20)
-- [ ] Поиск через FTS, не `LIKE`
+- [ ] Поиск через FTS, не `LIKE` — реализовано; smoke в `for_tests.md` § C4
 - [x] Demo seed: ≥15 тегов на вселенную (smoke подтверждён 2026-06-20)
 - [ ] PHASES.md § «Вариант 5» / «Общие требования» — отметить закрытые пункты
 

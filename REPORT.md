@@ -1342,6 +1342,18 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Compliance C4: PostgreSQL FTS для поиска заметок (2026-06-20)
+
+**Проблема:** `NoteRepository::search()` использовал `LIKE '%…%'` без индекса — расхождение с ТЗ (FTS5 / аналог).
+
+**Решение:** миграция `Version20260620120000` — `search_vector` (`GENERATED ALWAYS`, `to_tsvector('russian', title || content)`) + GIN. Репозиторий — `to_tsquery` с префиксом `token:*` (мин. 3 символа на токен); сортировка `updatedAt DESC`. `GET /api/notes?title=` — ILIKE. Теги в FTS не входят.
+
+**Smoke:** `for_tests.md` § Compliance C4 — ожидает ручной проверки.
+
+**Затронутые файлы:** `backend/migrations/Version20260620120000.php`, `backend/src/Repository/NoteRepository.php`, `backend/tests/Functional/ApiTestCase.php`, `backend/tests/Unit/Repository/NoteRepositorySearchTest.php`.
+
+---
+
 ## JWT 500 на login после dev bind-mount (2026-06-20)
 
 **Проблема:** `POST /api/auth/login` → 500, `JWTEncodeFailureException` — нет `backend/config/jwt/*.pem`. В dev overlay `./backend:/var/www/backend` перекрывает ключи из Docker-образа; каталог gitignored.

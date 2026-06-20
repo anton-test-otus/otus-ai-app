@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Entity\Note;
 use App\Repository\NoteRepository;
+use App\Security\AuthenticatedUserAssert;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -22,7 +23,7 @@ class RestoreNoteProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): ?Note
     {
-        $user = $this->security->getUser();
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->security->getUser());
         $noteId = $uriVariables['id'] ?? null;
 
         if (!$noteId) {

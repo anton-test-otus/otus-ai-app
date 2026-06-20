@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use App\Dto\NoteSnapshot;
 use App\Entity\Note;
+use App\Security\AuthenticatedUserAssert;
 use App\Security\OwnedRelationAssert;
 use App\Security\ResourceOwnershipAssert;
 use App\Service\NoteLinkSyncService;
@@ -35,7 +36,7 @@ class NoteProcessor implements ProcessorInterface
             return null;
         }
 
-        $user = $this->security->getUser();
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->security->getUser());
         
         // Для новых заметок устанавливаем пользователя
         if (!$data->getId()) {

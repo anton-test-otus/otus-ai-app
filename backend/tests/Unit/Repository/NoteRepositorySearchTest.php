@@ -47,7 +47,7 @@ class NoteRepositorySearchTest extends ApiTestCase
         self::assertCount(1, $result['notes']);
     }
 
-    public function testSearchWithHelloUsesLowerInQuery(): void
+    public function testSearchUsesToTsqueryPrefixOnSearchVector(): void
     {
         $user = $this->userFactory->createUser('repo-search-sql@example.com');
         $this->userFactory->createNote($user, 'Greeting', 'hello world');
@@ -56,7 +56,80 @@ class NoteRepositorySearchTest extends ApiTestCase
 
         self::assertNotEmpty($this->sqlLogger->sqlStatements);
         $sql = strtolower(implode("\n", $this->sqlLogger->sqlStatements));
-        self::assertStringContainsString('lower', $sql);
+        self::assertStringContainsString('to_tsquery', $sql);
+        self::assertStringContainsString('search_vector', $sql);
+    }
+
+    public function testSearchPrefixMatchesStartOfWord(): void
+    {
+        $user = $this->userFactory->createUser('repo-search-prefix@example.com');
+        $this->userFactory->createNote($user, 'Факультеты Хогвартса', 'Сравнение факультетов школы.');
+
+        $result = $this->repository->search($user, $this->searchCriteria(['query' => 'факульт']), 1, 20);
+
+        self::assertSame(1, $result['total']);
+        self::assertCount(1, $result['notes']);
+    }
+
+    public function testSearchIgnoresTokensShorterThanMinPrefixLength(): void
+    {
+        $user = $this->userFactory->createUser('repo-search-short@example.com');
+        $this->userFactory->createNote($user, 'Note', 'hello world');
+
+        $result = $this->repository->search($user, $this->searchCriteria(['query' => 'he']), 1, 20);
+
+        self::assertSame(0, $result['total']);
+    }
+
+    public function testSearchMatchesWordInMiddleOfLongContent(): void
+    {
+        $user = $this->userFactory->createUser('repo-search-middle@example.com');
+        $this->userFactory->createNote(
+            $user,
+            'Длинная заметка',
+            'В начале текста много слов, а в середине встречается пророчество и дальше снова текст.',
+        );
+
+        $result = $this->repository->search($user, $this->searchCriteria(['query' => 'пророчество']), 1, 20);
+
+        self::assertSame(1, $result['total']);
+        self::assertCount(1, $result['notes']);
+    }
+
+    public function testSearchCombinesFullTextWithFolderAndTagFilters(): void
+    {
+        $user = $this->userFactory->createUser('repo-search-filters@example.com');
+        $folder = $this->userFactory->createFolder($user, 'Архив');
+        $tag = $this->userFactory->createTag($user, 'важное');
+
+        $matching = $this->userFactory->createNote(
+            $user,
+            'Совпадение',
+            'Текст с уникальным словом квиддич внутри.',
+            $folder,
+        );
+        $matching->addTag($tag);
+        $this->entityManager->flush();
+
+        $this->userFactory->createNote(
+            $user,
+            'Другое',
+            'Тоже квиддич, но без папки и тега.',
+        );
+
+        $result = $this->repository->search(
+            $user,
+            $this->searchCriteria([
+                'query' => 'квиддич',
+                'folderId' => $folder->getId(),
+                'tags' => [$tag->getId()->toRfc4122()],
+            ]),
+            1,
+            20,
+        );
+
+        self::assertSame(1, $result['total']);
+        self::assertSame($matching->getId()->toRfc4122(), $result['notes'][0]->getId()->toRfc4122());
     }
 
     /**

@@ -39,6 +39,14 @@ abstract class ApiTestCase extends WebTestCase
         $metadata = $this->entityManager->getMetadataFactory()->getAllMetadata();
         $schemaTool = new SchemaTool($this->entityManager);
         $schemaTool->createSchema($metadata);
+
+        $connection->executeStatement(<<<'SQL'
+            ALTER TABLE notes ADD COLUMN search_vector tsvector
+              GENERATED ALWAYS AS (
+                to_tsvector('russian', coalesce(title, '') || ' ' || coalesce(content, ''))
+              ) STORED
+            SQL);
+        $connection->executeStatement('CREATE INDEX notes_search_vector_gin_idx ON notes USING GIN (search_vector)');
     }
 
     protected function login(User $user, string $password = UserFactory::PASSWORD): string

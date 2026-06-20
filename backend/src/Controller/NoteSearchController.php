@@ -2,8 +2,8 @@
 
 namespace App\Controller;
 
-use App\Entity\User;
 use App\Repository\NoteRepository;
+use App\Security\AuthenticatedUserAssert;
 use App\Service\NotePreviewService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -21,7 +21,8 @@ class NoteSearchController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function search(Request $request): JsonResponse
     {
-        $user = $this->getUser();
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->getUser());
+
         $query = $request->query->get('q', '');
         $folderId = $request->query->get('folderId');
         $tags = $request->query->all('tags');
@@ -41,10 +42,6 @@ class NoteSearchController extends AbstractController
         ];
 
         $result = $this->noteRepository->search($user, $criteria, $page, $perPage);
-
-        if (!$user instanceof User) {
-            throw $this->createAccessDeniedException();
-        }
 
         $titlesById = $this->notePreviewService->prefetchWikiTitlesForNotes($result['notes'], $user);
 

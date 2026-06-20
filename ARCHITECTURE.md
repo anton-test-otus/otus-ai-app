@@ -477,6 +477,10 @@ const noteSchema = z.object({
 
 Query: `page`, `perPage` (search) или `perPage` (admin).
 
+**Поиск заметок (`GET /api/notes/search?q=…`):** PostgreSQL FTS — колонка `search_vector` (`to_tsvector('russian', title || content)`, GIN). Предикат `to_tsquery('russian', 'token:* & …')` — префикс по началу лексемы (мин. 3 символа на токен). Сортировка `updatedAt DESC`. Комбинируется с `folderId`, `tags` (И), `isFavorite`, датами. Имена тегов в индекс не входят.
+
+**Поиск по title (`GET /api/notes?title=…`):** API Platform `SearchFilter` (`ILIKE`) — только для wiki-модалки (`searchByTitle`), не FTS.
+
 - `GET /api/stats` — KPI и данные для графиков текущего пользователя (без pagination): `notesCount`, `foldersCount`, `tagsCount`, `linksCount`, `favoritesCount`, `trashCount`, `notesByFolder[]`, `topTags[]`. UI: **`/stats`** (`StatsView`), не список заметок на `/` (`DashboardView`).
 
 ## Адаптивный дизайн (Mobile-First)

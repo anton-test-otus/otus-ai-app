@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
 use App\Repository\NoteRepository;
 use App\Repository\NoteVersionRepository;
+use App\Security\AuthenticatedUserAssert;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -21,10 +22,7 @@ class NoteVersionsByNoteProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        $user = $this->security->getUser();
-        if (!$user) {
-            throw new AccessDeniedHttpException('User not authenticated');
-        }
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->security->getUser());
 
         $noteId = $uriVariables['noteId'] ?? null;
         if (!$noteId) {

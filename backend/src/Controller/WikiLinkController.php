@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Note;
 use App\Entity\User;
 use App\Repository\NoteRepository;
+use App\Security\AuthenticatedUserAssert;
 use App\Service\NoteGraphService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -28,8 +29,7 @@ class WikiLinkController extends AbstractController
     #[Route('/notes/{id}/graph', name: 'note_graph', methods: ['GET'])]
     public function getGraph(Note $note, Request $request): JsonResponse
     {
-        /** @var User $user */
-        $user = $this->getUser();
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->getUser());
 
         if ($note->getUser() !== $user || $note->getDeletedAt() !== null) {
             return $this->json(['error' => 'Access denied'], Response::HTTP_FORBIDDEN);
@@ -69,7 +69,7 @@ class WikiLinkController extends AbstractController
             return $this->json(['error' => 'Invalid request'], 400);
         }
 
-        $user = $this->getUser();
+        $user = AuthenticatedUserAssert::requirePersistedUser($this->getUser());
         $normalizedIds = array_values(array_unique(array_filter(array_map(
             static fn ($id) => is_string($id) ? strtolower(trim($id)) : '',
             $ids
