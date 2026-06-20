@@ -41,9 +41,6 @@ run_bootstrap() {
     if [ "$APP_AUTH_ENABLED" = "false" ] || [ "$APP_AUTH_ENABLED" = "0" ]; then
         echo "Ensuring single-user account..."
         php bin/console app:ensure-single-user --no-interaction
-    else
-        echo "Seeding demo data (if missing)..."
-        php bin/console app:seed-demo-data --no-interaction --if-missing
     fi
 
     echo "Warming up cache..."

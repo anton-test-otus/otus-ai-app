@@ -1159,7 +1159,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `AuthDisabledSubscriber` + guards в `AuthController` — login/register/refresh/change-password → 404.
 - Frontend: условные роуты, `fetchUser()` без token, скрыты admin/logout/email/аккаунт в settings.
 
-**Prod compose (авто ensure-single-user / demo seed в entrypoint)** — реализовано в фазе 21: `docker/php/docker-entrypoint.sh` при старте php-fpm выполняет migrate и `app:seed-demo-data --if-missing` или `app:ensure-single-user` в зависимости от `APP_AUTH_ENABLED`.
+**Prod compose (entrypoint php-fpm):** migrate + `app:ensure-single-user` при `APP_AUTH_ENABLED=false`. Demo seed из entrypoint убран (2026-06-20) — явный вызов `app:seed-demo-data --if-missing` / `make seed-demo-if-missing` после `up` или в `make init`.
 
 ---
 
@@ -1294,7 +1294,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `npm install` в dev без Make — команда старта сервиса `node`
 
 **Исправленные неточности:**
-- demo seed загружается entrypoint php и в demo, и в dev (`--if-missing`), не только «вручную в dev»
+- demo seed — явная команда после `up` (`app:seed-demo-data --if-missing` / `make seed-demo-if-missing`), не entrypoint
 - split-view в `ARCHITECTURE.md` заменён на режимы edit/preview
 - параллельные инстансы через `--env-file .env.multi` заменены на отдельные клоны
 - `VITE_*` «из compose» → генерация из корневого `.env`

@@ -8,7 +8,7 @@
 **Принцип:** одна задача → один коммит → smoke из `for_tests.md` (секция «Compliance» после добавления).  
 Не смешивать с шагами `frontend_selfreview.md` / `backend_selfreview.md`, если пользователь не попросил.
 
-**Уже закрыто (не трогать без необходимости):** Swagger, CRUD, теги/облако, избранное, версии, wiki+граф, экспорт MD/PDF, корзина 30 дней, автосохранение, DnD между папками, ≥10 тестов, CI (typecheck+tests), README/ARCHITECTURE/REPORT, git-история, **single-user режим** (фаза 19), **demo seed при multi-user** (entrypoint `seed-demo-data --if-missing`), **запуск с клона** (фаза 21), **lint/typecheck в CI** (`vue-tsc` в build).
+**Уже закрыто (не трогать без необходимости):** Swagger, CRUD, теги/облако, избранное, версии, wiki+граф, экспорт MD/PDF, корзина 30 дней, автосохранение, DnD между папками, ≥10 тестов, CI (typecheck+tests), README/ARCHITECTURE/REPORT, git-история, **single-user режим** (фаза 19), **demo seed** (`app:seed-demo-data`, явный вызов после `up`), **запуск с клона** (фаза 21), **lint/typecheck в CI** (`vue-tsc` в build).
 
 **Осознанные отклонения (не делаем):**
 

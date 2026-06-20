@@ -50,7 +50,7 @@ class SeedDemoDataCommand extends Command
             'if-missing',
             null,
             InputOption::VALUE_NONE,
-            'Пропустить загрузку, если demo-пользователи уже существуют (для bootstrap prod/demo)',
+            'Пропустить загрузку, если demo-пользователи уже существуют',
         );
     }
 

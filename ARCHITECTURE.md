@@ -549,7 +549,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev |
 | API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` |
 | Сборка фронта | `make frontend-dist` / CI → ветка `dist` | не обязательна (HMR) |
-| Bootstrap php | entrypoint: migrate + demo seed `--if-missing` / `ensure-single-user` | тот же entrypoint; `make init` дополнительно: composer, migrate, admin |
+| Bootstrap php | entrypoint: migrate + `ensure-single-user` (single-user); demo seed — явно (`make seed-demo-if-missing` / `app:seed-demo-data --if-missing`) | entrypoint: migrate; `make init`: composer, migrate, admin, seed |
 | Назначение | сдача проекта, demo, staging | ежедневная разработка |
 
 `docker-compose.yml` — **demo** (без `node`; SPA из `frontend/dist` в образе `nginx`). Dev overlay — `docker-compose.dev.yml` + Vite `:5173`.
@@ -594,7 +594,7 @@ make env && make init
 | `app:reset-schema` | Удалить схему БД и применить миграции заново |
 | `app:ensure-single-user` | Создать единственного пользователя для `APP_AUTH_ENABLED=false` (idempotent) |
 | `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
-| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать; `--if-missing` — пропустить, если уже есть (entrypoint php при каждом `up`) |
+| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--if-missing` — пропустить, если уже есть; `--force` — пересоздать |
 | `app:cleanup-trash` | Удалить заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно) |
 
 ### Demo seed (`app:seed-demo-data`)
@@ -611,7 +611,7 @@ make env && make init
 
 **Структура кода:** классы в `backend/src/DemoSeed/`; определения вселенных — `DemoSeed/Universe/*Universe.php`. Wiki-ссылки в контенте задаются плейсхолдерами `{{link:key}}` / `{{link:key|alias}}`, резолвятся в UUID при seed. При правке контента — перегенерация через `python3 backend/tools/build_universes.py` (встроенная проверка на смешение латиницы и кириллицы в одном слове).
 
-**Сброс и перезагрузка demo** (не нужно при первом `make init` / `up` — seed идёт автоматически):
+**Сброс и перезагрузка demo** (первый запуск — `app:seed-demo-data --if-missing` или `make seed-demo-if-missing` после `up`):
 
 ```bash
 docker compose exec php bin/console app:reset-schema

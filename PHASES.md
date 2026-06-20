@@ -431,9 +431,9 @@ Additive-фича; опирается на установленные loading/er
 
 Финализация на стабильной кодовой базе после фаз 19–20.
 
-- [x] Демо-данные для БД — см. **фаза 15** (`app:seed-demo-data` в entrypoint prod при `APP_AUTH_ENABLED=true`)
+- [x] Демо-данные для БД — см. **фаза 15** (`app:seed-demo-data`; явный вызов после `up`, не entrypoint)
 - [ ] **Два варианта окружения (Docker):**
-  - [x] **Демо / продакшен (по умолчанию):** `docker-compose.yml` — без `node`; nginx копирует `frontend/dist` (сборка в CI / `make frontend-build`); entrypoint php (migrate + demo seed / ensure-single-user); один URL `APP_PORT`
+  - [x] **Демо / продакшен (по умолчанию):** `docker-compose.yml` — без `node`; nginx копирует `frontend/dist` (сборка в CI / `make frontend-build`); entrypoint php (migrate + ensure-single-user); demo seed — явно; один URL `APP_PORT`
   - [x] **Разработка:** `docker-compose.dev.yml` — overlay с `node` (Vite `:5173`); README (`make up-dev`)
 - [ ] **Тесты — минимальный набор (smoke):**
   - **бэкенд (PHPUnit):** регистрация/логин, CRUD заметки, доступ только к своим данным; спецификации — [`future_autotests.md`](./future_autotests.md); план PR — [`autotests_prs.md`](./autotests_prs.md);
@@ -464,7 +464,7 @@ Additive-фича; опирается на установленные loading/er
 
 ### Общие требования — нефункциональные
 
-- [x] Seed-данные при запуске приложения — `app:seed-demo-data --if-missing` в entrypoint php при multi-user (**фаза 21**)
+- [x] Seed-данные — `app:seed-demo-data --if-missing` явно после `up` / в `make init` (**фаза 21**, из entrypoint убрано 2026-06-20)
 - [x] REST API с живой OpenAPI/Swagger документацией (`/api/docs`)
 - [x] Не менее 10 unit/integration тестов (~24 PHPUnit + ~14 Vitest файлов, ~118 test-методов)
 - [x] CI pipeline (GitHub Actions): тесты + typecheck (`ci.yml`), сборка артефактов после green CI (`build.yml`)
@@ -515,7 +515,7 @@ Additive-фича; опирается на установленные loading/er
 |:---------:|--------|-------------------|
 | — | GitHub Actions (тесты + typecheck) | фаза 20 ✅ |
 | — | Однопользовательский режим | фаза 19 ✅ — опционален, **C1 N/A** |
-| — | Demo seed при multi-user | entrypoint ✅ — **C2 N/A** (single-user = пустая база by design) |
+| — | Demo seed при multi-user | явный вызов ✅ — **C2 N/A** (single-user = пустая база by design) |
 | — | `docker-compose.yml` prod по умолчанию | фаза 21 ✅ |
 | 🔴 | Дашборд с графиками / статистикой | **C3** — ✅ закрыто |
 | 🔴 | Полнотекстовый поиск (FTS) | **C4** — ✅ закрыто (smoke) |

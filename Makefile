@@ -1,4 +1,4 @@
-.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init jwt-keys console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo seed-demo-if-missing admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init jwt-keys console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
 
 # DOCKER_ENV из корневого .env (dev | demo) или override: make up DOCKER_ENV=demo
 DOCKER_ENV ?= $(shell grep -E '^DOCKER_ENV=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//')
@@ -40,6 +40,7 @@ help:
 	@echo "  make db-test          - Создание test БД (otus_ai_db_test) для PHPUnit"
 	@echo "  make schema-reset     - Очистка схемы БД и повторное применение миграций"
 	@echo "  make seed-demo        - Загрузка demo-данных (3 вселенные, --force)"
+	@echo "  make seed-demo-if-missing - Demo seed, если пользователей ещё нет (--if-missing)"
 	@echo "  make admin            - Создание администратора из .env"
 	@echo "  make cache-clear      - Очистка кэша Symfony"
 	@echo "  make test             - PHPUnit (backend)"
@@ -78,8 +79,9 @@ init: volumes-init
 	@$(MAKE) build
 	@$(MAKE) up
 	@if [ "$(DOCKER_ENV)" = "demo" ]; then \
-		echo "Ожидание bootstrap (migrate + demo seed / ensure-single-user)..."; \
+		echo "Ожидание bootstrap (migrate)..."; \
 		sleep 8; \
+		if grep -qE '^APP_AUTH_ENABLED=(true|1)' .env 2>/dev/null; then $(MAKE) seed-demo-if-missing; fi; \
 		echo ""; \
 		echo "✅ Demo окружение: http://localhost:$${APP_PORT:-8080}/"; \
 		echo "   Demo: hogwarts@demo.local / westeros@demo.local / witcher@demo.local — пароль demo1234"; \
@@ -89,6 +91,7 @@ init: volumes-init
 		$(MAKE) install; \
 		$(MAKE) migrate; \
 		$(MAKE) admin; \
+		if grep -qE '^APP_AUTH_ENABLED=(true|1)' .env 2>/dev/null; then $(MAKE) seed-demo-if-missing; fi; \
 		echo ""; \
 		echo "✅ Dev окружение готово"; \
 		echo "🌐 API: http://localhost:8080/api"; \
@@ -108,14 +111,8 @@ env:
 	@$(MAKE) jwt-keys
 
 jwt-keys:
-	@mkdir -p backend/config/jwt
-	@if [ ! -f backend/config/jwt/private.pem ]; then \
-		echo "Generating JWT keys on host (fallback for dev without Docker rebuild)..."; \
-		openssl genpkey -algorithm RSA -out backend/config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096; \
-		openssl rsa -pubout -in backend/config/jwt/private.pem -out backend/config/jwt/public.pem; \
-		chmod 644 backend/config/jwt/private.pem backend/config/jwt/public.pem; \
-		echo "✅ JWT keys generated in backend/config/jwt/"; \
-	fi
+	@chmod +x scripts/generate-jwt-keys.sh
+	@./scripts/generate-jwt-keys.sh
 
 build: env
 	$(COMPOSE) build
@@ -174,6 +171,10 @@ schema-reset:
 seed-demo:
 	@echo "Загрузка demo-данных..."
 	@$(COMPOSE) exec php bin/console app:seed-demo-data --force
+
+seed-demo-if-missing:
+	@echo "Загрузка demo-данных (если ещё нет)..."
+	@$(COMPOSE) exec php bin/console app:seed-demo-data --if-missing
 
 admin:
 	@echo "Создание администратора..."

@@ -67,13 +67,11 @@ make init
 - `make volumes-init` — каталоги `volumes/${APP_NAME}/…` (вызывается из `init`, `up`)
 - demo: `make frontend-dist` — подтягивание `frontend/dist` с ветки `dist` или локальная сборка
 
-Устаревшие алиасы `make init-dev` / `make init-prod` / `make build-dev` / `make up-dev` делегируют в unified-цели.
-
 ### Demo (`DOCKER_ENV=demo`)
 
 Приложение: **http://localhost:8080/** — SPA и API на одном порту, без Vite dev server.
 
-После деплоя (multi-user, по умолчанию) **demo-данные загружаются автоматически** при первом запуске php (entrypoint: migrate + `app:seed-demo-data --if-missing`).
+При `APP_AUTH_ENABLED=true` (по умолчанию) demo-данные загружаются **явной командой** после первого `docker compose up` — см. «Способ 1» ниже или `make seed-demo-if-missing` / `make init`.
 
 | Email | Пароль | Вселенная |
 |-------|--------|-----------|
@@ -89,28 +87,35 @@ make init
 # 1. Env (DOCKER_ENV=demo в .env)
 cp .env.example .env
 # Отредактируйте .env: секреты, DB; для demo — VITE_API_URL=/api
-make env   # или ./scripts/generate-env.sh
+chmod +x scripts/generate-env.sh
+./scripts/generate-env.sh
+# JWT keys для demo не нужны на хосте — создаются в образе php при build и при старте контейнера
 
 # 2. Frontend-артефакты (frontend/dist) — нужны ДО сборки nginx
-make frontend-dist
-# или вручную: git fetch origin dist && git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
+git fetch origin dist
+git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
 
 # 3. Образы и контейнеры (каталог postgres создаётся при первом up)
 docker compose build
 docker compose up -d
 
-# 4. Дождаться bootstrap (migrate + demo seed) — ~10 с
+# 4. Дождаться bootstrap (migrate) — ~10 с
 docker compose logs php | tail -20
 
 # 5. (Опционально) администратор
 docker compose exec php bin/console app:create-admin
+
+# 6. Demo seed (multi-user, APP_AUTH_ENABLED=true)
+docker compose exec php bin/console app:seed-demo-data --if-missing
+# пересоздать demo-данные с нуля (удалит существующих demo-пользователей):
+# docker compose exec php bin/console app:seed-demo-data --force
 ```
 
 **Проверка:** откройте http://localhost:8080/login → войдите как `hogwarts@demo.local` / `demo1234`.
 
 **Что происходит при `docker compose up` (demo):**
 - **nginx** — раздаёт `frontend/dist` и проксирует `/api` в Symfony
-- **php (entrypoint)** — миграции; при `APP_AUTH_ENABLED=true` — demo seed; при `false` — `app:ensure-single-user`
+- **php (entrypoint)** — миграции; при `APP_AUTH_ENABLED=false` — `app:ensure-single-user`
 - **postgres** — БД в `volumes/${APP_NAME}/postgres/data` (`.gitkeep` — в родительском `postgres/`)
 
 **Смена `APP_AUTH_ENABLED`** → пересобрать `frontend/dist` и `docker compose build nginx`.
@@ -120,11 +125,11 @@ docker compose exec php bin/console app:create-admin
 ```bash
 cp .env.example .env
 # DOCKER_ENV=demo в .env
-make init   # env + frontend/dist + build + up + bootstrap
+make init   # env + frontend/dist + build + up + migrate + seed (multi-user) + bootstrap
 # опционально: make admin
 ```
 
-`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + bootstrap.
+`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + migrate + `seed-demo-if-missing` (если `APP_AUTH_ENABLED=true`).
 
 #### Артефакты frontend (CI / ветка `dist`)
 
@@ -140,6 +145,7 @@ cp .env.example .env   # DOCKER_ENV=demo, секреты
 make env
 make frontend-dist
 docker compose build && docker compose up -d
+docker compose exec php bin/console app:seed-demo-data --if-missing
 ```
 
 ### Dev (`DOCKER_ENV=dev`)
@@ -165,7 +171,7 @@ VITE_API_URL=http://localhost:8080/api   # demo: /api
 После правок `make build` / `make up` сами перегенерируют `backend/.env` и `frontend/.env` — отдельный `./scripts/generate-env.sh` не нужен.
 
 - API: http://localhost:8080/api · UI: http://localhost:5173 · Swagger: http://localhost:8080/api/docs
-- Demo seed: при первом `up` entrypoint php загружает demo-данные (`--if-missing`); пересоздать — `make seed-demo`
+- Demo seed: после `up` — `make seed-demo-if-missing` (или вручную `app:seed-demo-data --if-missing`); пересоздать — `make seed-demo`
 - Альтернатива без паузы: `make build && make up && make install && make migrate && make admin`
 
 **Порты:** по умолчанию API на 8080; для продакшена — `APP_PORT=80`. PostgreSQL только внутри Docker-сети.
@@ -182,10 +188,11 @@ make env
 
 docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
-# node сам выполняет npm install при старте; entrypoint php — migrate + demo seed --if-missing
+# node сам выполняет npm install при старте; entrypoint php — migrate (+ ensure-single-user при APP_AUTH_ENABLED=false)
 
 docker compose exec php composer install --no-interaction
 docker compose exec php bin/console app:create-admin
+docker compose exec php bin/console app:seed-demo-data --if-missing
 # пересоздать demo-данные (опционально):
 docker compose exec php bin/console app:seed-demo-data --force
 ```
@@ -270,6 +277,8 @@ make install          # Установка зависимостей Composer (ba
 make migrate          # Применение миграций
 make db-test          # Создание test БД для PHPUnit
 make schema-reset     # Очистка схемы БД и повторное применение миграций
+make seed-demo-if-missing  # Demo seed, если пользователей ещё нет
+make seed-demo        # Пересоздать demo-данные (--force)
 make admin            # Создание администратора из .env
 make cache-clear      # Очистка кэша Symfony
 make test             # PHPUnit (backend)
@@ -404,7 +413,12 @@ docker compose exec node npm run test:watch
 
 ## Demo-данные
 
-При `APP_AUTH_ENABLED=true` demo-данные загружаются автоматически при первом `docker compose up` (entrypoint php: `app:seed-demo-data --if-missing`) — и в demo, и в dev.
+При `APP_AUTH_ENABLED=true` demo-данные **не** загружаются при `docker compose up` — явно:
+
+```bash
+make seed-demo-if-missing
+# или: docker compose exec php bin/console app:seed-demo-data --if-missing
+```
 
 Пересоздать принудительно:
 
