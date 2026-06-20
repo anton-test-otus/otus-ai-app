@@ -431,7 +431,7 @@ Additive-фича; опирается на установленные loading/er
 
 Финализация на стабильной кодовой базе после фаз 19–20.
 
-- [x] Демо-данные для БД — см. **фаза 15** (`app:seed-demo-data`; явный вызов после `up`, не entrypoint)
+- [x] Демо-данные для БД — см. **фаза 15** (`app:seed-demo-data`; явный вызов, не entrypoint и не `make init`)
 - [ ] **Два варианта окружения (Docker):**
   - [x] **Демо / продакшен (по умолчанию):** `docker-compose.yml` — без `node`; nginx копирует `frontend/dist` (сборка в CI / `make frontend-build`); entrypoint php (migrate + ensure-single-user); demo seed — явно; один URL `APP_PORT`
   - [x] **Разработка:** `docker-compose.dev.yml` — overlay с `node` (Vite `:5173`); README (`make up-dev`)
@@ -464,14 +464,13 @@ Additive-фича; опирается на установленные loading/er
 
 ### Общие требования — нефункциональные
 
-- [x] Seed-данные — `app:seed-demo-data --if-missing` явно после `up` / в `make init` (**фаза 21**, из entrypoint убрано 2026-06-20)
+- [x] Seed-данные — `app:seed-demo-data --if-missing` только явной командой (`make seed-demo-if-missing`), не entrypoint и не `make init` (**фаза 21**)
 - [x] REST API с живой OpenAPI/Swagger документацией (`/api/docs`)
 - [x] Не менее 10 unit/integration тестов (~24 PHPUnit + ~14 Vitest файлов, ~118 test-методов)
 - [x] CI pipeline (GitHub Actions): тесты + typecheck (`ci.yml`), сборка артефактов после green CI (`build.yml`)
 - [x] Запуск всего приложения одной командой `docker compose up -d` — prod compose: build + up, migrate + single-user в entrypoint (**фаза 21**, demo-seed — опционально)
 - [x] `README.md` с инструкцией по запуску (markdown)
 - [x] `ARCHITECTURE.md` с описанием архитектуры и плана разработки (markdown)
-- [ ] Ссылка на видео-демонстрацию (опционально) — не создана (**фаза 21**)
 - [x] `REPORT.md` с историей создания проекта (markdown, ведётся по ходу)
 - [x] Проект в git-репозитории с адекватной историей коммитов (не одним коммитом)
 
@@ -481,7 +480,7 @@ Additive-фича; опирается на установленные loading/er
 - [x] Markdown-редактор с live preview — **split-view не планируется** (решение 2026-06): Milkdown WYSIWYG в `edit` + read-only `preview` по переключению; split снят в **фазе 6**, возврат не рассматривается
 - [x] Иерархия: папки для группировки заметок (вложенное дерево в сайдбаре)
 - [x] Теги: несколько тегов на заметку, облако тегов (`TagsPanel`), фильтрация по тегам (логика **И**)
-- [ ] Полнотекстовый поиск по содержимому — PostgreSQL FTS (`search_vector`, `to_tsquery` + префикс) на `GET /api/notes/search`; smoke в `for_tests.md` § C4
+- [x] Полнотекстовый поиск по содержимому — PostgreSQL FTS (`search_vector`, `to_tsquery` + префикс) на `GET /api/notes/search`; smoke в `for_tests.md` § C4
 - [x] Избранное: закрепление заметок, отдельная вкладка `/favorites`
 - [x] История версий: просмотр предыдущих редакций, откат к любой версии (`VersionHistoryDialog`, `restoreVersion`)
 - [x] Связи между заметками: wiki-ссылки `[[uuid]]` / `[[uuid|alias]]`, граф связей (`NoteLinksGraphDialog`, vis-network)

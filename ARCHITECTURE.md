@@ -549,7 +549,7 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev |
 | API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` |
 | Сборка фронта | `make frontend-dist` / CI → ветка `dist` | не обязательна (HMR) |
-| Bootstrap php | entrypoint: migrate + `ensure-single-user` (single-user); demo seed — явно (`make seed-demo-if-missing` / `app:seed-demo-data --if-missing`) | entrypoint: migrate; `make init`: composer, migrate, admin, seed |
+| Bootstrap php | entrypoint: migrate + `ensure-single-user` (single-user) | entrypoint: migrate; `make init`: composer, migrate, admin |
 | Назначение | сдача проекта, demo, staging | ежедневная разработка |
 
 `docker-compose.yml` — **demo** (без `node`; SPA из `frontend/dist` в образе `nginx`). Dev overlay — `docker-compose.dev.yml` + Vite `:5173`.

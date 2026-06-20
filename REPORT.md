@@ -1159,7 +1159,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `AuthDisabledSubscriber` + guards в `AuthController` — login/register/refresh/change-password → 404.
 - Frontend: условные роуты, `fetchUser()` без token, скрыты admin/logout/email/аккаунт в settings.
 
-**Prod compose (entrypoint php-fpm):** migrate + `app:ensure-single-user` при `APP_AUTH_ENABLED=false`. Demo seed из entrypoint убран (2026-06-20) — явный вызов `app:seed-demo-data --if-missing` / `make seed-demo-if-missing` после `up` или в `make init`.
+**Prod compose (entrypoint php-fpm):** migrate + `app:ensure-single-user` при `APP_AUTH_ENABLED=false`. Demo seed не в entrypoint и не в `make init` — только явно: `make seed-demo-if-missing` / `app:seed-demo-data --if-missing`.
 
 ---
 
@@ -1294,7 +1294,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `npm install` в dev без Make — команда старта сервиса `node`
 
 **Исправленные неточности:**
-- demo seed — явная команда после `up` (`app:seed-demo-data --if-missing` / `make seed-demo-if-missing`), не entrypoint
+- demo seed — только явная команда (`make seed-demo-if-missing`), не entrypoint и не `make init`
 - split-view в `ARCHITECTURE.md` заменён на режимы edit/preview
 - параллельные инстансы через `--env-file .env.multi` заменены на отдельные клоны
 - `VITE_*` «из compose» → генерация из корневого `.env`
@@ -1325,6 +1325,8 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 **Проблема:** `make clean` вызывал `rm -rf volumes/…/node_modules` от имени хост-пользователя — root-owned файлы из Docker (`npm install`, postgres) не удалялись; `.gitkeep` (dev) удалялся, каталог оставался «грязным». `volumes-init` не восстанавливал `.gitkeep`.
 
 **Решение:** `clean` очищает содержимое `node_modules/` (кроме `.gitkeep`) и `postgres/data/` через ephemeral `alpine` (root). `.gitkeep` для postgres — в **родительском** `postgres/`, не в mount data: compose монтирует `postgres/data:/var/lib/postgresql/data` (initdb требует пустой каталог). `volumes-init` — `mkdir` + `.gitkeep` через docker.
+
+**Дополнение (2026-06-20):** `make clean` также вызывает `clean-artifacts` — удаление артефактов сборки на хосте: `frontend/dist`, `backend/config/jwt/*.pem`, `vendor`, `var`, сгенерированные `backend/.env` и `frontend/.env`, `.dist-source-sha`. Корневой `.env` и `*.local` не трогаются. Отдельная цель `make clean-artifacts` — без Docker/volumes.
 
 **Затронутые файлы:** `Makefile`, `.gitignore`, `docker-compose.yml`, `README.md`.
 

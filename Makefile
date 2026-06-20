@@ -1,4 +1,4 @@
-.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo seed-demo-if-missing admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init jwt-keys console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo seed-demo-if-missing admin cache-clear test db-test frontend-test clean clean-artifacts frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init jwt-keys console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
 
 # DOCKER_ENV из корневого .env (dev | demo) или override: make up DOCKER_ENV=demo
 DOCKER_ENV ?= $(shell grep -E '^DOCKER_ENV=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//')
@@ -52,7 +52,8 @@ help:
 	@echo "  make frontend-dev     - Запуск Vite dev server"
 	@echo "  make frontend-kill    - Остановка всех Node.js/Vite процессов"
 	@echo "  make frontend-restart - Перезапуск Vite dev server"
-	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
+	@echo "  make clean            - Полная очистка: Docker, volumes и артефакты сборки"
+	@echo "  make clean-artifacts  - Только артефакты сборки (dist, JWT keys, vendor, var...)"
 
 volumes-init:
 	@mkdir -p $(VOLUME_DIR)/node_modules 2>/dev/null || true
@@ -81,21 +82,20 @@ init: volumes-init
 	@if [ "$(DOCKER_ENV)" = "demo" ]; then \
 		echo "Ожидание bootstrap (migrate)..."; \
 		sleep 8; \
-		if grep -qE '^APP_AUTH_ENABLED=(true|1)' .env 2>/dev/null; then $(MAKE) seed-demo-if-missing; fi; \
 		echo ""; \
 		echo "✅ Demo окружение: http://localhost:$${APP_PORT:-8080}/"; \
-		echo "   Demo: hogwarts@demo.local / westeros@demo.local / witcher@demo.local — пароль demo1234"; \
+		echo "   Demo seed (опционально): make seed-demo-if-missing"; \
 	else \
 		echo "Ожидание PostgreSQL..."; \
 		sleep 5; \
 		$(MAKE) install; \
 		$(MAKE) migrate; \
 		$(MAKE) admin; \
-		if grep -qE '^APP_AUTH_ENABLED=(true|1)' .env 2>/dev/null; then $(MAKE) seed-demo-if-missing; fi; \
 		echo ""; \
 		echo "✅ Dev окружение готово"; \
 		echo "🌐 API: http://localhost:8080/api"; \
 		echo "💻 UI:  http://localhost:5173"; \
+		echo "   Demo seed (опционально): make seed-demo-if-missing"; \
 	fi
 
 # Обратная совместимость
@@ -245,11 +245,31 @@ frontend-restart: frontend-kill
 	@sleep 2
 	@$(MAKE) frontend-dev
 
+clean-artifacts:
+	@echo "Удаление артефактов сборки (dist, JWT keys, vendor, var...)..."
+	@docker run --rm -v "$(CURDIR):/repo" -w /repo alpine sh -c '\
+		rm -rf \
+			backend/vendor \
+			backend/var \
+			backend/public/bundles \
+			backend/config/jwt \
+			backend/.env \
+			backend/.phpunit.cache \
+			frontend/dist \
+			frontend/.env \
+			frontend/node_modules \
+			.dist-source-sha \
+		2>/dev/null || true'
+	@echo "✅ Артефакты сборки удалены"
+
 clean:
-	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и данные в volumes/"
+	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит контейнеры, образы, volumes и артефакты сборки"
+	@echo "   (frontend/dist, backend/config/jwt/*.pem, vendor, var, сгенерированные .env...)"
+	@echo "   Корневой .env и *.local не удаляются."
 	@echo "Нажмите Ctrl+C для отмены или Enter для продолжения..."
 	@read dummy
 	$(COMPOSE) down --rmi all
+	@$(MAKE) clean-artifacts
 	@mkdir -p $(VOLUME_DIR)/postgres/data $(VOLUME_DIR)/node_modules 2>/dev/null || true
 	@docker run --rm -v "$(CURDIR)/$(VOLUME_DIR):/vol" alpine sh -c '\
 		mkdir -p /vol/node_modules; \

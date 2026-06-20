@@ -71,7 +71,7 @@ make init
 
 Приложение: **http://localhost:8080/** — SPA и API на одном порту, без Vite dev server.
 
-При `APP_AUTH_ENABLED=true` (по умолчанию) demo-данные загружаются **явной командой** после первого `docker compose up` — см. «Способ 1» ниже или `make seed-demo-if-missing` / `make init`.
+При `APP_AUTH_ENABLED=true` (по умолчанию) demo-данные **не** загружаются при развёртывании — только явной командой: `make seed-demo-if-missing` (см. раздел «Demo-данные»).
 
 | Email | Пароль | Вселенная |
 |-------|--------|-----------|
@@ -104,14 +104,9 @@ docker compose logs php | tail -20
 
 # 5. (Опционально) администратор
 docker compose exec php bin/console app:create-admin
-
-# 6. Demo seed (multi-user, APP_AUTH_ENABLED=true)
-docker compose exec php bin/console app:seed-demo-data --if-missing
-# пересоздать demo-данные с нуля (удалит существующих demo-пользователей):
-# docker compose exec php bin/console app:seed-demo-data --force
 ```
 
-**Проверка:** откройте http://localhost:8080/login → войдите как `hogwarts@demo.local` / `demo1234`.
+**Проверка:** откройте http://localhost:8080/ (после `make seed-demo-if-missing` — вход как `hogwarts@demo.local` / `demo1234`).
 
 **Что происходит при `docker compose up` (demo):**
 - **nginx** — раздаёт `frontend/dist` и проксирует `/api` в Symfony
@@ -125,11 +120,11 @@ docker compose exec php bin/console app:seed-demo-data --if-missing
 ```bash
 cp .env.example .env
 # DOCKER_ENV=demo в .env
-make init   # env + frontend/dist + build + up + migrate + seed (multi-user) + bootstrap
-# опционально: make admin
+make init   # env + frontend/dist + build + up + migrate (+ admin в dev)
+# опционально: make admin, make seed-demo-if-missing
 ```
 
-`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + migrate + `seed-demo-if-missing` (если `APP_AUTH_ENABLED=true`).
+`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + migrate (entrypoint). Demo seed — отдельно: `make seed-demo-if-missing`.
 
 #### Артефакты frontend (CI / ветка `dist`)
 
@@ -145,7 +140,7 @@ cp .env.example .env   # DOCKER_ENV=demo, секреты
 make env
 make frontend-dist
 docker compose build && docker compose up -d
-docker compose exec php bin/console app:seed-demo-data --if-missing
+# опционально: make seed-demo-if-missing
 ```
 
 ### Dev (`DOCKER_ENV=dev`)
@@ -171,7 +166,7 @@ VITE_API_URL=http://localhost:8080/api   # demo: /api
 После правок `make build` / `make up` сами перегенерируют `backend/.env` и `frontend/.env` — отдельный `./scripts/generate-env.sh` не нужен.
 
 - API: http://localhost:8080/api · UI: http://localhost:5173 · Swagger: http://localhost:8080/api/docs
-- Demo seed: после `up` — `make seed-demo-if-missing` (или вручную `app:seed-demo-data --if-missing`); пересоздать — `make seed-demo`
+- Demo seed (опционально): `make seed-demo-if-missing`; пересоздать — `make seed-demo`
 - Альтернатива без паузы: `make build && make up && make install && make migrate && make admin`
 
 **Порты:** по умолчанию API на 8080; для продакшена — `APP_PORT=80`. PostgreSQL только внутри Docker-сети.
@@ -192,9 +187,7 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 docker compose exec php composer install --no-interaction
 docker compose exec php bin/console app:create-admin
-docker compose exec php bin/console app:seed-demo-data --if-missing
-# пересоздать demo-данные (опционально):
-docker compose exec php bin/console app:seed-demo-data --force
+# опционально: make seed-demo-if-missing
 ```
 
 ### CI: сборка артефактов
@@ -285,7 +278,8 @@ make test             # PHPUnit (backend)
 make frontend-test    # Vitest (frontend)
 make frontend-install # Установка зависимостей npm (frontend)
 make frontend-build   # Сборка production фронтенда
-make clean            # Удаление всех контейнеров и volumes
+make clean            # Полная очистка: Docker, volumes и артефакты сборки
+make clean-artifacts  # Только артефакты сборки (dist, JWT keys, vendor, var...)
 ```
 
 ### Frontend: `node_modules` и IDE
