@@ -111,7 +111,7 @@ docker compose exec php bin/console app:create-admin
 **Что происходит при `docker compose up` (demo):**
 - **nginx** — раздаёт `frontend/dist` и проксирует `/api` в Symfony
 - **php (entrypoint)** — миграции; при `APP_AUTH_ENABLED=true` — demo seed; при `false` — `app:ensure-single-user`
-- **postgres** — БД в `volumes/${APP_NAME}/postgres`
+- **postgres** — БД в `volumes/${APP_NAME}/postgres/data` (`.gitkeep` — в родительском `postgres/`)
 
 **Смена `APP_AUTH_ENABLED`** → пересобрать `frontend/dist` и `docker compose build nginx`.
 

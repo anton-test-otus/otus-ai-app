@@ -37,10 +37,11 @@ RUN sed -i 's/^APP_ENV=dev/APP_ENV=prod/' .env \
     && sed -i 's/^APP_DEBUG=1/APP_DEBUG=0/' .env || true
 
 RUN composer dump-autoload --optimize --classmap-authoritative \
-    && mkdir -p var/cache var/log config/jwt \
-    && openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096 \
-    && openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem \
-    && chmod 644 config/jwt/private.pem config/jwt/public.pem \
+    && mkdir -p var/cache var/log config/jwt /opt/app-jwt \
+    && openssl genpkey -algorithm RSA -out /opt/app-jwt/private.pem -pkeyopt rsa_keygen_bits:4096 \
+    && openssl rsa -pubout -in /opt/app-jwt/private.pem -out /opt/app-jwt/public.pem \
+    && cp /opt/app-jwt/private.pem /opt/app-jwt/public.pem config/jwt/ \
+    && chmod 644 /opt/app-jwt/private.pem /opt/app-jwt/public.pem config/jwt/private.pem config/jwt/public.pem \
     && chown -R www-data:www-data var
 
 COPY docker/php/docker-entrypoint.sh /usr/local/bin/app-entrypoint.sh

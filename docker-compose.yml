@@ -12,7 +12,7 @@ services:
       POSTGRES_USER: ${DB_USER:-otus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-otus_password}
     volumes:
-      - ./volumes/${APP_NAME:-otus_ai}/postgres:/var/lib/postgresql/data
+      - ./volumes/${APP_NAME:-otus_ai}/postgres/data:/var/lib/postgresql/data
     networks:
       - app_network
     healthcheck:

@@ -16,6 +16,9 @@
 !/volumes/*/
 !/volumes/*/*/
 !/volumes/*/*/.gitkeep
+/volumes/*/node_modules/*
+!/volumes/*/node_modules/.gitkeep
+/volumes/*/postgres/data/*
 .DS_Store
 .idea/
 .vscode/

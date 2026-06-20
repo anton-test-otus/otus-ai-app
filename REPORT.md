@@ -1300,3 +1300,40 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `VITE_*` «из compose» → генерация из корневого `.env`
 
 **Затронутые файлы:** `README.md`, `frontend/README.md`, `ARCHITECTURE.md`.
+
+---
+
+## Compliance C3 — stats dashboard (2026-06-20)
+
+**Задача:** закрыть требование «дашборд с визуализацией данных» (minimal pass).
+
+**Решение:**
+- Backend: `GET /api/stats` (`StatsController`, `StatsRepository`) — KPI (заметки, папки, теги, связи, избранное, корзина), `notesByFolder[]`, `topTags[]` (top 8).
+- Frontend: отдельная страница **`/stats`** (`StatsView.vue`) — компонент `DashboardStatsPanel` (6 KPI, doughnut по папкам, horizontal bar по тегам; PrimeVue Chart + `chart.js`).
+- Навигация: hover-кнопка «Статистика» (`pi-chart-bar`) у строки настроек аккаунта в `SidebarFooter` (паттерн folder-actions).
+- **`DashboardView` (`/`)** — только список заметок; статистики нет.
+- Клик по сегменту/тегу на графиках → переход на `/` с фильтром по папке или тегу.
+
+**Smoke:** `for_tests.md` § Compliance C3 — подтверждено 2026-06-20.
+
+**Затронутые файлы:** `backend/src/Controller/StatsController.php`, `backend/src/Repository/StatsRepository.php`, `frontend/src/api/stats.ts`, `frontend/src/components/dashboard/DashboardStatsPanel.vue`, `frontend/src/views/StatsView.vue`, `frontend/src/components/sidebar/SidebarFooter.vue`, `frontend/src/router/index.ts`, `frontend/package.json`.
+
+---
+
+## Makefile: clean + volumes .gitkeep (2026-06-20)
+
+**Проблема:** `make clean` вызывал `rm -rf volumes/…/node_modules` от имени хост-пользователя — root-owned файлы из Docker (`npm install`, postgres) не удалялись; `.gitkeep` (dev) удалялся, каталог оставался «грязным». `volumes-init` не восстанавливал `.gitkeep`.
+
+**Решение:** `clean` очищает содержимое `node_modules/` (кроме `.gitkeep`) и `postgres/data/` через ephemeral `alpine` (root). `.gitkeep` для postgres — в **родительском** `postgres/`, не в mount data: compose монтирует `postgres/data:/var/lib/postgresql/data` (initdb требует пустой каталог). `volumes-init` — `mkdir` + `.gitkeep` через docker.
+
+**Затронутые файлы:** `Makefile`, `.gitignore`, `docker-compose.yml`, `README.md`.
+
+---
+
+## JWT 500 на login после dev bind-mount (2026-06-20)
+
+**Проблема:** `POST /api/auth/login` → 500, `JWTEncodeFailureException` — нет `backend/config/jwt/*.pem`. В dev overlay `./backend:/var/www/backend` перекрывает ключи из Docker-образа; каталог gitignored.
+
+**Решение:** `make jwt-keys` (вызывается из `make env`); entrypoint `ensure_jwt_keys()` при старте php-fpm (после `docker compose build php`).
+
+**Затронутые файлы:** `docker/php/docker-entrypoint.sh`, `Makefile`.

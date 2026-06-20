@@ -1,4 +1,4 @@
-.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
+.PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init jwt-keys console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
 
 # DOCKER_ENV из корневого .env (dev | demo) или override: make up DOCKER_ENV=demo
 DOCKER_ENV ?= $(shell grep -E '^DOCKER_ENV=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//')
@@ -23,6 +23,7 @@ help:
 	@echo ""
 	@echo "Доступные команды:"
 	@echo "  make env              - Сгенерировать backend/.env и frontend/.env из корневого .env"
+	@echo "  make jwt-keys         - JWT keys на хосте (fallback; в Docker — из образа при старте php)"
 	@echo "  make init             - Первичная настройка (режим из DOCKER_ENV: dev или demo)"
 	@echo "  make build            - Сборка Docker-образов (compose по DOCKER_ENV)"
 	@echo "  make up               - Запуск контейнеров (dev: API :8080 + Vite :5173; demo: :8080)"
@@ -53,7 +54,13 @@ help:
 	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
 
 volumes-init:
-	@mkdir -p $(VOLUME_DIR)/postgres $(VOLUME_DIR)/node_modules
+	@mkdir -p $(VOLUME_DIR)/node_modules 2>/dev/null || true
+	@touch $(VOLUME_DIR)/node_modules/.gitkeep 2>/dev/null || true
+	@docker run --rm -v "$(CURDIR)/$(VOLUME_DIR):/vol" alpine sh -c '\
+		mkdir -p /vol/postgres/data /vol/node_modules; \
+		test -f /vol/postgres/.gitkeep || touch /vol/postgres/.gitkeep; \
+		test -f /vol/node_modules/.gitkeep || touch /vol/node_modules/.gitkeep; \
+		chmod 755 /vol/postgres'
 
 init: volumes-init
 	@echo "Инициализация окружения DOCKER_ENV=$(DOCKER_ENV)..."
@@ -98,6 +105,17 @@ init-prod:
 env:
 	@chmod +x scripts/generate-env.sh
 	@./scripts/generate-env.sh
+	@$(MAKE) jwt-keys
+
+jwt-keys:
+	@mkdir -p backend/config/jwt
+	@if [ ! -f backend/config/jwt/private.pem ]; then \
+		echo "Generating JWT keys on host (fallback for dev without Docker rebuild)..."; \
+		openssl genpkey -algorithm RSA -out backend/config/jwt/private.pem -pkeyopt rsa_keygen_bits:4096; \
+		openssl rsa -pubout -in backend/config/jwt/private.pem -out backend/config/jwt/public.pem; \
+		chmod 644 backend/config/jwt/private.pem backend/config/jwt/public.pem; \
+		echo "✅ JWT keys generated in backend/config/jwt/"; \
+	fi
 
 build: env
 	$(COMPOSE) build
@@ -231,6 +249,15 @@ clean:
 	@echo "Нажмите Ctrl+C для отмены или Enter для продолжения..."
 	@read dummy
 	$(COMPOSE) down --rmi all
-	rm -rf $(VOLUME_DIR)/postgres $(VOLUME_DIR)/node_modules
+	@mkdir -p $(VOLUME_DIR)/postgres/data $(VOLUME_DIR)/node_modules 2>/dev/null || true
+	@docker run --rm -v "$(CURDIR)/$(VOLUME_DIR):/vol" alpine sh -c '\
+		mkdir -p /vol/node_modules; \
+		find /vol/node_modules -mindepth 1 ! -name .gitkeep -exec rm -rf {} +; \
+		mkdir -p /vol/postgres; \
+		find /vol/postgres -mindepth 1 -maxdepth 1 ! -name .gitkeep ! -name data -exec rm -rf {} +; \
+		rm -rf /vol/postgres/data; \
+		mkdir -p /vol/postgres/data; \
+		test -f /vol/postgres/.gitkeep || touch /vol/postgres/.gitkeep; \
+		chmod 755 /vol/postgres'
 	@$(MAKE) volumes-init
 	@echo "✅ Очистка завершена"

@@ -180,7 +180,7 @@ otus-ai-app/
 │   │   │   └── common/        # LoadingState, ErrorState, EmptyState, SaveIndicator
 │   │   ├── composables/       # useAutosave, useNoteExport, useMoveNoteToFolder, …
 │   │   ├── stores/            # auth, notes, folders, tags, trash (+ resetUserStores)
-│   │   ├── views/             # Dashboard, NoteView, Trash, Settings, admin/AdminUsersView, …
+│   │   ├── views/             # Dashboard, StatsView (/stats), NoteView, Trash, Settings, admin/…
 │   │   ├── utils/             # hydra, sanitizeText, exportNote, noteGraph, …
 │   │   ├── types/
 │   │   └── router/
@@ -459,7 +459,9 @@ const noteSchema = z.object({
 
 Фронтенд парсит через `parseHydraCollection()` (`utils/hydra.ts`); query-параметры: `page`, `itemsPerPage` (default 20, max 100).
 
-**2. Кастомный JSON** — `GET /api/notes/search`, `GET /api/admin/users`:
+**2. Кастомный JSON**
+
+- `GET /api/notes/search`, `GET /api/admin/users` — paginated `{ data, meta }`:
 
 ```json
 {
@@ -474,6 +476,8 @@ const noteSchema = z.object({
 ```
 
 Query: `page`, `perPage` (search) или `perPage` (admin).
+
+- `GET /api/stats` — KPI и данные для графиков текущего пользователя (без pagination): `notesCount`, `foldersCount`, `tagsCount`, `linksCount`, `favoritesCount`, `trashCount`, `notesByFolder[]`, `topTags[]`. UI: **`/stats`** (`StatsView`), не список заметок на `/` (`DashboardView`).
 
 ## Адаптивный дизайн (Mobile-First)
 
@@ -566,7 +570,7 @@ make env && make init
 
 Команды через сервисные имена: `docker compose exec php …` (не зависят от `container_name`).
 
-Каталоги данных создаёт `make volumes-init` (`volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`). При смене layout с `volumes/postgres` перенесите данные: `mv volumes/postgres volumes/otus_ai/postgres`.
+Каталоги данных создаёт `make volumes-init` (`volumes/${APP_NAME}/postgres/data`, `volumes/${APP_NAME}/node_modules`; `.gitkeep` — в `postgres/` и `node_modules/`, не в `postgres/data/`). При смене layout с `volumes/postgres` перенесите данные: `mv volumes/postgres volumes/otus_ai/postgres/data`.
 
 ### Режим аутентификации
 

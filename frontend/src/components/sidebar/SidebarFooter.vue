@@ -30,17 +30,44 @@
     </nav>
 
     <div class="sidebar-account border-t app-border panel-padding-x py-3">
-      <router-link
-        :to="{ name: 'settings' }"
-        class="sidebar-nav-item sidebar-account-link"
-        :class="{ 'sidebar-nav-item--active': route.name === 'settings' }"
-        @click="handleNavigate"
+      <div
+        class="group relative flex items-center min-w-0 rounded"
+        :class="{ 'sidebar-nav-item--active': isAccountSectionActive }"
       >
-        <i class="pi pi-cog sidebar-nav-icon" aria-hidden="true" />
-        <span class="sidebar-nav-label truncate">
-          {{ authStore.authUiEnabled ? authStore.user?.email : 'Настройки' }}
-        </span>
-      </router-link>
+        <router-link
+          :to="{ name: 'settings' }"
+          class="sidebar-nav-item sidebar-account-link flex-1 min-w-0 pr-10"
+          :class="{ 'sidebar-nav-item--active': route.name === 'settings' }"
+          @click="handleNavigate"
+        >
+          <i class="pi pi-cog sidebar-nav-icon" aria-hidden="true" />
+          <span class="sidebar-nav-label truncate">
+            {{ authStore.authUiEnabled ? authStore.user?.email : 'Настройки' }}
+          </span>
+        </router-link>
+
+        <div
+          class="absolute right-0 top-0 bottom-0 flex items-center justify-end pr-0.5 pl-2 transition-opacity rounded-r"
+          :class="[
+            statsActionsVisibilityClass,
+            isAccountSectionActive
+              ? 'bg-primary-50 dark:bg-primary-900/20'
+              : 'bg-surface-0 group-hover:bg-surface-100 dark:bg-surface-900 dark:group-hover:bg-surface-800',
+          ]"
+        >
+          <Button
+            icon="pi pi-chart-bar"
+            text
+            rounded
+            size="small"
+            class="sidebar-icon-btn"
+            :severity="route.name === 'stats' ? 'info' : undefined"
+            @mousedown.prevent
+            @click.stop="goToStats"
+            v-tooltip.top="'Статистика'"
+          />
+        </div>
+      </div>
 
       <button
         v-if="authStore.authUiEnabled"
@@ -56,9 +83,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Badge from 'primevue/badge'
+import Button from 'primevue/button'
 import { useAuthStore } from '@/stores/auth'
 import { useTrashStore } from '@/stores/trash'
 import { useLayoutPanels } from '@/composables/useLayoutPanels'
@@ -68,6 +96,16 @@ const router = useRouter()
 const authStore = useAuthStore()
 const trashStore = useTrashStore()
 const layoutPanels = useLayoutPanels()
+
+const isAccountSectionActive = computed(
+  () => route.name === 'settings' || route.name === 'stats',
+)
+
+const statsActionsVisibilityClass = computed(() =>
+  route.name === 'stats'
+    ? 'opacity-100 pointer-events-auto'
+    : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto',
+)
 
 onMounted(() => {
   trashStore.fetchCount()
@@ -79,6 +117,11 @@ function formatBadgeCount(value: number): string {
 
 function handleNavigate() {
   layoutPanels?.closeNavigation?.()
+}
+
+function goToStats() {
+  handleNavigate()
+  router.push({ name: 'stats' })
 }
 
 function logout() {
