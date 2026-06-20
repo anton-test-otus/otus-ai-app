@@ -62,7 +62,8 @@ JWT ключи (private.pem, public.pem) генерировались вручн
 - `DB_NAME` - имя базы данных
 - `DB_USER` - пользователь базы данных
 - `DB_PASSWORD` - пароль базы данных
-- `DATABASE_URL` строится из этих переменных в .env
+
+**Актуализация (2026-06-20):** промежуточный вариант «`DATABASE_URL` строится из `DB_*` в `.env`» снят. Doctrine подключается **только** через отдельные `DB_*` в `doctrine.yaml`; `DATABASE_URL` удалён из env-файлов и CI.
 
 ---
 
@@ -1158,7 +1159,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `AuthDisabledSubscriber` + guards в `AuthController` — login/register/refresh/change-password → 404.
 - Frontend: условные роуты, `fetchUser()` без token, скрыты admin/logout/email/аккаунт в settings.
 
-**Prod compose (авто ensure-single-user в entrypoint)** — отложено на фазу 21.
+**Prod compose (авто ensure-single-user / demo seed в entrypoint)** — реализовано в фазе 21: `docker/php/docker-entrypoint.sh` при старте php-fpm выполняет migrate и `app:seed-demo-data --if-missing` или `app:ensure-single-user` в зависимости от `APP_AUTH_ENABLED`.
 
 ---
 
@@ -1213,7 +1214,7 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - Bootstrap ветки `dist` при первом запуске (`git push HEAD:refs/heads/dist`)
 - `.dist-source-sha` в ветке `dist` — SHA исходного коммита `main`
 - `main`: `frontend/dist` и `.dist-source-sha` в `.gitignore`
-- README: деплой `git pull main` + `git checkout origin/dist -- frontend/dist`
+- README: деплой `git pull main` + подтягивание dist с ветки `dist` (сейчас: `git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha`)
 
 **Затронутые файлы:** `.github/workflows/build.yml`, `.gitignore`, `README.md`, `Makefile`, `for_tests.md`.
 
@@ -1252,3 +1253,50 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 - `init-prod` / `init-dev` / `build-dev` / `up-dev` — тонкие алиасы с override `DOCKER_ENV`
 
 **Затронутые файлы:** `Makefile`, `.env.example`, `docker-compose.yml`, `docker-compose.dev.yml`, `README.md`, `ARCHITECTURE.md`, `frontend/README.md`.
+
+---
+
+## Единый корневой `.env` и generate-env (2026-06-20)
+
+**Задача:** `backend/.env` и `frontend/.env` не коммитятся; оператор редактирует один корневой `.env`.
+
+**Решение:**
+- `.env.example` в корне — все переменные проекта (Symfony, DB, JWT, `VITE_*`)
+- `scripts/generate-env.sh` / `make env` — `backend/.env` (без `VITE_*`), `frontend/.env` (только `VITE_*`); `VITE_AUTH_ENABLED` из `APP_AUTH_ENABLED`, если не задан
+- `make init`, `make build`, `make up` вызывают `make env` автоматически — ручной `./scripts/generate-env.sh` не нужен при работе через Make
+
+**Затронутые файлы:** `.env.example`, `scripts/generate-env.sh`, `Makefile`, `docker-compose.dev.yml`, `.gitignore`, CI workflows, `README.md`, `ARCHITECTURE.md`.
+
+---
+
+## APP_NAME и изолированные volumes (2026-06-20)
+
+**Задача:** параллельный запуск нескольких инстансов (multi-user + single-user) без конфликта имён контейнеров и данных.
+
+**Решение:**
+- `APP_NAME` (default `otus_ai`) — префикс контейнеров, образов, сети compose и каталогов `volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`
+- `make volumes-init` создаёт каталоги; вызывается из `init` / `up`
+- Параллельный запуск — **отдельные клоны/worktree** (один рабочий каталог → один `backend/.env` / `frontend/.env` на диск)
+
+**Затронутые файлы:** `docker-compose.yml`, `docker-compose.dev.yml`, `Makefile`, `volumes/`, `.gitignore`, `README.md`, `ARCHITECTURE.md`.
+
+---
+
+## Документация: аудит README и ARCHITECTURE (2026-06-20)
+
+**Задача:** после unified Makefile / generate-env / `DOCKER_ENV` убрать из документации шаги, которые Makefile выполняет автоматически, и исправить неточности.
+
+**Устаревшие ручные шаги (больше не нужны при `make init` / `make up`):**
+- `./scripts/generate-env.sh` — вызывается через `make env`
+- `mkdir -p volumes/…` — `make volumes-init`
+- `git fetch` + `git restore` dist — `make frontend-dist` (demo)
+- отдельный `doctrine:migrations:migrate` в dev без Make — entrypoint php
+- `npm install` в dev без Make — команда старта сервиса `node`
+
+**Исправленные неточности:**
+- demo seed загружается entrypoint php и в demo, и в dev (`--if-missing`), не только «вручную в dev»
+- split-view в `ARCHITECTURE.md` заменён на режимы edit/preview
+- параллельные инстансы через `--env-file .env.multi` заменены на отдельные клоны
+- `VITE_*` «из compose» → генерация из корневого `.env`
+
+**Затронутые файлы:** `README.md`, `frontend/README.md`, `ARCHITECTURE.md`.

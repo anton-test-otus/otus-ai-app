@@ -62,6 +62,11 @@ make init
 
 Дальнейшие команды (`make build`, `make up`, `make down`, …) используют тот же `DOCKER_ENV`. Разовый override: `make up DOCKER_ENV=demo`.
 
+**Что делает Makefile автоматически** (ручные шаги ниже не нужны):
+- `make env` — генерация `backend/.env` и `frontend/.env` из корневого `.env` (вызывается из `init`, `build`, `up`)
+- `make volumes-init` — каталоги `volumes/${APP_NAME}/…` (вызывается из `init`, `up`)
+- demo: `make frontend-dist` — подтягивание `frontend/dist` с ветки `dist` или локальная сборка
+
 Устаревшие алиасы `make init-dev` / `make init-prod` / `make build-dev` / `make up-dev` делегируют в unified-цели.
 
 ### Demo (`DOCKER_ENV=demo`)
@@ -83,16 +88,14 @@ make init
 ```bash
 # 1. Env (DOCKER_ENV=demo в .env)
 cp .env.example .env
-# Отредактируйте .env: DOCKER_ENV=demo, APP_SECRET, DB_PASSWORD, JWT_PASSPHRASE, …
-# demo: VITE_API_URL=/api
-./scripts/generate-env.sh
+# Отредактируйте .env: секреты, DB; для demo — VITE_API_URL=/api
+make env   # или ./scripts/generate-env.sh
 
 # 2. Frontend-артефакты (frontend/dist) — нужны ДО сборки nginx
-git fetch origin dist
-git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
+make frontend-dist
+# или вручную: git fetch origin dist && git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
 
-# 3. Образы и контейнеры
-mkdir -p volumes/otus_ai/postgres   # или make volumes-init
+# 3. Образы и контейнеры (каталог postgres создаётся при первом up)
 docker compose build
 docker compose up -d
 
@@ -133,59 +136,39 @@ make init   # env + frontend/dist + build + up + bootstrap
 
 ```bash
 git pull origin main
-git fetch origin dist
-git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
-
-cp .env.example .env   # DOCKER_ENV=demo
-./scripts/generate-env.sh
-
+cp .env.example .env   # DOCKER_ENV=demo, секреты
+make env
+make frontend-dist
 docker compose build && docker compose up -d
 ```
 
 ### Dev (`DOCKER_ENV=dev`)
 
 ```bash
-cp .env.example .env   # DOCKER_ENV=demo; для dev — DOCKER_ENV=dev
-make init
-# или вручную: make build && make up && make install && make migrate && make admin
+cp .env.example .env
+# В .env: DOCKER_ENV=dev и секреты (см. ниже)
+make init   # пауза для правки .env → build, up, composer, migrate, admin
 ```
 
-- API: http://localhost:8080/api · UI: http://localhost:5173
-- Demo seed в dev **не** в entrypoint — вручную: `make seed-demo` или `docker compose exec php bin/console app:seed-demo-data`
+Минимум для правки в корневом `.env` перед Enter в `make init`:
 
-### Настройка для разработчика (dev-режим)
-
-1. Клонируйте репозиторий и перейдите в директорию проекта
-
-2. **Инициализация:**
-```bash
-make init   # при DOCKER_ENV=dev в .env
-```
-
-3. **Важно!** Перед продолжением отредактируйте **корневой `.env`**:
 ```bash
 DOCKER_ENV=dev
 APP_SECRET=your_random_secret_min_32_chars
-APP_PORT=8080
 DB_PASSWORD=your_secure_db_password
 JWT_PASSPHRASE=your_jwt_passphrase_min_32_chars
 ADMIN_EMAIL=your_admin@example.com
 ADMIN_PASSWORD=your_secure_admin_password
-VITE_API_URL=http://localhost:8080/api   # dev; demo: /api
+VITE_API_URL=http://localhost:8080/api   # demo: /api
 ```
 
-После правок: `make env` или любая команда `make build` / `make up` перегенерирует `backend/.env` и `frontend/.env`.
+После правок `make build` / `make up` сами перегенерируют `backend/.env` и `frontend/.env` — отдельный `./scripts/generate-env.sh` не нужен.
 
-**Примечание о портах:**
-- По умолчанию приложение доступно на порту 8080 (удобно для разработки, не требует sudo)
-- Для продакшена установите `APP_PORT=80` в `.env`
-- Nginx внутри контейнера всегда слушает стандартный порт 80
-- PostgreSQL работает только внутри Docker сети (порт не открыт наружу)
+- API: http://localhost:8080/api · UI: http://localhost:5173 · Swagger: http://localhost:8080/api/docs
+- Demo seed: при первом `up` entrypoint php загружает demo-данные (`--if-missing`); пересоздать — `make seed-demo`
+- Альтернатива без паузы: `make build && make up && make install && make migrate && make admin`
 
-4. Доступ к приложению (dev):
-   - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8080/api
-   - **Swagger UI**: http://localhost:8080/api/docs
+**Порты:** по умолчанию API на 8080; для продакшена — `APP_PORT=80`. PostgreSQL только внутри Docker-сети.
 
 ### Однопользовательский режим — один параметр
 
@@ -195,17 +178,16 @@ VITE_API_URL=http://localhost:8080/api   # dev; demo: /api
 
 ```bash
 cp .env.example .env   # DOCKER_ENV=dev
-./scripts/generate-env.sh
+make env
 
-mkdir -p volumes/otus_ai/postgres volumes/otus_ai/node_modules
 docker compose -f docker-compose.yml -f docker-compose.dev.yml build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# node сам выполняет npm install при старте; entrypoint php — migrate + demo seed --if-missing
 
 docker compose exec php composer install --no-interaction
-docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 docker compose exec php bin/console app:create-admin
-# demo-данные (опционально):
-docker compose exec php bin/console app:seed-demo-data
+# пересоздать demo-данные (опционально):
+docker compose exec php bin/console app:seed-demo-data --force
 ```
 
 ### CI: сборка артефактов
@@ -422,12 +404,13 @@ docker compose exec node npm run test:watch
 
 ## Demo-данные
 
-**Prod/demo:** загружаются автоматически при `docker compose up` (entrypoint php: `app:seed-demo-data --if-missing`), если `APP_AUTH_ENABLED=true`.
+При `APP_AUTH_ENABLED=true` demo-данные загружаются автоматически при первом `docker compose up` (entrypoint php: `app:seed-demo-data --if-missing`) — и в demo, и в dev.
 
-**Dev:** вручную:
+Пересоздать принудительно:
 
 ```bash
-docker compose exec php php bin/console app:seed-demo-data
+make seed-demo
+# или: docker compose exec php bin/console app:seed-demo-data --force
 ```
 
 | Email | Пароль | Вселенная |

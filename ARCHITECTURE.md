@@ -190,9 +190,9 @@ otus-ai-app/
 ├── docker/
 │   ├── nginx/
 │   └── php/
-├── volumes/                    # node_modules (Docker volume для frontend)
-├── docker-compose.yml          # (фаза 21) prod/demo по умолчанию: postgres, php, nginx, cron
-├── docker-compose.dev.yml      # (фаза 21) overlay для разработки: + node (Vite)
+├── volumes/                    # данные Docker: volumes/${APP_NAME}/postgres, node_modules
+├── docker-compose.yml          # demo (DOCKER_ENV=demo): postgres, php, nginx, cron
+├── docker-compose.dev.yml      # overlay для DOCKER_ENV=dev: mount backend + node (Vite)
 ├── ARCHITECTURE.md
 ├── demoseed.md
 ├── REPORT.md
@@ -204,7 +204,7 @@ otus-ai-app/
 ### 1. Markdown редактор с живым предпросмотром
 
 - WYSIWYG markdown редактор на базе Milkdown (ProseMirror)
-- Разделённый вид: редактор слева, предпросмотр справа (переключаемый)
+- Режимы **edit** (WYSIWYG) и **preview** (read-only) — переключение, без split-pane (редактор и превью не одновременно)
 - Подсветка синтаксиса для блоков кода
 - Поддержка загрузки изображений
 
@@ -517,9 +517,22 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 
 ## Варианты развёртывания (Docker)
 
-> Реализация: **фаза 19** (single-user), **фаза 21** (prod `docker-compose.yml`). Ниже целевая схема.
+> Реализация: **фаза 19** (single-user), **фаза 21** (demo `docker-compose.yml`).
 
-Режим задаётся **`DOCKER_ENV`** в корневом `.env` (`dev` | `demo`). Make (`make init`, `make build`, `make up`, …) подставляет нужный compose-файл автоматически.
+Режим задаётся **`DOCKER_ENV`** в корневом `.env` (`demo` — по умолчанию | `dev`). Make (`make init`, `make build`, `make up`, …) подставляет нужный compose-файл автоматически.
+
+### Конфигурация окружения
+
+Оператор редактирует **только корневой `.env`** (шаблон — `.env.example`). Скрипт `scripts/generate-env.sh` / `make env` создаёт:
+
+| Файл | Содержимое |
+|------|------------|
+| `backend/.env` | все переменные **кроме** `VITE_*` |
+| `frontend/.env` | только `VITE_*` (`VITE_AUTH_ENABLED` — из `APP_AUTH_ENABLED`, если не задан) |
+
+`make init`, `make build`, `make up` вызывают `make env` — отдельный запуск `generate-env.sh` не нужен. Каталоги `volumes/${APP_NAME}/…` создаёт `make volumes-init` (в `init`/`up`).
+
+Подключение Doctrine к PostgreSQL — отдельные переменные `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` (не `DATABASE_URL`).
 
 | | Demo (`DOCKER_ENV=demo`) | Dev (`DOCKER_ENV=dev`) |
 |---|------------|------------------|
@@ -528,30 +541,30 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 | Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev |
 | API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` |
 | Сборка фронта | `make frontend-dist` / CI → ветка `dist` | не обязательна (HMR) |
-| Назначение | сдача проекта, демо, staging | ежедневная разработка |
+| Bootstrap php | entrypoint: migrate + demo seed `--if-missing` / `ensure-single-user` | тот же entrypoint; `make init` дополнительно: composer, migrate, admin |
+| Назначение | сдача проекта, demo, staging | ежедневная разработка |
 
-`docker-compose.yml` — **demo** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + demo seed / ensure-single-user). Dev overlay — `docker-compose.dev.yml` + Vite `:5173`.
+`docker-compose.yml` — **demo** (без `node`; SPA из `frontend/dist` в образе `nginx`). Dev overlay — `docker-compose.dev.yml` + Vite `:5173`.
 
 ### Имена контейнеров и образов (`APP_NAME`)
 
 Корневой `.env`: **`APP_NAME`** (по умолчанию `otus_ai`) — префикс имён контейнеров, Docker-образов (`${APP_NAME}-php`, `${APP_NAME}-nginx`), сети (`${APP_NAME}_network`) и каталогов данных (`volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`). Поле `name:` в compose задаёт имя проекта.
 
-Параллельный запуск двух инстансов (например multi-user и single-user) — отдельные `.env` с разными `APP_NAME`, `APP_PORT`, `FRONTEND_PORT` и при необходимости `DB_NAME`:
+Параллельный запуск двух инстансов (например multi-user и single-user) — **отдельные клоны или git worktree** (общий рабочий каталог не подходит: один `backend/.env` / `frontend/.env` на диск). В каждом экземпляре свой корневой `.env` с разными `APP_NAME`, `APP_PORT`, `FRONTEND_PORT` и при необходимости `DB_NAME`:
 
 ```bash
-# multi-user на :8080
-cp .env.example .env.multi
+# в каталоге multi-user
+cp .env.example .env
 # APP_NAME=otus_ai, APP_AUTH_ENABLED=true, APP_PORT=8080
+make env && make init   # или make up
 
-# single-user на :8081
-cp .env.example .env.single
+# в отдельном каталоге single-user
+cp .env.example .env
 # APP_NAME=otus_single, APP_AUTH_ENABLED=false, APP_PORT=8081, FRONTEND_PORT=5174
-
-docker compose --env-file .env.multi up -d
-docker compose --env-file .env.single up -d
+make env && make init
 ```
 
-Команды через сервисные имена: `docker compose --env-file .env.single exec php …` (не зависят от `container_name`).
+Команды через сервисные имена: `docker compose exec php …` (не зависят от `container_name`).
 
 Каталоги данных создаёт `make volumes-init` (`volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`). При смене layout с `volumes/postgres` перенесите данные: `mv volumes/postgres volumes/otus_ai/postgres`.
 
@@ -559,10 +572,12 @@ docker compose --env-file .env.single up -d
 
 | | Multi-user (default) | Single-user |
 |---|---------------------|-------------|
-| Env | корневой `.env`: `APP_AUTH_ENABLED=true` | корневой `.env`: `APP_AUTH_ENABLED=false` (+ `VITE_*` из compose) |
+| Env | корневой `.env`: `APP_AUTH_ENABLED=true` | корневой `.env`: `APP_AUTH_ENABLED=false`; `VITE_AUTH_ENABLED` синхронизируется при `make env` |
 | API | JWT (Lexik) | `SingleUserAuthenticator` — каждый запрос от имени `SINGLE_USER_EMAIL` |
 | Пользователь | demo seed (`--if-missing`) / регистрация / `app:create-admin` | `app:ensure-single-user` (пустая база) |
 | UI | login, register, admin, logout | сразу dashboard; admin и пароль скрыты |
+
+При смене `APP_AUTH_ENABLED` для demo пересобрать `frontend/dist` (`make frontend-build` / CI) и образ nginx.
 
 ## Консольные команды
 
@@ -571,7 +586,7 @@ docker compose --env-file .env.single up -d
 | `app:reset-schema` | Удалить схему БД и применить миграции заново |
 | `app:ensure-single-user` | Создать единственного пользователя для `APP_AUTH_ENABLED=false` (idempotent) |
 | `app:create-admin` | Создать администратора из `ADMIN_EMAIL` / `ADMIN_PASSWORD` в `.env` |
-| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать; `--if-missing` — пропустить, если уже есть (bootstrap prod/demo) |
+| `app:seed-demo-data` | Загрузить demo-данные (3 вселенные); `--force` — пересоздать; `--if-missing` — пропустить, если уже есть (entrypoint php при каждом `up`) |
 | `app:cleanup-trash` | Удалить заметки из корзины старше `TRASH_RETENTION_DAYS` (default 30, cron ежедневно) |
 
 ### Demo seed (`app:seed-demo-data`)
@@ -588,12 +603,12 @@ docker compose --env-file .env.single up -d
 
 **Структура кода:** классы в `backend/src/DemoSeed/`; определения вселенных — `DemoSeed/Universe/*Universe.php`. Wiki-ссылки в контенте задаются плейсхолдерами `{{link:key}}` / `{{link:key|alias}}`, резолвятся в UUID при seed. При правке контента — перегенерация через `python3 backend/tools/build_universes.py` (встроенная проверка на смешение латиницы и кириллицы в одном слове).
 
-**Типичный сценарий dev/demo:**
+**Сброс и перезагрузка demo** (не нужно при первом `make init` / `up` — seed идёт автоматически):
 
 ```bash
-docker compose exec php php bin/console app:reset-schema
-docker compose exec php php bin/console app:seed-demo-data
-docker compose exec php php bin/console app:create-admin
+docker compose exec php bin/console app:reset-schema
+docker compose exec php bin/console app:seed-demo-data --force
+docker compose exec php bin/console app:create-admin
 ```
 
 ## Роли пользователей
