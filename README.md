@@ -4,6 +4,33 @@
 
 Многопользовательское веб-приложение для ведения персональной базы знаний с markdown-заметками, иерархическими папками, историей версий, wiki-ссылками, тегами и drag-and-drop организацией.
 
+## Содержание
+
+- [Текущий статус](#текущий-статус)
+- [Стек технологий](#стек-технологий)
+- [Быстрый старт](#быстрый-старт)
+  - [Требования](#требования)
+  - [Режим окружения (`DOCKER_ENV`)](#режим-окружения-docker_env)
+  - [Demo (`DOCKER_ENV=demo`)](#demo-docker_envdemo)
+  - [Dev (`DOCKER_ENV=dev`)](#dev-docker_envdev)
+  - [Однопользовательский режим](#однопользовательский-режим--один-параметр)
+  - [Dev без Make (docker compose)](#dev-без-make-docker-compose)
+  - [CI: сборка артефактов](#ci-сборка-артефактов)
+- [Процесс деплоя](#процесс-деплоя)
+  - [Способ 1 — docker compose (без Make)](#способ-1--docker-compose-без-make)
+  - [Способ 2 — Make](#способ-2--make)
+  - [Артефакты frontend (CI / ветка `dist`)](#артефакты-frontend-ci--ветка-dist)
+- [Структура проекта](#структура-проекта)
+- [Разработка](#разработка)
+  - [Makefile команды](#makefile-команды)
+  - [Frontend: `node_modules` и IDE](#frontend-node_modules-и-ide)
+  - [Прямые команды Docker (без Make)](#прямые-команды-docker-без-make)
+- [Тесты](#тесты)
+- [Demo-данные](#demo-данные)
+- [Документация](#документация)
+- [Swagger UI](#swagger-ui)
+- [Лицензия](#лицензия)
+
 ## Текущий статус
 
 Backend полностью функционален с JWT аутентификацией, API Platform, Doctrine ORM.
@@ -81,86 +108,14 @@ make init
 
 Администратор (опционально): `app:create-admin` — `ADMIN_EMAIL` / `ADMIN_PASSWORD` в корневом `.env`.
 
-#### Способ 1 — docker compose (без Make)
-
-```bash
-# 1. Env (DOCKER_ENV=demo в .env)
-cp .env.example .env
-# Отредактируйте .env: секреты, DB; для demo — VITE_API_URL=/api
-chmod +x scripts/generate-env.sh
-./scripts/generate-env.sh
-# JWT keys для demo не нужны на хосте — создаются в образе php при build и при старте контейнера
-
-# 2. Frontend-артефакты (frontend/dist) — нужны ДО сборки nginx
-git fetch origin dist
-git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
-
-# 3. Образы и контейнеры (каталог postgres создаётся при первом up)
-docker compose build
-docker compose up -d
-
-# 4. Дождаться bootstrap (migrate) — ~10 с
-docker compose logs php | tail -20
-
-# 5. (Опционально) администратор
-docker compose exec php bin/console app:create-admin
-```
-
-**Проверка:** откройте http://localhost:8080/ (после `make seed-demo-if-missing` — вход как `hogwarts@demo.local` / `demo1234`).
-
-**Что происходит при `docker compose up` (demo):**
-- **nginx** — раздаёт `frontend/dist` и проксирует `/api` в Symfony
-- **php (entrypoint)** — миграции; при `APP_AUTH_ENABLED=false` — `app:ensure-single-user`
-- **postgres** — БД в `volumes/${APP_NAME}/postgres/data` (`.gitkeep` — в родительском `postgres/`)
-
-**Смена `APP_AUTH_ENABLED`** → пересобрать `frontend/dist` и `docker compose build nginx`.
-
-#### Способ 2 — Make
-
-```bash
-cp .env.example .env
-# DOCKER_ENV=demo в .env
-make init   # env + frontend/dist + build + up + migrate (+ admin в dev)
-# опционально: make admin, make seed-demo-if-missing
-```
-
-`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + migrate (entrypoint). Demo seed — отдельно: `make seed-demo-if-missing`.
-
-#### Артефакты frontend (CI / ветка `dist`)
-
-На `main` каталог `frontend/dist` в `.gitignore`. CI ([`.github/workflows/build.yml`](.github/workflows/build.yml)) после успешного CI собирает dist и пушит в ветку **`dist`**.
-
-Локально dist подтягивается через `git restore --worktree` (только рабочая копия, без изменений в `git status` на `main`).
-
-Деплой с готовыми ассетами (без `npm` на сервере):
-
-```bash
-git pull origin main
-cp .env.example .env   # DOCKER_ENV=demo, секреты
-make env
-make frontend-dist
-docker compose build && docker compose up -d
-# опционально: make seed-demo-if-missing
-```
+Подробные шаги развёртывания — в разделе [Процесс деплоя](#процесс-деплоя).
 
 ### Dev (`DOCKER_ENV=dev`)
 
 ```bash
 cp .env.example .env
-# В .env: DOCKER_ENV=dev и секреты (см. ниже)
+# В .env: DOCKER_ENV=dev и секреты — см. .env.example (APP_SECRET, DB_PASSWORD, JWT_PASSPHRASE, ADMIN_*)
 make init   # пауза для правки .env → build, up, composer, migrate, admin
-```
-
-Минимум для правки в корневом `.env` перед Enter в `make init`:
-
-```bash
-DOCKER_ENV=dev
-APP_SECRET=your_random_secret_min_32_chars
-DB_PASSWORD=your_secure_db_password
-JWT_PASSPHRASE=your_jwt_passphrase_min_32_chars
-ADMIN_EMAIL=your_admin@example.com
-ADMIN_PASSWORD=your_secure_admin_password
-VITE_API_URL=http://localhost:8080/api   # demo: /api
 ```
 
 После правок `make build` / `make up` сами перегенерируют `backend/.env` и `frontend/.env` — отдельный `./scripts/generate-env.sh` не нужен.
@@ -202,6 +157,72 @@ Workflow [`.github/workflows/build.yml`](.github/workflows/build.yml) запус
 Тесты на PR/push — [`.github/workflows/ci.yml`](.github/workflows/ci.yml): PHPUnit, Vitest, `vue-tsc` (через `npm run build`), проверка сборки nginx. ESLint не подключён — typecheck через `vue-tsc`.
 
 **Настройка GitHub (один раз):** Settings → Actions → General → Workflow permissions → **Read and write permissions**. PR не создаётся — прямой push в `dist` (не требует «Allow GitHub Actions to create pull requests»).
+
+## Процесс деплоя
+
+Развёртывание demo-окружения (`DOCKER_ENV=demo`): статический SPA + API на одном порту.
+
+### Способ 1 — docker compose (без Make)
+
+```bash
+# 1. Env (DOCKER_ENV=demo в .env)
+cp .env.example .env
+# Отредактируйте .env: секреты, DB; для demo — VITE_API_URL=/api
+chmod +x scripts/generate-env.sh
+./scripts/generate-env.sh
+# JWT keys для demo не нужны на хосте — создаются в образе php при build и при старте контейнера
+
+# 2. Frontend-артефакты (frontend/dist) — нужны ДО сборки nginx
+git fetch origin dist
+git restore --source=origin/dist --worktree -- frontend/dist .dist-source-sha
+
+# 3. Образы и контейнеры (каталог postgres создаётся при первом up)
+docker compose build
+docker compose up -d
+
+# 4. Дождаться bootstrap (migrate) — ~10 с
+docker compose logs php | tail -20
+
+# 5. (Опционально) администратор
+docker compose exec php bin/console app:create-admin
+```
+
+**Проверка:** откройте http://localhost:8080/ (после `make seed-demo-if-missing` — вход как `hogwarts@demo.local` / `demo1234`).
+
+**Что происходит при `docker compose up` (demo):**
+- **nginx** — раздаёт `frontend/dist` и проксирует `/api` в Symfony
+- **php (entrypoint)** — миграции; при `APP_AUTH_ENABLED=false` — `app:ensure-single-user`
+- **postgres** — БД в `volumes/${APP_NAME}/postgres/data` (`.gitkeep` — в родительском `postgres/`)
+
+**Смена `APP_AUTH_ENABLED`** → пересобрать `frontend/dist` и `docker compose build nginx`.
+
+### Способ 2 — Make
+
+```bash
+cp .env.example .env
+# DOCKER_ENV=demo в .env
+make init   # env + frontend/dist + build + up + migrate (+ admin в dev)
+# опционально: make admin, make seed-demo-if-missing
+```
+
+`make init` при `DOCKER_ENV=demo` = `env` + `frontend-dist` + `docker compose build` + `up` + migrate (entrypoint). Demo seed — отдельно: `make seed-demo-if-missing`.
+
+### Артефакты frontend (CI / ветка `dist`)
+
+На `main` каталог `frontend/dist` в `.gitignore`. CI ([`.github/workflows/build.yml`](.github/workflows/build.yml)) после успешного CI собирает dist и пушит в ветку **`dist`**.
+
+Локально dist подтягивается через `git restore --worktree` (только рабочая копия, без изменений в `git status` на `main`).
+
+Деплой с готовыми ассетами (без `npm` на сервере):
+
+```bash
+git pull origin main
+cp .env.example .env   # DOCKER_ENV=demo, секреты
+make env
+make frontend-dist
+docker compose build && docker compose up -d
+# опционально: make seed-demo-if-missing
+```
 
 ## Структура проекта
 
@@ -250,7 +271,7 @@ otus-ai-app/
 
 Администратор создаётся автоматически при выполнении `make init` или `make admin` на основе переменных `ADMIN_EMAIL` и `ADMIN_PASSWORD` из `.env` файла.
 
-Для назначения роли администратора существующему пользователю используйте endpoint `PATCH /api/admin/users/{id}/promote`.
+Для назначения роли администратора существующему пользователю войдите под учётной записью с `ROLE_ADMIN` и откройте **Управление пользователями** в боковом меню (маршрут `/admin/users`) — кнопка «Сделать админом». Либо через API: `PATCH /api/admin/users/{id}/promote` (снять роль — `…/demote`).
 
 ## Разработка
 
