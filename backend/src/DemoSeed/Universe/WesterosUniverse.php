@@ -32,12 +32,17 @@ final class WesterosUniverse
                 'драконы',
                 'ночной-дозор',
                 'совет',
+                'трон',
+                'зима',
+                'корона',
+                'предательство',
+                'долг',
             ],
             notes: [
                 new DemoNoteDefinition(
                     key: 'seal',
                     title: 'Печать: зима близка',
-                    tags: ['дом', 'север', 'совет'],
+                    tags: ['дом', 'север', 'совет', 'зима'],
                     isFavorite: true,
                     updatedAtOffset: '-2 hours',
                     content: <<<'MD'
@@ -98,7 +103,7 @@ MD,
                 new DemoNoteDefinition(
                     key: 'nights-oath',
                     title: 'Клятва ночной стражи',
-                    tags: ['ночной-дозор', 'север'],
+                    tags: ['ночной-дозор', 'север', 'долг'],
                     updatedAtOffset: '-10 days',
                     content: <<<'MD'
 ## Клятва
@@ -130,7 +135,7 @@ MD,
                     key: 'bolton',
                     title: 'Дом Болтоны',
                     folderPath: 'Дома/Север',
-                    tags: ['дом', 'север', 'интрига'],
+                    tags: ['дом', 'север', 'интрига', 'предательство'],
                     updatedAtOffset: '-11 days',
                     content: <<<'MD'
 ## Болтоны
@@ -204,7 +209,7 @@ MD,
                     key: 'ned',
                     title: 'Ned Stark',
                     folderPath: 'Персонажи',
-                    tags: ['персонаж', 'север'],
+                    tags: ['персонаж', 'север', 'долг'],
                     isFavorite: true,
                     updatedAtOffset: '-4 days',
                     content: <<<'MD'
@@ -328,7 +333,7 @@ MD,
                     key: 'baelish',
                     title: 'Petyr Baelish',
                     folderPath: 'Персонажи',
-                    tags: ['персонаж', 'интрига'],
+                    tags: ['персонаж', 'интрига', 'предательство'],
                     updatedAtOffset: '-8 days',
                     content: <<<'MD'
 ## Мизинец
@@ -489,7 +494,7 @@ MD,
                     key: 'red-wedding',
                     title: 'Red Wedding',
                     folderPath: 'Интриги',
-                    tags: ['интрига', 'война', 'север'],
+                    tags: ['интрига', 'война', 'север', 'предательство'],
                     updatedAtOffset: '-5 days',
                     content: <<<'MD'
 ## Красная свадьба
@@ -568,7 +573,7 @@ MD,
                 new DemoNoteDefinition(
                     key: 'iron-throne',
                     title: 'Iron Throne',
-                    tags: ['локация', 'интрига', 'война'],
+                    tags: ['локация', 'интрига', 'война', 'трон', 'корона'],
                     updatedAtOffset: '-4 days',
                     content: <<<'MD'
 ## Железный трон
@@ -601,7 +606,7 @@ MD,
                 new DemoNoteDefinition(
                     key: 'joffrey',
                     title: 'Joffrey Baratheon',
-                    tags: ['персонаж', 'интрига', 'юг'],
+                    tags: ['персонаж', 'интрига', 'юг', 'корона'],
                     updatedAtOffset: '-7 days',
                     content: <<<'MD'
 ## Джоффри

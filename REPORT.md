@@ -1330,6 +1330,18 @@ docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 
 ---
 
+## Compliance C5: 15 тегов в demo seed (2026-06-20)
+
+**Проблема:** ТЗ требует 15 тегов на demo-пользователя; в seed было 10 на вселенную.
+
+**Решение:** в `PotterUniverse`, `WesterosUniverse`, `WitcherUniverse` добавлены по 5 тематических тегов в словарь и назначены существующим заметкам. `app:seed-demo-data --force` выводит `Тегов: 15` для каждой вселенной.
+
+**Smoke:** `for_tests.md` § Compliance C5 — подтверждено 2026-06-20.
+
+**Затронутые файлы:** `backend/src/DemoSeed/Universe/*Universe.php`, `demoseed.md`.
+
+---
+
 ## JWT 500 на login после dev bind-mount (2026-06-20)
 
 **Проблема:** `POST /api/auth/login` → 500, `JWTEncodeFailureException` — нет `backend/config/jwt/*.pem`. В dev overlay `./backend:/var/www/backend` перекрывает ключи из Docker-образа; каталог gitignored.

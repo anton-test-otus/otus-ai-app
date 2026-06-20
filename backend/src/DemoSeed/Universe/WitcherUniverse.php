@@ -31,6 +31,11 @@ final class WitcherUniverse
                 'монстрология',
                 'ведьмаки',
                 'легенда',
+                'судьба',
+                'монстр',
+                'серебро',
+                'мутация',
+                'путь',
             ],
             notes: [
                 new DemoNoteDefinition(
@@ -71,7 +76,7 @@ MD,
                 new DemoNoteDefinition(
                     key: 'law-of-surprise',
                     title: 'Закон неожиданности',
-                    tags: ['легенда', 'ведьмак'],
+                    tags: ['легенда', 'ведьмак', 'судьба'],
                     isFavorite: true,
                     updatedAtOffset: '-5 days',
                     content: <<<'MD'
@@ -187,7 +192,7 @@ MD,
                     key: 'ciri',
                     title: 'Ciri',
                     folderPath: 'Ведьмаки',
-                    tags: ['легенда', 'ведьмаки'],
+                    tags: ['легенда', 'ведьмаки', 'судьба'],
                     isFavorite: true,
                     updatedAtOffset: '-3 days',
                     content: <<<'MD'
@@ -255,7 +260,7 @@ MD,
                     key: 'griffin',
                     title: 'Griffin',
                     folderPath: 'Чудовища',
-                    tags: ['чудовище', 'контракт'],
+                    tags: ['чудовище', 'контракт', 'монстр'],
                     updatedAtOffset: '-8 days',
                     content: <<<'MD'
 ## Грифон
@@ -291,7 +296,7 @@ MD,
                     key: 'werewolf',
                     title: 'Werewolf',
                     folderPath: 'Чудовища',
-                    tags: ['чудовище'],
+                    tags: ['чудовище', 'монстр', 'серебро'],
                     updatedAtOffset: '-11 days',
                     content: <<<'MD'
 ## Оборотень
@@ -363,7 +368,7 @@ MD,
                     key: 'kaer-morhen',
                     title: 'Kaer Morhen',
                     folderPath: 'Локации/Королевства',
-                    tags: ['локация', 'ведьмаки'],
+                    tags: ['локация', 'ведьмаки', 'мутация'],
                     updatedAtOffset: '-8 days',
                     content: <<<'MD'
 ## Каэр Морхен
@@ -459,7 +464,7 @@ MD,
                     key: 'griffin-hunt',
                     title: 'Охота на грифона',
                     folderPath: 'Квесты',
-                    tags: ['квест', 'чудовище', 'контракт'],
+                    tags: ['квест', 'чудовище', 'контракт', 'путь'],
                     updatedAtOffset: '-4 days',
                     content: <<<'MD'
 ## Охота
@@ -483,7 +488,7 @@ MD,
                     key: 'baron-quest',
                     title: 'Bloody Baron',
                     folderPath: 'Квесты',
-                    tags: ['квест', 'локация'],
+                    tags: ['квест', 'локация', 'путь'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Кровавый барон

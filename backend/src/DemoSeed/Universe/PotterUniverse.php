@@ -32,12 +32,17 @@ final class PotterUniverse
                 'квиддич',
                 'учебник',
                 'гриффиндор',
+                'школа',
+                'магия',
+                'смерть',
+                'дружба',
+                'пророчество',
             ],
             notes: [
                 new DemoNoteDefinition(
                     key: 'guide',
                     title: 'Краткий путеводитель',
-                    tags: ['хогвартс', 'учебник'],
+                    tags: ['хогвартс', 'учебник', 'школа'],
                     isFavorite: true,
                     updatedAtOffset: '-2 hours',
                     content: <<<'MD'
@@ -226,7 +231,7 @@ MD,
                     key: 'harry',
                     title: 'Гарри Поттер',
                     folderPath: 'Персонажи',
-                    tags: ['персонаж', 'гриффиндор'],
+                    tags: ['персонаж', 'гриффиндор', 'дружба', 'пророчество'],
                     isFavorite: true,
                     updatedAtOffset: '-3 days',
                     content: <<<'MD'
@@ -289,7 +294,7 @@ MD,
                     key: 'ron',
                     title: 'Рон Уизли',
                     folderPath: 'Персонажи',
-                    tags: ['персонаж', 'гриффиндор', 'квиддич'],
+                    tags: ['персонаж', 'гриффиндор', 'квиддич', 'дружба'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Рон Уизли
@@ -397,7 +402,7 @@ MD,
                     key: 'expelliarmus',
                     title: 'Expelliarmus',
                     folderPath: 'Заклинания',
-                    tags: ['заклинание', 'гриффиндор'],
+                    tags: ['заклинание', 'гриффиндор', 'магия'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Expelliarmus
@@ -411,7 +416,7 @@ MD,
                     key: 'patronus',
                     title: 'Patronus',
                     folderPath: 'Заклинания',
-                    tags: ['заклинание', 'гриффиндор'],
+                    tags: ['заклинание', 'гриффиндор', 'магия'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Expecto Patronum
@@ -425,7 +430,7 @@ MD,
                     key: 'lumos',
                     title: 'Lumos',
                     folderPath: 'Заклинания',
-                    tags: ['заклинание'],
+                    tags: ['заклинание', 'магия'],
                     updatedAtOffset: '-15 days',
                     content: <<<'MD'
 ## Lumos
@@ -491,7 +496,7 @@ MD,
                     key: 'elder-wand',
                     title: 'Старейшая палочка',
                     folderPath: 'Артефакты',
-                    tags: ['артефакт', 'тёмная-магия'],
+                    tags: ['артефакт', 'тёмная-магия', 'смерть'],
                     updatedAtOffset: '-5 days',
                     content: <<<'MD'
 ## Старейшая палочка
@@ -515,7 +520,7 @@ MD,
                     key: 'deathly-hallows',
                     title: 'Дары Смерти',
                     folderPath: 'Артефакты',
-                    tags: ['артефакт', 'хогвартс'],
+                    tags: ['артефакт', 'хогвартс', 'смерть'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Дары Смерти
@@ -529,7 +534,7 @@ MD,
                     key: 'horcruxes',
                     title: 'Крестражи',
                     folderPath: 'Артефакты',
-                    tags: ['артефакт', 'тёмная-магия'],
+                    tags: ['артефакт', 'тёмная-магия', 'смерть'],
                     updatedAtOffset: '-5 days',
                     content: <<<'MD'
 ## Крестражи
@@ -571,7 +576,7 @@ MD,
                     key: 'philosophers-stone-event',
                     title: 'События камня',
                     folderPath: 'События',
-                    tags: ['событие', 'гриффиндор'],
+                    tags: ['событие', 'гриффиндор', 'дружба'],
                     updatedAtOffset: '-8 days',
                     content: <<<'MD'
 ## Охота за камнем
@@ -609,7 +614,7 @@ MD,
                 new DemoNoteDefinition(
                     key: 'hogwarts-castle',
                     title: 'Хогвартс',
-                    tags: ['хогвартс', 'событие'],
+                    tags: ['хогвартс', 'событие', 'школа'],
                     updatedAtOffset: '-6 days',
                     content: <<<'MD'
 ## Хогвартс
