@@ -1,18 +1,20 @@
-# Production / demo: SPA из frontend/dist (сборка: make frontend-build / CI) + API (без сервиса node).
-# Разработка с Vite: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Demo (DOCKER_ENV=demo): SPA из frontend/dist + API, без сервиса node.
+# Dev: make up при DOCKER_ENV=dev (overlay docker-compose.dev.yml + Vite :5173)
+
+name: ${APP_NAME:-otus_ai}
 
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: otus_postgres
+    container_name: ${APP_NAME:-otus_ai}_postgres
     environment:
       POSTGRES_DB: ${DB_NAME:-otus_ai_db}
       POSTGRES_USER: ${DB_USER:-otus_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-otus_password}
     volumes:
-      - ./volumes/postgres:/var/lib/postgresql/data
+      - ./volumes/${APP_NAME:-otus_ai}/postgres:/var/lib/postgresql/data
     networks:
-      - otus_network
+      - app_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-otus_user} -d ${DB_NAME:-otus_ai_db}"]
       interval: 10s
@@ -23,8 +25,8 @@ services:
     build:
       context: .
       dockerfile: docker/php/Dockerfile
-    image: otus-ai-app-php
-    container_name: otus_php
+    image: ${APP_NAME:-otus_ai}-php
+    container_name: ${APP_NAME:-otus_ai}_php
     working_dir: /var/www/backend
     env_file:
       - ./backend/.env
@@ -37,23 +39,24 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - otus_network
+      - app_network
 
   nginx:
     build:
       context: .
       dockerfile: docker/nginx/Dockerfile
-    container_name: otus_nginx
+    image: ${APP_NAME:-otus_ai}-nginx
+    container_name: ${APP_NAME:-otus_ai}_nginx
     ports:
       - "${APP_PORT:-8080}:80"
     depends_on:
       - php
     networks:
-      - otus_network
+      - app_network
 
   cron:
-    image: otus-ai-app-php
-    container_name: otus_cron
+    image: ${APP_NAME:-otus_ai}-php
+    container_name: ${APP_NAME:-otus_ai}_cron
     working_dir: /var/www/backend
     env_file:
       - ./backend/.env
@@ -68,10 +71,11 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - otus_network
+      - app_network
     command: >
       sh -c "echo '0 0 * * * cd /var/www/backend && php bin/console app:cleanup-trash >> /var/log/cron.log 2>&1' | crontab - && crond -f -l 2"
 
 networks:
-  otus_network:
+  app_network:
+    name: ${APP_NAME:-otus_ai}_network
     driver: bridge

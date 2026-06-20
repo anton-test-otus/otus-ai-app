@@ -3996,3 +3996,51 @@ Ctrl + N создаёт новое окно в браузере. Проверь 
 **Результат:** подключение к БД только через отдельные переменные; DSN не хранится в env.
 
 ---
+
+## Промпт 210
+
+Добавь параметр в энвы APP_NAME (в .env.example проставь otus_ai). Используй этот энв для генерации образов и имени контейнеров (чтобы можно было поднять разные версии приложений - к примеру single и multi-user одновременно)
+
+**Результат:**
+
+- `.env.example` — `APP_NAME=otus_ai` (префикс контейнеров, образов, сети compose)
+- `docker-compose.yml` / `docker-compose.dev.yml` — `${APP_NAME}` для `name:`, `container_name`, `image`, сети `app_network`
+- `Makefile`, `README.md`, `REPORT.md` — `docker compose exec` по имени сервиса вместо хардкода `otus_*`
+- `ARCHITECTURE.md` — сценарий параллельного запуска через `--env-file` и разные `APP_NAME` / порты
+
+---
+
+## Промпт 211
+
+Добавь отдельные пути volume (тем более что директория volumes уже есть, можно добавить вольюмы сюда - при необходимости помести .gitkeep в них)
+
+**Результат:**
+
+- `docker-compose.yml` / `docker-compose.dev.yml` — `./volumes/${APP_NAME}/postgres` и `./volumes/${APP_NAME}/node_modules`
+- `Makefile` — `VOLUME_DIR = volumes/$(APP_NAME)` для `volumes-init` и `clean`
+- `volumes/otus_ai/postgres/.gitkeep`, `volumes/otus_ai/node_modules/.gitkeep`; `.gitignore` — разрешает `volumes/*/*/.gitkeep`
+- Документация (README, ARCHITECTURE, docker-packages, frontend/README) — обновлены пути
+
+---
+
+## Промпт 212
+
+Доработай окружение. Добавь параметр DOCKER_ENV=demo|dev
+make init должен запускать свой вариант деплоя в зависимости от этого параметра (без необходимости дублирования init-dev|init-prod, build-dev|build, и т.д.)
+обнови документацию.
+
+**Результат:**
+
+- `.env.example` — `DOCKER_ENV=dev|demo`
+- `Makefile` — `COMPOSE` по `DOCKER_ENV`; единые `init`, `build`, `up`, `down`, …; алиасы `init-dev`/`init-prod`/`build-dev`/`up-dev`
+- `README.md`, `ARCHITECTURE.md`, `frontend/README.md`, `REPORT.md` — описание режимов и одной команды `make init`
+
+---
+
+## Промпт 213
+
+> по умолчанию должно быть DOCKER_ENV=demo, не dev
+
+**Результат:** default в `.env.example`, fallback в `Makefile` и документации — `demo`.
+
+---

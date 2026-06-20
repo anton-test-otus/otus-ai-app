@@ -1,5 +1,5 @@
-# Dev overlay: hot reload backend + Vite на :5173 (поверх docker-compose.yml).
-# Запуск: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+# Dev overlay (DOCKER_ENV=dev): hot reload backend + Vite на :5173.
+# Запуск: make up  или  docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d
 
 services:
   php:
@@ -15,15 +15,15 @@ services:
 
   node:
     image: node:22-alpine
-    container_name: otus_node
+    container_name: ${APP_NAME:-otus_ai}_node
     working_dir: /app
     volumes:
       - ./frontend:/app
-      - ./volumes/node_modules:/app/node_modules
+      - ./volumes/${APP_NAME:-otus_ai}/node_modules:/app/node_modules
     ports:
       - "${FRONTEND_PORT:-5173}:5173"
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     networks:
-      - otus_network
+      - app_network
     env_file:
       - ./frontend/.env

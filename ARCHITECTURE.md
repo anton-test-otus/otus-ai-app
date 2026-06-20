@@ -519,16 +519,41 @@ Query: `page`, `perPage` (search) или `perPage` (admin).
 
 > Реализация: **фаза 19** (single-user), **фаза 21** (prod `docker-compose.yml`). Ниже целевая схема.
 
-| | Демо / продакшен (по умолчанию) | Разработка |
+Режим задаётся **`DOCKER_ENV`** в корневом `.env` (`dev` | `demo`). Make (`make init`, `make build`, `make up`, …) подставляет нужный compose-файл автоматически.
+
+| | Demo (`DOCKER_ENV=demo`) | Dev (`DOCKER_ENV=dev`) |
 |---|------------|------------------|
-| Compose | `docker-compose.yml` | `docker-compose.dev.yml` (overlay) или profile `dev` |
-| Запуск | `docker compose up -d` — готовое приложение по ТЗ | `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d` |
-| Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev (`5173`) |
-| API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` (как сейчас) |
-| Сборка фронта | `make frontend-build` / CI [`build.yml`](.github/workflows/build.yml) → ветка `dist` | не обязательна (HMR) |
+| Compose | `docker-compose.yml` | `docker-compose.yml` + `docker-compose.dev.yml` |
+| Запуск | `make up` → готовое приложение на `:8080` | `make up` → API `:8080`, Vite `:5173` |
+| Frontend | **без** `node`; статика из `frontend/dist` | сервис `node`: `npm install` + Vite dev |
+| API + SPA | один nginx (`APP_PORT`): `/api` → PHP, `/` → `dist` | API `:8080`, UI `:5173` |
+| Сборка фронта | `make frontend-dist` / CI → ветка `dist` | не обязательна (HMR) |
 | Назначение | сдача проекта, демо, staging | ежедневная разработка |
 
-Текущий `docker-compose.yml` — **prod/demo по умолчанию** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + demo seed / ensure-single-user). Dev: `docker-compose.dev.yml` + Vite `:5173`. Сборка `dist` — локально `make frontend-build` или CI (`.github/workflows/build.yml` → ветка `dist`).
+`docker-compose.yml` — **demo** (без `node`; SPA из `frontend/dist` в образе `nginx`, entrypoint php: migrate + demo seed / ensure-single-user). Dev overlay — `docker-compose.dev.yml` + Vite `:5173`.
+
+### Имена контейнеров и образов (`APP_NAME`)
+
+Корневой `.env`: **`APP_NAME`** (по умолчанию `otus_ai`) — префикс имён контейнеров, Docker-образов (`${APP_NAME}-php`, `${APP_NAME}-nginx`), сети (`${APP_NAME}_network`) и каталогов данных (`volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`). Поле `name:` в compose задаёт имя проекта.
+
+Параллельный запуск двух инстансов (например multi-user и single-user) — отдельные `.env` с разными `APP_NAME`, `APP_PORT`, `FRONTEND_PORT` и при необходимости `DB_NAME`:
+
+```bash
+# multi-user на :8080
+cp .env.example .env.multi
+# APP_NAME=otus_ai, APP_AUTH_ENABLED=true, APP_PORT=8080
+
+# single-user на :8081
+cp .env.example .env.single
+# APP_NAME=otus_single, APP_AUTH_ENABLED=false, APP_PORT=8081, FRONTEND_PORT=5174
+
+docker compose --env-file .env.multi up -d
+docker compose --env-file .env.single up -d
+```
+
+Команды через сервисные имена: `docker compose --env-file .env.single exec php …` (не зависят от `container_name`).
+
+Каталоги данных создаёт `make volumes-init` (`volumes/${APP_NAME}/postgres`, `volumes/${APP_NAME}/node_modules`). При смене layout с `volumes/postgres` перенесите данные: `mv volumes/postgres volumes/otus_ai/postgres`.
 
 ### Режим аутентификации
 

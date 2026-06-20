@@ -119,7 +119,7 @@ JWT ключи (private.pem, public.pem) генерировались вручн
 
 Для прямого доступа к БД в целях отладки можно использовать:
 ```bash
-docker exec -it otus_postgres psql -U otus_user -d otus_ai_db
+docker compose exec postgres psql -U otus_user -d otus_ai_db
 ```
 
 ---
@@ -252,7 +252,7 @@ docker exec -it otus_postgres psql -U otus_user -d otus_ai_db
 ```bash
 docker compose down -v
 docker compose up -d
-docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
+docker compose exec php bin/console doctrine:migrations:migrate --no-interaction
 ```
 
 **Результат:**
@@ -1239,3 +1239,16 @@ docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
 - README, `PHASES.md`, `ARCHITECTURE.md` — без упоминаний GHCR
 
 **Затронутые файлы:** `.github/workflows/build.yml`, `README.md`, `PHASES.md`, `ARCHITECTURE.md`, `REPORT.md`.
+
+---
+
+## DOCKER_ENV: единый Makefile для dev и demo (2026-06-20)
+
+**Задача:** убрать дублирование `init-dev`/`init-prod`, `build-dev`/`build`, `up-dev`/`up`.
+
+**Решение:**
+- В корневом `.env`: **`DOCKER_ENV=dev|demo`** (default **`demo`**) — выбор compose-стека
+- `make init`, `make build`, `make up`, `make down`, … читают `DOCKER_ENV` и подставляют `docker-compose.dev.yml` только для `dev`
+- `init-prod` / `init-dev` / `build-dev` / `up-dev` — тонкие алиасы с override `DOCKER_ENV`
+
+**Затронутые файлы:** `Makefile`, `.env.example`, `docker-compose.yml`, `docker-compose.dev.yml`, `README.md`, `ARCHITECTURE.md`, `frontend/README.md`.

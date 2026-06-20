@@ -1,17 +1,31 @@
 .PHONY: help init init-prod init-dev build build-dev up up-dev down restart status logs install migrate schema-reset seed-demo admin cache-clear test db-test frontend-test clean frontend-install frontend-build frontend-dist frontend-dev frontend-kill frontend-restart volumes-init console-php console-nginx console-cron console-postgres ensure-single-user sync-dist env
 
+# DOCKER_ENV из корневого .env (dev | demo) или override: make up DOCKER_ENV=demo
+DOCKER_ENV ?= $(shell grep -E '^DOCKER_ENV=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//')
+DOCKER_ENV := $(if $(filter demo dev,$(strip $(DOCKER_ENV))),$(strip $(DOCKER_ENV)),demo)
+
+ifeq ($(DOCKER_ENV),dev)
+COMPOSE = docker compose -f docker-compose.yml -f docker-compose.dev.yml
+else
+COMPOSE = docker compose
+endif
+
+# Dev overlay для frontend-* (node), даже если основной стек в demo
 COMPOSE_DEV = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
+# APP_NAME из корневого .env (default: otus_ai)
+APP_NAME := $(shell grep -E '^APP_NAME=' .env 2>/dev/null | head -1 | cut -d= -f2- | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$$//')
+APP_NAME := $(if $(strip $(APP_NAME)),$(APP_NAME),otus_ai)
+VOLUME_DIR = volumes/$(APP_NAME)
+
 help:
+	@echo "DOCKER_ENV=$(DOCKER_ENV) (dev | demo — в корневом .env или make … DOCKER_ENV=demo)"
+	@echo ""
 	@echo "Доступные команды:"
 	@echo "  make env              - Сгенерировать backend/.env и frontend/.env из корневого .env"
-	@echo "  make init-prod        - Prod/demo: .env, dist (CI или build), up (migrate + demo seed)"
-	@echo "  make init-dev         - Dev: backend .env, overlay с node/Vite (бывший make init)"
-	@echo "  make init             - Alias для make init-dev"
-	@echo "  make build            - Сборка prod Docker образов (php + nginx; нужен frontend/dist)"
-	@echo "  make build-dev        - Сборка с dev overlay"
-	@echo "  make up               - Запуск prod (один URL :8080, SPA + API)"
-	@echo "  make up-dev           - Запуск dev (API :8080, Vite :5173)"
+	@echo "  make init             - Первичная настройка (режим из DOCKER_ENV: dev или demo)"
+	@echo "  make build            - Сборка Docker-образов (compose по DOCKER_ENV)"
+	@echo "  make up               - Запуск контейнеров (dev: API :8080 + Vite :5173; demo: :8080)"
 	@echo "  make down             - Остановка контейнеров"
 	@echo "  make restart          - Перезапуск контейнеров"
 	@echo "  make status           - Статус контейнеров проекта"
@@ -39,125 +53,127 @@ help:
 	@echo "  make clean            - Удаление всех контейнеров, образов и volumes"
 
 volumes-init:
-	@mkdir -p volumes/postgres volumes/node_modules
+	@mkdir -p $(VOLUME_DIR)/postgres $(VOLUME_DIR)/node_modules
 
-init-dev: volumes-init
-	@echo "Инициализация dev-окружения (Vite + mount backend)..."
+init: volumes-init
+	@echo "Инициализация окружения DOCKER_ENV=$(DOCKER_ENV)..."
 	@if [ ! -f .env ]; then cp .env.example .env; fi
 	@$(MAKE) env
-	@echo "ВАЖНО: Отредактируйте корневой .env (секреты, пароли)"
+	@if [ "$(DOCKER_ENV)" = "demo" ]; then \
+		sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' frontend/.env; \
+		echo "Проверьте корневой .env (APP_AUTH_ENABLED, секреты, DB)"; \
+	else \
+		echo "ВАЖНО: Отредактируйте корневой .env (секреты, пароли)"; \
+	fi
 	@echo "Нажмите Enter для продолжения..."
 	@read dummy
-	@$(MAKE) build-dev
-	@$(MAKE) up-dev
-	@echo "Ожидание PostgreSQL..."
-	@sleep 5
-	@$(MAKE) install
-	@$(MAKE) migrate
-	@$(MAKE) admin
-	@echo ""
-	@echo "✅ Dev окружение готово"
-	@echo "🌐 API: http://localhost:8080/api"
-	@echo "💻 UI:  http://localhost:5173"
-
-init-prod: volumes-init
-	@echo "Инициализация prod/demo (static SPA, без node)..."
-	@if [ ! -f .env ]; then cp .env.example .env; fi
-	@$(MAKE) env
-	@sed -i 's|^VITE_API_URL=.*|VITE_API_URL=/api|' frontend/.env
-	@echo "Проверьте корневой .env (APP_AUTH_ENABLED, секреты, DB)"
-	@echo "Нажмите Enter для продолжения..."
-	@read dummy
-	@$(MAKE) frontend-dist
+	@if [ "$(DOCKER_ENV)" = "demo" ]; then $(MAKE) frontend-dist; fi
 	@$(MAKE) build
 	@$(MAKE) up
-	@echo "Ожидание bootstrap (migrate + demo seed / ensure-single-user)..."
-	@sleep 8
-	@echo ""
-	@echo "✅ Prod/demo окружение: http://localhost:$${APP_PORT:-8080}/"
-	@echo "   Demo: hogwarts@demo.local / westeros@demo.local / witcher@demo.local — пароль demo1234"
+	@if [ "$(DOCKER_ENV)" = "demo" ]; then \
+		echo "Ожидание bootstrap (migrate + demo seed / ensure-single-user)..."; \
+		sleep 8; \
+		echo ""; \
+		echo "✅ Demo окружение: http://localhost:$${APP_PORT:-8080}/"; \
+		echo "   Demo: hogwarts@demo.local / westeros@demo.local / witcher@demo.local — пароль demo1234"; \
+	else \
+		echo "Ожидание PostgreSQL..."; \
+		sleep 5; \
+		$(MAKE) install; \
+		$(MAKE) migrate; \
+		$(MAKE) admin; \
+		echo ""; \
+		echo "✅ Dev окружение готово"; \
+		echo "🌐 API: http://localhost:8080/api"; \
+		echo "💻 UI:  http://localhost:5173"; \
+	fi
 
-init: init-dev
+# Обратная совместимость
+init-dev:
+	@$(MAKE) init DOCKER_ENV=dev
+
+init-prod:
+	@$(MAKE) init DOCKER_ENV=demo
 
 env:
 	@chmod +x scripts/generate-env.sh
 	@./scripts/generate-env.sh
 
 build: env
-	docker compose build
+	$(COMPOSE) build
 
-build-dev: env
-	$(COMPOSE_DEV) build
+build-dev:
+	@$(MAKE) build DOCKER_ENV=dev
 
 rebuild:
-	docker compose build --no-cache
+	$(COMPOSE) build --no-cache
 
 up: env volumes-init
-	docker compose up -d
+	$(COMPOSE) up -d
 
-up-dev: env volumes-init
-	$(COMPOSE_DEV) up -d
+up-dev:
+	@$(MAKE) up DOCKER_ENV=dev
 
 down:
-	docker compose down
+	$(COMPOSE) down
 
 restart:
 	@$(MAKE) down
 	@$(MAKE) up
 
 status:
-	@docker compose ps
+	@$(COMPOSE) ps
 
 logs:
-	docker compose logs -f
+	$(COMPOSE) logs -f
 
 console-php:
-	docker exec -it otus_php sh
+	$(COMPOSE) exec php sh
 
 console-nginx:
-	docker exec -it otus_nginx sh
+	$(COMPOSE) exec nginx sh
 
 console-cron:
-	docker exec -it otus_cron sh
+	$(COMPOSE) exec cron sh
 
 console-postgres:
-	docker exec -it otus_postgres sh
+	$(COMPOSE) exec postgres sh
 
 install:
-	docker exec otus_php composer install --no-interaction
+	$(COMPOSE) exec php composer install --no-interaction
 
 migrate:
-	docker exec otus_php bin/console doctrine:migrations:migrate --no-interaction
+	$(COMPOSE) exec php bin/console doctrine:migrations:migrate --no-interaction
 
 db-test:
-	docker exec otus_php bin/console doctrine:database:create --env=test --if-not-exists
+	$(COMPOSE) exec php bin/console doctrine:database:create --env=test --if-not-exists
 
 schema-reset:
 	@echo "⚠️  Очистка схемы БД и повторное применение миграций..."
-	docker exec otus_php bin/console app:reset-schema
+	$(COMPOSE) exec php bin/console app:reset-schema
 	@echo "✅ Схема пересоздана"
 
 seed-demo:
 	@echo "Загрузка demo-данных..."
-	@docker exec otus_php bin/console app:seed-demo-data --force
+	@$(COMPOSE) exec php bin/console app:seed-demo-data --force
 
 admin:
 	@echo "Создание администратора..."
-	@docker exec otus_php bin/console app:create-admin
+	@$(COMPOSE) exec php bin/console app:create-admin
 
 cache-clear:
-	docker exec otus_php bin/console cache:clear
+	$(COMPOSE) exec php bin/console cache:clear
 
 test: db-test
-	docker exec otus_php bin/phpunit
+	$(COMPOSE) exec php bin/phpunit
 
 frontend-test:
 	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
-	docker exec otus_node npm test
+	$(COMPOSE_DEV) exec node npm test
 
 frontend-install:
 	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
-	docker exec otus_node npm install
+	$(COMPOSE_DEV) exec node npm install
 
 frontend-build: env
 	@echo "Сборка frontend/dist..."
@@ -198,11 +214,11 @@ sync-dist:
 frontend-dev:
 	@echo "Запуск Vite dev server..."
 	@$(COMPOSE_DEV) up -d node 2>/dev/null || true
-	docker exec -it otus_node sh -c "cd /app && npm run dev"
+	$(COMPOSE_DEV) exec node sh -c "cd /app && npm run dev"
 
 frontend-kill:
 	@echo "Остановка Node.js/Vite процессов..."
-	@docker exec otus_node sh -c "pkill -9 node || true" 2>/dev/null || echo "⚠️  Контейнер node не запущен"
+	@$(COMPOSE_DEV) exec node sh -c "pkill -9 node || true" 2>/dev/null || echo "⚠️  Контейнер node не запущен"
 	@echo "✅ Завершено"
 
 frontend-restart: frontend-kill
@@ -214,7 +230,7 @@ clean:
 	@echo "⚠️  ВНИМАНИЕ: Эта команда удалит все контейнеры, образы и данные в volumes/"
 	@echo "Нажмите Ctrl+C для отмены или Enter для продолжения..."
 	@read dummy
-	docker compose down --rmi all
-	rm -rf volumes/postgres volumes/node_modules
+	$(COMPOSE) down --rmi all
+	rm -rf $(VOLUME_DIR)/postgres $(VOLUME_DIR)/node_modules
 	@$(MAKE) volumes-init
 	@echo "✅ Очистка завершена"
